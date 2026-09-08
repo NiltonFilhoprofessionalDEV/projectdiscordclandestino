@@ -2,7 +2,7 @@
   "name": "voice-rooms",
   "private": true,
   "engines": {
-    "node": "20.x"
+    "node": "22.x"
   },
   "workspaces": ["shared", "server", "web"],
   "scripts": {
