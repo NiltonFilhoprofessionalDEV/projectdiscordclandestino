@@ -1,12 +1,15 @@
 {
   "name": "voice-rooms",
   "private": true,
+  "engines": {
+    "node": "20.x"
+  },
   "workspaces": ["shared", "server", "web"],
   "scripts": {
     "dev:server": "npm run dev -w server",
     "dev:web": "npm run dev -w web",
     "test": "npm run test -w shared && npm run test -w server",
-    "build": "npm run build -w web"
+    "build": "npm run build -w web && node scripts/copy-dist.mjs"
   },
   "dependencies": {
     "hono": "^4.9.8",

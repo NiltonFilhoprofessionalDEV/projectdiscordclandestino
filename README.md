@@ -37,10 +37,19 @@ Abra `http://localhost:5173`.
 
 ## Deploy na Vercel
 
-A Vercel deve usar a **raiz do repositório** (não a pasta `server` nem só `web`).
+O erro `FUNCTION_INVOCATION_FAILED` na página inteira acontece se a Vercel sobe o servidor Node em vez do HTML.
 
-1. Project → Settings → General: **Root Directory** vazio / `.`
-2. Settings → Environment Variables (Production e Preview):
+Em **Settings → General**, force:
+
+| Campo | Valor |
+| --- | --- |
+| Framework Preset | **Other** |
+| Root Directory | **vazio** (raiz do GitHub, não `web` nem `server`) |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
+| Install Command | `npm install` |
+
+Em **Settings → Environment Variables** (Production e Preview):
 
 ```
 LIVEKIT_URL=wss://seu-projeto.livekit.cloud
@@ -49,9 +58,7 @@ LIVEKIT_API_SECRET=...
 APP_ORIGIN=https://seu-app.vercel.app
 ```
 
-`APP_ORIGIN` é a URL pública do site (sem barra no final). Depois de salvar as variáveis, faça um **Redeploy**.
-
-Sem essas variáveis o site abre, mas entrar na sala falha (token).
+Salve e faça **Redeploy** (Deployments → ⋯ → Redeploy). Sem as variáveis do LiveKit o site abre, mas a sala não conecta.
 
 ## Testes
 
