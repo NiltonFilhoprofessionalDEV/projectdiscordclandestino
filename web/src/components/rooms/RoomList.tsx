@@ -26,14 +26,20 @@ export function RoomList({ rooms, activeId, onSelect }: RoomListProps) {
             key={room.id}
             type="button"
             onClick={() => onSelect(room.id)}
+            aria-current={active ? "page" : undefined}
             className={cn(
-              "flex min-h-12 items-center gap-3 rounded-2xl px-3 text-left transition",
-              active ? "bg-white/8 text-fog" : "text-mist hover:bg-white/5 hover:text-fog",
+              "focus-ring relative flex min-h-11 items-center gap-3 rounded-xl px-3 text-left text-sm transition",
+              active
+                ? "bg-electric/14 text-cloud"
+                : "text-haze hover:bg-white/5 hover:text-cloud",
             )}
           >
-            <Volume2 className={cn("size-4 shrink-0", active ? "text-copper" : "text-mist")} />
+            {active ? (
+              <span className="absolute left-0 h-5 w-[3px] rounded-r-full bg-electric" />
+            ) : null}
+            <Volume2 className={cn("size-4 shrink-0", active ? "text-electric" : "text-haze")} />
             <span className="flex-1 font-medium">{room.label}</span>
-            <span className="text-xs text-mist">{occupancyLabel(room.occupantCount)}</span>
+            <span className="text-xs text-haze">{occupancyLabel(room.occupantCount)}</span>
           </button>
         );
       })}
