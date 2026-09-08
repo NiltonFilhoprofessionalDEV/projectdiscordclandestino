@@ -20,26 +20,32 @@ export function ProfilePanel({
   onSelect,
 }: ProfilePanelProps) {
   return (
-    <aside className="hidden w-72 shrink-0 flex-col gap-5 p-4 xl:flex">
-      <div className="glass flex flex-col items-center rounded-[1.5rem] px-4 py-6">
-        <span className="halo-ring flex size-24 items-center justify-center rounded-full bg-linear-to-br from-copper via-violet to-led font-display text-2xl">
+    <aside className="surface hidden w-72 shrink-0 flex-col gap-6 border-y-0 border-r-0 p-5 xl:flex">
+      <div className="flex flex-col items-center border-b border-haze/10 px-2 pb-6">
+        <span className="flex size-20 items-center justify-center rounded-[1.4rem] bg-linear-to-br from-electric to-pulse font-display text-xl text-white shadow-[0_14px_28px_rgba(93,124,255,0.24)]">
           {initials(displayName)}
         </span>
-        <p className="mt-4 truncate font-display text-lg">{displayName}</p>
-        <p className="text-xs text-mist">
+        <p className="mt-4 max-w-full truncate font-display text-lg text-cloud">
+          {displayName}
+        </p>
+        <p className="mt-1 text-xs text-haze">
           {activeRoomId ? getRoomLabel(activeRoomId) : "Explorando"}
         </p>
       </div>
       {activeRoomId ? (
         <div>
-          <h2 className="mb-2 px-1 text-xs tracking-wide text-mist uppercase">Na sala</h2>
+          <h2 className="mb-3 px-1 text-xs font-semibold tracking-[0.14em] text-haze uppercase">
+            Na sala
+          </h2>
           <ParticipantList participants={participants} />
         </div>
       ) : (
         <div>
-          <h2 className="mb-2 px-1 text-xs tracking-wide text-mist uppercase">Atividade recente</h2>
+          <h2 className="mb-3 px-1 text-xs font-semibold tracking-[0.14em] text-haze uppercase">
+            Ao vivo agora
+          </h2>
           {liveRooms.length === 0 ? (
-            <p className="glass-soft rounded-2xl px-3 py-4 text-sm text-mist">
+            <p className="rounded-xl bg-abyss/55 px-3 py-4 text-sm leading-relaxed text-haze">
               Ninguém nas salas ainda. Seja a primeira pessoa.
             </p>
           ) : (
@@ -49,10 +55,13 @@ export function ProfilePanel({
                   <button
                     type="button"
                     onClick={() => onSelect(item.id)}
-                    className="glass-soft flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left text-sm hover:bg-white/10"
+                    aria-label={`Entrar na sala ${item.label}`}
+                    className="focus-ring flex min-h-11 w-full items-center justify-between rounded-xl bg-abyss/55 px-3 text-left text-sm text-cloud transition hover:bg-abyss"
                   >
                     <span>{item.label}</span>
-                    <span className="text-xs text-mist">{item.occupantCount}</span>
+                    <span className="flex min-w-6 items-center justify-center rounded-full bg-electric/15 px-2 py-0.5 text-xs text-[#aab9ff]">
+                      {item.occupantCount}
+                    </span>
                   </button>
                 </li>
               ))}
