@@ -39,15 +39,16 @@ Abra `http://localhost:5173`.
 
 O erro `FUNCTION_INVOCATION_FAILED` na página inteira acontece se a Vercel sobe o servidor Node em vez do HTML.
 
-Em **Settings → General**, force:
+Em **Settings → Build and Deployment** (não é a aba General):
 
 | Campo | Valor |
 | --- | --- |
 | Framework Preset | **Other** |
-| Root Directory | **vazio** (raiz do GitHub, não `web` nem `server`) |
-| Build Command | `npm run build` |
+| Root Directory | **vazio** — se estiver `server` ou `web`, apague |
+| Build Command | deixe o do `vercel.json` (ou `npm run build -w @voice/web && node scripts/copy-dist.mjs`) |
 | Output Directory | `dist` |
-| Install Command | `npm install` |
+
+Se o projeto se chama `…-server`, a Vercel está tratando como API. O Root Directory não pode ser a pasta `server`.
 
 Em **Settings → Environment Variables** (Production e Preview):
 

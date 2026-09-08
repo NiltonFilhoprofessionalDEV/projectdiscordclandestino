@@ -30,6 +30,9 @@
     "lightningcss-linux-x64-gnu": "1.32.0",
     "lightningcss-linux-x64-musl": "1.32.0"
   },
+  "engines": {
+    "node": "22.x"
+  },
   "devDependencies": {
     "@types/node": "^24.3.1",
     "@types/react": "^19.1.13",
