@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { parseDisplayName } from "../../shared/displayName.ts";
 import { isKnownRoomId, ROOMS } from "../../shared/rooms.ts";
-import { APP_ORIGIN, hasLiveKitCredentials, LIVEKIT_URL } from "./config.ts";
+import { hasLiveKitCredentials, LIVEKIT_URL, resolveCorsOrigin } from "./config.ts";
 import { createToken, occupancyByRoom } from "./livekit.ts";
 import { allowRequest } from "./rateLimit.ts";
 
@@ -11,7 +11,7 @@ export const app = new Hono();
 app.use(
   "/api/*",
   cors({
-    origin: APP_ORIGIN,
+    origin: (origin) => resolveCorsOrigin(origin),
     allowMethods: ["GET", "POST", "OPTIONS"],
     allowHeaders: ["Content-Type"],
   }),

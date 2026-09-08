@@ -6,6 +6,10 @@
     "dev:server": "npm run dev -w server",
     "dev:web": "npm run dev -w web",
     "test": "npm run test -w shared && npm run test -w server",
-    "build": "npm run build -w web && npm run build -w server"
+    "build": "npm run build -w web"
+  },
+  "dependencies": {
+    "hono": "^4.9.8",
+    "livekit-server-sdk": "^2.13.3"
   }
 }

@@ -35,6 +35,24 @@ npm run dev:web
 
 Abra `http://localhost:5173`.
 
+## Deploy na Vercel
+
+A Vercel deve usar a **raiz do repositório** (não a pasta `server` nem só `web`).
+
+1. Project → Settings → General: **Root Directory** vazio / `.`
+2. Settings → Environment Variables (Production e Preview):
+
+```
+LIVEKIT_URL=wss://seu-projeto.livekit.cloud
+LIVEKIT_API_KEY=...
+LIVEKIT_API_SECRET=...
+APP_ORIGIN=https://seu-app.vercel.app
+```
+
+`APP_ORIGIN` é a URL pública do site (sem barra no final). Depois de salvar as variáveis, faça um **Redeploy**.
+
+Sem essas variáveis o site abre, mas entrar na sala falha (token).
+
 ## Testes
 
 ```
