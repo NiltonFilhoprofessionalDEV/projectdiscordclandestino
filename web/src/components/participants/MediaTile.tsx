@@ -27,8 +27,8 @@ export function MediaTile({ publication, label, large, muteElement }: MediaTileP
     <figure
       className={
         large
-          ? "relative overflow-hidden rounded-3xl border border-white/10 bg-void"
-          : "relative aspect-video overflow-hidden rounded-2xl border border-white/10 bg-void"
+          ? "relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-void shadow-glow"
+          : "relative aspect-video overflow-hidden rounded-[1.25rem] border border-white/10 bg-void"
       }
     >
       <video

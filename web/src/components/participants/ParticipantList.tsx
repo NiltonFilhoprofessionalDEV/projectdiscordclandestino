@@ -12,12 +12,14 @@ export function ParticipantList({ participants }: ParticipantListProps) {
       {participants.map((participant) => (
         <li
           key={participant.identity}
-          className="flex min-h-11 items-center gap-3 rounded-xl px-2 text-fog"
+          className="glass-soft flex min-h-11 items-center gap-3 rounded-2xl px-3 text-fog"
         >
           <span
             className={cn(
               "size-2.5 rounded-full",
-              participant.isSpeaking ? "bg-led shadow-[0_0_10px_#e8b84a]" : "bg-emerald-400",
+              participant.isSpeaking
+                ? "bg-copper shadow-[0_0_12px_var(--color-copper)]"
+                : "bg-led",
             )}
             aria-hidden
           />

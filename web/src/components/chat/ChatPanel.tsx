@@ -24,7 +24,7 @@ export function ChatPanel({ messages, onSend }: ChatPanelProps) {
   }
 
   return (
-    <section className="flex h-full min-h-64 flex-col border-t border-white/8 lg:border-l lg:border-t-0">
+    <section className="glass mt-3 flex h-full min-h-64 flex-col rounded-[1.25rem] lg:mt-0 lg:ml-3">
       <header className="px-4 py-3 text-xs tracking-wide text-mist uppercase">Chat</header>
       <div className="flex-1 space-y-3 overflow-y-auto px-4 pb-3">
         {messages.length === 0 ? (

@@ -21,8 +21,8 @@ export function DeviceSettings({ room, onClose }: DeviceSettingsProps) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center">
-      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-panel p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-void/70 p-4 sm:items-center">
+      <div className="glass w-full max-w-md rounded-[1.75rem] p-6">
         <h2 className="font-display text-xl text-fog">Dispositivos</h2>
         <label className="mt-4 block text-sm text-mist">Microfone</label>
         <select

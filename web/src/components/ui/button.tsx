@@ -7,10 +7,10 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        solid: "bg-copper text-ink hover:bg-copper-bright",
+        solid: "bg-copper text-void hover:bg-copper-bright",
         ghost: "bg-white/5 text-fog hover:bg-white/10",
         danger: "bg-rose-500/90 text-white hover:bg-rose-400",
-        live: "bg-led/15 text-led hover:bg-led/25",
+        live: "bg-led/15 text-led shadow-[0_0_18px_rgba(126,224,255,0.25)] hover:bg-led/25",
         mute: "bg-rose-500/20 text-rose-200 hover:bg-rose-500/30",
       },
       size: {

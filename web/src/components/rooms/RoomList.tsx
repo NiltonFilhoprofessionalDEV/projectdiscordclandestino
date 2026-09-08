@@ -28,7 +28,7 @@ export function RoomList({ rooms, activeId, onSelect }: RoomListProps) {
             onClick={() => onSelect(room.id)}
             className={cn(
               "flex min-h-12 items-center gap-3 rounded-2xl px-3 text-left transition",
-              active ? "bg-copper/15 text-fog" : "text-mist hover:bg-white/5 hover:text-fog",
+              active ? "bg-white/8 text-fog" : "text-mist hover:bg-white/5 hover:text-fog",
             )}
           >
             <Volume2 className={cn("size-4 shrink-0", active ? "text-copper" : "text-mist")} />

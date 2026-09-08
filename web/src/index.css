@@ -7,15 +7,17 @@
 @theme {
   --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Syne", ui-sans-serif, sans-serif;
-  --color-ink: #12141a;
-  --color-panel: #1a2030;
-  --color-void: #0e1118;
-  --color-fog: #e8e2d6;
-  --color-mist: #8b93a7;
-  --color-copper: #c4a07a;
-  --color-copper-bright: #d8b892;
-  --color-led: #e8b84a;
-  --shadow-glow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  --color-ink: #160f29;
+  --color-panel: #1c1436;
+  --color-void: #0b0616;
+  --color-fog: #f6f2ff;
+  --color-mist: #b5a8c9;
+  --color-copper: #ff4ec8;
+  --color-copper-bright: #ff7ad8;
+  --color-led: #7ee0ff;
+  --color-violet: #9b5cff;
+  --shadow-glow: 0 24px 80px rgba(255, 78, 200, 0.18);
+  --shadow-halo: 0 0 28px rgba(255, 78, 200, 0.55);
 }
 
 html,
@@ -26,12 +28,56 @@ body,
 
 body {
   margin: 0;
-  background: radial-gradient(1200px 600px at 20% -10%, #2a241c 0%, transparent 50%),
-    var(--color-ink);
   color: var(--color-fog);
   font-family: var(--font-sans);
+  background:
+    radial-gradient(980px 520px at 88% -8%, rgba(255, 78, 200, 0.34) 0%, transparent 58%),
+    radial-gradient(820px 640px at -10% 108%, rgba(123, 61, 255, 0.42) 0%, transparent 55%),
+    radial-gradient(640px 420px at 42% 38%, rgba(110, 200, 255, 0.1) 0%, transparent 52%),
+    var(--color-ink);
 }
 
 .font-display {
   font-family: var(--font-display);
+}
+
+.glass {
+  background: rgba(22, 15, 45, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(22px);
+}
+
+.glass-soft {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+}
+
+.halo-ring {
+  box-shadow:
+    0 0 0 2px rgba(255, 78, 200, 0.95),
+    0 0 22px rgba(255, 78, 200, 0.55),
+    0 0 48px rgba(155, 92, 255, 0.35);
+}
+
+@keyframes wave {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.wave-bar {
+  transform-origin: center;
+  animation: wave 1.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wave-bar {
+    animation: none;
+    transform: scaleY(0.7);
+  }
 }

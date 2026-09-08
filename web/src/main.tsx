@@ -7,6 +7,12 @@ import "./index.css";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />
-    <Toaster theme="dark" position="top-center" />
+    <Toaster
+      theme="dark"
+      position="top-center"
+      toastOptions={{
+        className: "glass !border-white/10 !bg-panel/90 !text-fog",
+      }}
+    />
   </StrictMode>,
 );
