@@ -1,0 +1,6 @@
+[
+  { "id": "geral", "label": "Geral" },
+  { "id": "jogos", "label": "Jogos" },
+  { "id": "reuniao", "label": "Reunião" },
+  { "id": "desenvolvimento", "label": "Desenvolvimento" }
+]

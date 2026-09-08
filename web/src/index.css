@@ -1,0 +1,37 @@
+@import "@fontsource/figtree/400.css";
+@import "@fontsource/figtree/500.css";
+@import "@fontsource/figtree/600.css";
+@import "@fontsource/syne/700.css";
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Syne", ui-sans-serif, sans-serif;
+  --color-ink: #12141a;
+  --color-panel: #1a2030;
+  --color-void: #0e1118;
+  --color-fog: #e8e2d6;
+  --color-mist: #8b93a7;
+  --color-copper: #c4a07a;
+  --color-copper-bright: #d8b892;
+  --color-led: #e8b84a;
+  --shadow-glow: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+
+html,
+body,
+#root {
+  min-height: 100dvh;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(1200px 600px at 20% -10%, #2a241c 0%, transparent 50%),
+    var(--color-ink);
+  color: var(--color-fog);
+  font-family: var(--font-sans);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}

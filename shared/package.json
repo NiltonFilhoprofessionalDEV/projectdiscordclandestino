@@ -1,0 +1,17 @@
+{
+  "name": "@voice/shared",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    "./rooms": "./rooms.ts",
+    "./displayName": "./displayName.ts",
+    "./chat": "./chat.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
