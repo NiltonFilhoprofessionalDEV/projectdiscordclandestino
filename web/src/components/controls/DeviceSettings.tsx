@@ -21,12 +21,20 @@ export function DeviceSettings({ room, onClose }: DeviceSettingsProps) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-void/70 p-4 sm:items-center">
-      <div className="glass w-full max-w-md rounded-[1.75rem] p-6">
-        <h2 className="font-display text-xl text-fog">Dispositivos</h2>
-        <label className="mt-4 block text-sm text-mist">Microfone</label>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-abyss/85 p-4 backdrop-blur-sm sm:items-center">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="device-settings-title"
+        className="surface-raised w-full max-w-md rounded-[1.6rem] p-6"
+      >
+        <h2 id="device-settings-title" className="font-display text-xl text-cloud">
+          Dispositivos
+        </h2>
+        <p className="mt-1 text-sm text-haze">Escolha como você quer ouvir e falar.</p>
+        <label className="mt-6 block text-sm font-medium text-haze">Microfone</label>
         <select
-          className="mt-1 h-11 w-full rounded-xl border border-white/10 bg-void px-3 text-fog"
+          className="mt-2 h-11 w-full rounded-xl border border-haze/15 bg-abyss px-3 text-cloud outline-none focus:border-electric/70 focus:ring-2 focus:ring-electric/25"
           onChange={(event) => {
             void room.switchActiveDevice("audioinput", event.target.value);
           }}
@@ -39,9 +47,9 @@ export function DeviceSettings({ room, onClose }: DeviceSettingsProps) {
         </select>
         {supportsSink ? (
           <>
-            <label className="mt-4 block text-sm text-mist">Saída de áudio</label>
+            <label className="mt-5 block text-sm font-medium text-haze">Saída de áudio</label>
             <select
-              className="mt-1 h-11 w-full rounded-xl border border-white/10 bg-void px-3 text-fog"
+              className="mt-2 h-11 w-full rounded-xl border border-haze/15 bg-abyss px-3 text-cloud outline-none focus:border-electric/70 focus:ring-2 focus:ring-electric/25"
               onChange={(event) => {
                 void room.switchActiveDevice("audiooutput", event.target.value);
               }}
@@ -54,11 +62,11 @@ export function DeviceSettings({ room, onClose }: DeviceSettingsProps) {
             </select>
           </>
         ) : (
-          <p className="mt-4 text-sm text-mist">
+          <p className="mt-5 text-sm text-haze">
             Este navegador não permite escolher a saída de áudio.
           </p>
         )}
-        <Button type="button" variant="solid" className="mt-6 w-full" onClick={onClose}>
+        <Button type="button" variant="ghost" className="mt-6 w-full" onClick={onClose}>
           Fechar
         </Button>
       </div>

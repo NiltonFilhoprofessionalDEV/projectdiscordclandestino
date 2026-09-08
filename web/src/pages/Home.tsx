@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ConnectionState } from "livekit-client";
-import { Menu } from "lucide-react";
+import { Headphones, Menu } from "lucide-react";
 import { parseDisplayName } from "../../../shared/displayName.ts";
 import { getRoomLabel, type RoomId } from "../../../shared/rooms.ts";
 import { ChatPanel } from "../components/chat/ChatPanel.tsx";
@@ -49,6 +49,7 @@ export function Home({ displayName, onRename }: HomeProps) {
   const { quality, rttMs } = useConnectionQuality(room);
   const screen = activeScreenShare(participants);
   const canScreenShare = Boolean(navigator.mediaDevices?.getDisplayMedia);
+  const hasCamera = participants.some((participant) => participant.cameraPublication);
   const liveRooms = useMemo(
     () => rooms.filter((item) => item.occupantCount > 0).slice(0, 4),
     [rooms],
@@ -145,9 +146,9 @@ export function Home({ displayName, onRename }: HomeProps) {
               />
             ) : (
               <>
-                {error ? <p className="mb-3 text-sm text-rose-300">{error}</p> : null}
+                {error ? <p className="mb-3 text-sm text-coral">{error}</p> : null}
                 {connectionState === ConnectionState.Connected && participants.length === 0 ? (
-                  <p className="text-mist">Ninguém mais por aqui ainda.</p>
+                  <p className="text-haze">Ninguém mais por aqui ainda.</p>
                 ) : null}
                 {screen?.screenPublication ? (
                   <div className="mb-4">
@@ -162,9 +163,24 @@ export function Home({ displayName, onRename }: HomeProps) {
                     />
                   </div>
                 ) : null}
+                {connectionState === ConnectionState.Connected && !hasCamera ? (
+                  <div className="surface-raised flex min-h-72 flex-col items-center justify-center rounded-[1.5rem] px-6 text-center">
+                    <span className="flex size-16 items-center justify-center rounded-2xl bg-electric/14 text-electric ring-1 ring-electric/25">
+                      <Headphones className="size-7" />
+                    </span>
+                    <h2 className="mt-5 font-display text-2xl text-cloud">
+                      A conversa está acontecendo
+                    </h2>
+                    <p className="mt-2 max-w-sm text-sm leading-relaxed text-haze">
+                      Ligue a câmera quando quiser. Sua voz já está conectada à sala.
+                    </p>
+                  </div>
+                ) : null}
                 <VideoGrid participants={participants} />
                 <div className="mt-6 xl:hidden">
-                  <h2 className="mb-2 text-xs tracking-wide text-mist uppercase">Participantes</h2>
+                  <h2 className="mb-2 text-xs font-semibold tracking-wide text-haze uppercase">
+                    Participantes
+                  </h2>
                   <ParticipantList participants={participants} />
                 </div>
               </>

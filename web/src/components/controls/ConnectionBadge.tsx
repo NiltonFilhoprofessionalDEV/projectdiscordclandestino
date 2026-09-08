@@ -8,23 +8,23 @@ type ConnectionBadgeProps = {
 
 function qualityCopy(quality: ConnectionQuality): { label: string; className: string } {
   if (quality === ConnectionQuality.Excellent || quality === ConnectionQuality.Good) {
-    return { label: "Excelente conexão", className: "text-emerald-300" };
+    return { label: "Excelente conexão", className: "text-[#aab9ff]" };
   }
   if (quality === ConnectionQuality.Poor) {
-    return { label: "Conexão instável", className: "text-led" };
+    return { label: "Conexão instável", className: "text-amber-300" };
   }
-  return { label: "Conexão ruim", className: "text-rose-300" };
+  return { label: "Conexão ruim", className: "text-coral" };
 }
 
 export function ConnectionBadge({ state, quality, rttMs }: ConnectionBadgeProps) {
   if (state === ConnectionState.Connecting) {
-    return <p className="text-xs text-mist">Conectando…</p>;
+    return <p className="text-xs text-haze">Conectando…</p>;
   }
   if (state === ConnectionState.Reconnecting) {
-    return <p className="text-xs text-led">Reconectando…</p>;
+    return <p className="text-xs text-amber-300">Reconectando…</p>;
   }
   if (state !== ConnectionState.Connected) {
-    return <p className="text-xs text-rose-300">Desconectado</p>;
+    return <p className="text-xs text-coral">Desconectado</p>;
   }
 
   const copy = qualityCopy(quality);
