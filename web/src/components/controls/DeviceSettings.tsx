@@ -9,6 +9,7 @@ type DeviceSettingsProps = {
 
 export function DeviceSettings({ room, onClose }: DeviceSettingsProps) {
   const [inputs, setInputs] = useState<MediaDeviceInfo[]>([]);
+  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
   const [outputs, setOutputs] = useState<MediaDeviceInfo[]>([]);
   const supportsSink =
     typeof HTMLMediaElement !== "undefined" && "setSinkId" in HTMLMediaElement.prototype;
@@ -16,6 +17,7 @@ export function DeviceSettings({ room, onClose }: DeviceSettingsProps) {
   useEffect(() => {
     void navigator.mediaDevices.enumerateDevices().then((devices) => {
       setInputs(devices.filter((device) => device.kind === "audioinput"));
+      setCameras(devices.filter((device) => device.kind === "videoinput"));
       setOutputs(devices.filter((device) => device.kind === "audiooutput"));
     });
   }, []);
@@ -36,6 +38,23 @@ export function DeviceSettings({ room, onClose }: DeviceSettingsProps) {
               {device.label || "Microfone"}
             </option>
           ))}
+        </select>
+        <label className="mt-4 block text-sm text-mist">Câmera</label>
+        <select
+          className="mt-1 h-11 w-full rounded-xl border border-white/10 bg-void px-3 text-fog"
+          onChange={(event) => {
+            void room.switchActiveDevice("videoinput", event.target.value);
+          }}
+        >
+          {cameras.length === 0 ? (
+            <option value="">Nenhuma câmera listada</option>
+          ) : (
+            cameras.map((device) => (
+              <option key={device.deviceId} value={device.deviceId}>
+                {device.label || "Câmera"}
+              </option>
+            ))
+          )}
         </select>
         {supportsSink ? (
           <>

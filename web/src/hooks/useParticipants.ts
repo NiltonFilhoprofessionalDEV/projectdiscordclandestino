@@ -21,7 +21,13 @@ function publicationOf(participant: Participant, source: Track.Source) {
   const pub =
     participant.getTrackPublication(source) ??
     Array.from(participant.trackPublications.values()).find((item) => item.source === source);
-  if (!pub || pub.isMuted || !pub.track) {
+  if (!pub?.track) {
+    return null;
+  }
+  if (source === Track.Source.Camera && participant.isCameraEnabled) {
+    return pub;
+  }
+  if (pub.isMuted) {
     return null;
   }
   return pub;
@@ -74,6 +80,8 @@ export function useParticipants(room: Room | null): ParticipantView[] {
       RoomEvent.TrackSubscribed,
       RoomEvent.LocalTrackPublished,
       RoomEvent.LocalTrackUnpublished,
+      RoomEvent.TrackStreamStateChanged,
+      RoomEvent.MediaDevicesError,
       RoomEvent.ActiveSpeakersChanged,
       RoomEvent.ParticipantMetadataChanged,
     ] as const;

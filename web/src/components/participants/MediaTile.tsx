@@ -18,6 +18,12 @@ export function MediaTile({ publication, label, large, muteElement }: MediaTileP
       return;
     }
     track.attach(el);
+    el.muted = Boolean(muteElement);
+    el.playsInline = true;
+    el.autoplay = true;
+    void el.play().catch(() => {
+      /* autoplay can wait for a gesture; the click that opened the camera already happened */
+    });
     return () => {
       track.detach(el);
     };

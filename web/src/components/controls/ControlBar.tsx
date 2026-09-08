@@ -33,7 +33,7 @@ export function ControlBar({
   onLeave,
 }: ControlBarProps) {
   return (
-    <div className="glass mx-auto mt-2 flex w-fit flex-wrap items-center justify-center gap-2 rounded-full px-3 py-2 shadow-glow">
+    <div className="glass z-20 mx-auto mt-2 flex w-fit flex-wrap items-center justify-center gap-2 rounded-full px-3 py-2 shadow-glow">
       <Button
         type="button"
         size="icon"

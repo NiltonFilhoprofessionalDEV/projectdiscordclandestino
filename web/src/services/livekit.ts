@@ -17,7 +17,8 @@ export function createLiveKitRoom(): Room {
       autoGainControl: true,
     },
     videoCaptureDefaults: {
-      resolution: VideoPresets.h720.resolution,
+      facingMode: "user",
+      resolution: VideoPresets.h360.resolution,
     },
     publishDefaults: {
       simulcast: true,
