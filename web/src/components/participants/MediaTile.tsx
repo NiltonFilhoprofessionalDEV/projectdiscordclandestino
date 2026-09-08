@@ -33,8 +33,8 @@ export function MediaTile({ publication, label, large, muteElement }: MediaTileP
     <figure
       className={
         large
-          ? "relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-void shadow-glow"
-          : "relative aspect-video overflow-hidden rounded-[1.25rem] border border-white/10 bg-void"
+          ? "surface-raised relative overflow-hidden rounded-[1.5rem]"
+          : "surface relative aspect-video overflow-hidden rounded-[1.25rem]"
       }
     >
       <video
@@ -44,7 +44,7 @@ export function MediaTile({ publication, label, large, muteElement }: MediaTileP
         playsInline
         muted={muteElement}
       />
-      <figcaption className="absolute bottom-2 left-2 rounded-full bg-black/55 px-3 py-1 text-xs text-fog">
+      <figcaption className="glass-bar absolute bottom-3 left-3 rounded-lg px-3 py-1.5 text-xs text-cloud">
         {label}
       </figcaption>
     </figure>

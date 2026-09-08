@@ -11,7 +11,7 @@ createRoot(document.getElementById("root")!).render(
       theme="dark"
       position="top-center"
       toastOptions={{
-        className: "glass !border-white/10 !bg-panel/90 !text-fog",
+        className: "!border-haze/15 !bg-deck !text-cloud",
       }}
     />
   </StrictMode>,
