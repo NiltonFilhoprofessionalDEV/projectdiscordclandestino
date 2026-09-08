@@ -118,12 +118,12 @@ export function ExploreView({
         </label>
       </div>
 
-      <section className="surface-raised relative grid min-h-56 overflow-hidden rounded-[1.6rem] p-7 sm:p-9 lg:grid-cols-[1fr_0.7fr] lg:items-center">
+      <section className="surface-raised relative grid overflow-hidden rounded-[1.6rem] p-6 sm:p-8 lg:min-h-56 lg:grid-cols-[1fr_0.7fr] lg:items-center">
         <div className="relative z-10">
           <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.16em] text-[#aab9ff] uppercase">
             <Radio className="size-4 text-coral" /> Salas abertas
           </p>
-          <h2 className="mt-4 max-w-xl font-display text-3xl leading-tight text-cloud sm:text-4xl">
+          <h2 className="mt-4 max-w-xl font-display text-2xl leading-tight text-cloud sm:text-3xl lg:text-4xl">
             Encontre sua próxima conversa.
           </h2>
           <p className="mt-3 max-w-lg text-sm leading-relaxed text-haze">
@@ -134,7 +134,7 @@ export function ExploreView({
             {rooms.length} {rooms.length === 1 ? "sala disponível" : "salas disponíveis"}
           </p>
         </div>
-        <div className="relative mt-8 h-24 lg:mt-0" aria-hidden>
+        <div className="relative hidden h-24 lg:block" aria-hidden>
           <span className="absolute top-2 right-4 size-20 rounded-[1.4rem] bg-pulse/20 ring-1 ring-pulse/30" />
           <span className="absolute right-24 bottom-0 size-16 rounded-[1.2rem] bg-electric/20 ring-1 ring-electric/30" />
           <span className="absolute right-0 bottom-1 size-12 rounded-xl bg-coral/18 ring-1 ring-coral/25" />

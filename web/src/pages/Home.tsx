@@ -152,7 +152,7 @@ export function Home({ displayName, onRename }: HomeProps) {
                 ) : null}
                 {screen?.screenPublication ? (
                   <div className="mb-4">
-                    <p className="mb-2 text-sm text-copper">
+                    <p className="mb-2 text-sm text-electric">
                       {screen.name} está compartilhando a tela
                     </p>
                     <MediaTile
