@@ -3,5 +3,6 @@ dist
 .env
 *.local
 .DS_Store
+.worktrees/
 web/dist
 server/dist
