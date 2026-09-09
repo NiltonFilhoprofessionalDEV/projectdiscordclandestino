@@ -10,6 +10,8 @@ const summary = (role: CommunitySummary["role"]): CommunitySummary => ({
   visibility: "public",
   role,
   avatarUrl: null,
+  onlineCount: 0,
+  activeRooms: [],
 });
 
 describe("canManageCommunity", () => {

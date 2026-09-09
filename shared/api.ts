@@ -60,6 +60,11 @@ export type LiveKitTokenResponse = {
   roomName: string;
 };
 
+export type ActiveVoiceRoom = {
+  name: string;
+  occupantCount: number;
+};
+
 export type CommunitySummary = {
   id: CommunityId;
   name: string;
@@ -67,6 +72,8 @@ export type CommunitySummary = {
   visibility: CommunityVisibility;
   role: CommunityRole | null;
   avatarUrl: string | null;
+  onlineCount: number;
+  activeRooms: ActiveVoiceRoom[];
 };
 
 export type Community = {

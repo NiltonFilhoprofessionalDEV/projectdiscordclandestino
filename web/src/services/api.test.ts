@@ -60,6 +60,21 @@ describe("apiRequest", () => {
     });
   });
 
+  it("does not send Bearer undefined when the restored session has no token", async () => {
+    getSession.mockResolvedValue({ data: { session: null } });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { apiRequest } = await import("./api.ts");
+    const result = await apiRequest("/api/communities");
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      ok: false,
+      error: { code: "UNAUTHENTICATED", message: "Sessão inválida ou expirada." },
+    });
+  });
+
   it("returns INTERNAL when the network request fails", async () => {
     getSession.mockResolvedValue({ data: { session: { access_token: "tok_abc" } } });
     vi.stubGlobal(

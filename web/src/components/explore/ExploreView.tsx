@@ -1,4 +1,4 @@
-import { useRef, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import { Search } from "lucide-react";
 import type { CommunitySummary } from "../../../../shared/api.ts";
 import { filterExploreCommunities } from "../../communities/lists.ts";
@@ -35,6 +35,8 @@ function ExploreCommunityCard({
       kind={communityCardKind(member, community.visibility)}
       image={communityCoverFor(community.id, community.avatarUrl)}
       avatarUrl={community.avatarUrl}
+      onlineCount={community.onlineCount}
+      activeRooms={community.activeRooms}
       actionLabel={member ? "Abrir" : "Ver"}
       onOpen={() => onChoose(community)}
     />
@@ -195,6 +197,8 @@ function ExploreStatus({
   return null;
 }
 
+const EXPLORE_POLL_MS = 12_000;
+
 export function ExploreView({
   communities,
   query,
@@ -205,9 +209,16 @@ export function ExploreView({
   onRetry,
 }: ExploreViewProps) {
   const searchRef = useRef<HTMLInputElement>(null);
+  const retryRef = useRef(onRetry);
+  retryRef.current = onRetry;
   const { joined, discoverable } = filterExploreCommunities(communities, query);
   const hasQuery = query.trim().length > 0;
   const isEmpty = joined.length === 0 && discoverable.length === 0;
+
+  useEffect(() => {
+    const timer = window.setInterval(() => retryRef.current(), EXPLORE_POLL_MS);
+    return () => window.clearInterval(timer);
+  }, []);
 
   return (
     <div className="flex w-full flex-col gap-6">

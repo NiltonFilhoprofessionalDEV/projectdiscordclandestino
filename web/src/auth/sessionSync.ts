@@ -47,7 +47,7 @@ async function syncAvatar(user: User, profile: Profile): Promise<Profile> {
   return data ?? { ...profile, avatar_url: avatarUrl };
 }
 
-export async function applySession(next: Session | null, sink: SessionSink) {
+export function applyAuthSnapshot(next: Session | null, sink: SessionSink) {
   if (sink.isCancelled()) {
     return;
   }
@@ -56,40 +56,31 @@ export async function applySession(next: Session | null, sink: SessionSink) {
   if (!next?.user) {
     sink.setProfile(null);
     sink.setError(null);
+    sink.setLoading(false);
+  }
+}
+
+export async function loadUserProfile(user: User, sink: SessionSink) {
+  if (sink.isCancelled()) {
     return;
   }
-  const loaded = await fetchProfile(next.user.id);
+  const loaded = await fetchProfile(user.id);
   if (sink.isCancelled()) {
     return;
   }
   if (!loaded) {
     sink.setProfile(null);
     sink.setError("Não foi possível carregar seu perfil.");
+    sink.setLoading(false);
     return;
   }
-  const nextProfile = await syncAvatar(next.user, loaded);
+  const nextProfile = await syncAvatar(user, loaded);
   if (sink.isCancelled()) {
     return;
   }
   sink.setProfile(nextProfile);
   sink.setError(null);
+  sink.setLoading(false);
 }
 
-export async function restoreSession(sink: SessionSink) {
-  const { data, error } = await supabase.auth.getSession();
-  if (sink.isCancelled()) {
-    return;
-  }
-  if (error) {
-    sink.setSession(null);
-    sink.setUser(null);
-    sink.setProfile(null);
-    sink.setError("Não foi possível restaurar a sessão.");
-    sink.setLoading(false);
-    return;
-  }
-  await applySession(data.session, sink);
-  if (!sink.isCancelled()) {
-    sink.setLoading(false);
-  }
-}
+

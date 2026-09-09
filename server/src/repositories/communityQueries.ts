@@ -43,6 +43,8 @@ export async function listCommunities(
       visibility: row.visibility,
       role: roleByCommunity.get(row.id) ?? null,
       avatarUrl: row.avatar_url ?? null,
+      onlineCount: 0,
+      activeRooms: [],
     })),
   };
 }

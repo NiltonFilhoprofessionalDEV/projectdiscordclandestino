@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ApiResult } from "../../shared/api.ts";
 import type { ChannelId, CommunityId } from "../../shared/community.ts";
 import { app, createApp } from "./app.ts";
+import type { AppDeps } from "./http/deps.ts";
 import type { CommunityRepository } from "./repositories/communityRepository.ts";
 import { requireUser } from "./supabase.ts";
 
@@ -68,6 +69,7 @@ function testApp(options: {
     communityId: string,
     channelIds: readonly string[],
   ) => Promise<Record<string, { identity: string; name: string }[]>>;
+  listExploreActivity?: AppDeps["listExploreActivity"];
   allowRequest?: () => { allowed: true } | { allowed: false; retryAfterSeconds: number };
   getRepository?: () => CommunityRepository;
 }) {
@@ -81,6 +83,9 @@ function testApp(options: {
       options.listVoiceOccupants ??
       (async (_communityId, channelIds) =>
         Object.fromEntries(channelIds.map((id) => [id, []]))),
+    listExploreActivity:
+      options.listExploreActivity ??
+      (async () => ({ ok: true, data: { members: [], voiceChannels: [] } })),
     hasLiveKitCredentials: () => true,
     livekitUrl: "wss://livekit.example.test",
     allowRequest: options.allowRequest ?? alwaysAllow,
@@ -132,6 +137,63 @@ describe("API", () => {
 });
 
 describe("authorized community routes", () => {
+  it("lists communities with online counts and occupied voice rooms", async () => {
+    const listCommunities = vi.fn().mockResolvedValue({
+      ok: true,
+      data: [
+        {
+          id: COMMUNITY_ID,
+          name: "Salas",
+          slug: "salas",
+          visibility: "public",
+          role: "owner",
+          avatarUrl: null,
+          onlineCount: 0,
+          activeRooms: [],
+        },
+      ],
+    });
+    const api = testApp({
+      repository: { listCommunities },
+      listExploreActivity: async () => ({
+        ok: true,
+        data: {
+          members: [
+            {
+              communityId: COMMUNITY_ID,
+              presence: "online",
+              lastSeenAt: new Date().toISOString(),
+            },
+          ],
+          voiceChannels: [
+            { communityId: COMMUNITY_ID, channelId: VOICE_CHANNEL_ID, name: "WARZONE" },
+          ],
+        },
+      }),
+      listVoiceOccupants: async () => ({
+        [VOICE_CHANNEL_ID]: [{ identity: "a", name: "A" }],
+      }),
+    });
+
+    const res = await api.request("/api/communities", { headers: jsonHeaders() });
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      ok: true,
+      data: [
+        {
+          id: COMMUNITY_ID,
+          name: "Salas",
+          slug: "salas",
+          visibility: "public",
+          role: "owner",
+          avatarUrl: null,
+          onlineCount: 1,
+          activeRooms: [{ name: "WARZONE", occupantCount: 1 }],
+        },
+      ],
+    });
+  });
+
   it("unauthenticated create returns 401 UNAUTHENTICATED", async () => {
     const api = testApp({ requireUser });
     const res = await api.request("/api/communities", {

@@ -93,7 +93,7 @@ export function CommunityRail({
             "focus-ring flex size-11 items-center justify-center overflow-hidden rounded-2xl transition duration-150 ease-out hover:scale-[1.04] hover:brightness-110 active:scale-[0.98]",
             exploring && "ring-2 ring-electric/50 ring-offset-2 ring-offset-[#08090F]",
           )}
-          aria-label="Gamers de cria — Explorar"
+          aria-label="DiscordClandestino — Explorar"
           aria-current={exploring ? "page" : undefined}
         >
           <img src={logoIcon} alt="" className="size-full object-cover" />

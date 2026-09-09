@@ -10,7 +10,7 @@ import { createCommunity, fetchCommunities, updateCommunity } from "../services/
 
 export type LoadStatus = "idle" | "loading" | "ready" | "error";
 
-export function useCommunities() {
+export function useCommunities(accessToken: string | null) {
   const [communities, setCommunities] = useState<CommunitySummary[]>([]);
   const [selectedId, setSelectedId] = useState<CommunityId | null>(null);
   const [status, setStatus] = useState<LoadStatus>("idle");
@@ -18,6 +18,12 @@ export function useCommunities() {
   const guard = useRef(createRequestGuard());
 
   const reload = useCallback(async () => {
+    if (!accessToken) {
+      return {
+        ok: false as const,
+        error: { code: "UNAUTHENTICATED" as const, message: "Sessão inválida ou expirada." },
+      };
+    }
     const ticket = guard.current.next();
     setStatus((current) => (current === "ready" ? "ready" : "loading"));
     const result = await fetchCommunities();
@@ -33,11 +39,17 @@ export function useCommunities() {
     setError(null);
     setStatus("ready");
     return result;
-  }, []);
+  }, [accessToken]);
 
   useEffect(() => {
+    if (!accessToken) {
+      setCommunities([]);
+      setStatus("idle");
+      setError(null);
+      return;
+    }
     void reload();
-  }, [reload]);
+  }, [accessToken, reload]);
 
   const select = useCallback((id: CommunityId | null) => {
     setSelectedId(id);

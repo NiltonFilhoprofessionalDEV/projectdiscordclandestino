@@ -70,8 +70,8 @@ function InviteToast({
 }
 
 export function Home({ user, profile }: HomeProps) {
-  const { signOut } = useAuth();
-  const communities = useCommunities();
+  const { session, signOut } = useAuth();
+  const communities = useCommunities(session?.access_token ?? null);
   const nav = useHomeNavigation();
   const onJoinedCommunity = useCallback(
     (communityId: CommunityId) => {
