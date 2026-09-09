@@ -24,13 +24,55 @@ type ProfileRow = {
   avatar_url: string | null;
   presence: string | null;
   activity: string | null;
+  last_seen_at: string | null;
 };
 
-function mapPresence(value: string | null | undefined): FriendEntry["presence"] {
-  if (value === "online" || value === "in_voice") {
-    return value;
+const STALE_MS = 60_000;
+
+function mapPresence(
+  value: string | null | undefined,
+  lastSeenAt: string | null | undefined,
+): FriendEntry["presence"] {
+  if (value !== "online" && value !== "in_voice") {
+    return "offline";
   }
-  return "offline";
+  if (!lastSeenAt) {
+    return "offline";
+  }
+  const age = Date.now() - new Date(lastSeenAt).getTime();
+  if (Number.isNaN(age) || age > STALE_MS) {
+    return "offline";
+  }
+  return value;
+}
+
+async function pushMyPresence(
+  presence: FriendEntry["presence"],
+  activity: string | null,
+): Promise<boolean> {
+  const { error: rpcError } = await supabase.rpc("set_my_presence", {
+    next_presence: presence,
+    next_activity: activity,
+  });
+  if (!rpcError) {
+    return true;
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return false;
+  }
+  const { error: updateError } = await supabase
+    .from("profiles")
+    .update({
+      presence,
+      activity,
+      last_seen_at: new Date().toISOString(),
+    })
+    .eq("id", user.id);
+  return !updateError;
 }
 
 export function useFriends(userId: string | null, voiceActivity: string | null) {
@@ -39,15 +81,17 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
+  const friendIdsRef = useRef<string[]>([]);
 
   const reload = useCallback(async () => {
     if (!userId) {
       setFriends([]);
       setIncoming([]);
       setStatus("idle");
+      friendIdsRef.current = [];
       return;
     }
-    setStatus("loading");
+    setStatus((current) => (current === "ready" ? "ready" : "loading"));
     const { data, error: queryError } = await supabase
       .from("friendships")
       .select("id, requester_id, addressee_id, status")
@@ -66,11 +110,12 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
         rows.map((row) => (row.requester_id === userId ? row.addressee_id : row.requester_id)),
       ),
     ];
+    friendIdsRef.current = otherIds;
     const profilesById = new Map<string, ProfileRow>();
     if (otherIds.length > 0) {
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url, presence, activity")
+        .select("id, display_name, avatar_url, presence, activity, last_seen_at")
         .in("id", otherIds);
       for (const profile of (profiles ?? []) as ProfileRow[]) {
         profilesById.set(profile.id, profile);
@@ -87,7 +132,7 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
         userId: otherId,
         displayName: profile?.display_name?.trim() || "Usuário",
         avatarUrl: profile?.avatar_url ?? null,
-        presence: mapPresence(profile?.presence),
+        presence: mapPresence(profile?.presence, profile?.last_seen_at),
         activity: profile?.activity ?? null,
         direction: row.status === "accepted" ? "accepted" : mine ? "outgoing" : "incoming",
       };
@@ -107,7 +152,7 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
   useEffect(() => {
     mounted.current = true;
     void reload();
-    const timer = window.setInterval(() => void reload(), 15000);
+    const timer = window.setInterval(() => void reload(), 12000);
     return () => {
       mounted.current = false;
       window.clearInterval(timer);
@@ -118,25 +163,79 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
     if (!userId) {
       return;
     }
-    const presence = voiceActivity ? "in_voice" : "online";
-    void supabase.rpc("set_my_presence", {
-      next_presence: presence,
-      next_activity: voiceActivity,
-    });
-    const heartbeat = window.setInterval(() => {
-      void supabase.rpc("set_my_presence", {
-        next_presence: presence,
-        next_activity: voiceActivity,
-      });
-    }, 20000);
+    const channel = supabase
+      .channel(`friends-presence:${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles" },
+        (payload) => {
+          const row = payload.new as ProfileRow;
+          if (!friendIdsRef.current.includes(row.id)) {
+            return;
+          }
+          setFriends((current) =>
+            current.map((entry) =>
+              entry.userId === row.id
+                ? {
+                    ...entry,
+                    displayName: row.display_name?.trim() || entry.displayName,
+                    avatarUrl: row.avatar_url,
+                    presence: mapPresence(row.presence, row.last_seen_at),
+                    activity: row.activity,
+                  }
+                : entry,
+            ),
+          );
+        },
+      )
+      .subscribe();
     return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+    let cancelled = false;
+    const presence: FriendEntry["presence"] = voiceActivity ? "in_voice" : "online";
+
+    const beat = () => {
+      if (!cancelled) {
+        void pushMyPresence(presence, voiceActivity);
+      }
+    };
+    beat();
+    const heartbeat = window.setInterval(beat, 15000);
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        beat();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      cancelled = true;
       window.clearInterval(heartbeat);
-      void supabase.rpc("set_my_presence", {
-        next_presence: "offline",
-        next_activity: null,
-      });
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [userId, voiceActivity]);
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+    const goOffline = () => {
+      void pushMyPresence("offline", null);
+    };
+    window.addEventListener("pagehide", goOffline);
+    return () => {
+      window.removeEventListener("pagehide", goOffline);
+      goOffline();
+    };
+  }, [userId]);
 
   const requestByEmail = useCallback(
     async (email: string) => {
