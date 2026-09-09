@@ -36,6 +36,7 @@ export function ChatPanel({
         messages={chat.messages}
         status={chat.status}
         hasMore={chat.hasMore}
+        olderError={chat.olderError}
         onLoadOlder={chat.loadOlder}
         onRetry={(clientNonce) => void chat.retry(clientNonce)}
       />

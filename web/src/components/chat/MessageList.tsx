@@ -5,6 +5,7 @@ type MessageListProps = {
   messages: ChatMessage[];
   status: "idle" | "loading" | "ready" | "error";
   hasMore: boolean;
+  olderError: string | null;
   onLoadOlder: () => Promise<void>;
   onRetry: (clientNonce: string) => void;
 };
@@ -71,7 +72,7 @@ function MessageBody({
   );
 }
 
-export function MessageList({ messages, status, hasMore, onLoadOlder, onRetry }: MessageListProps) {
+export function MessageList({ messages, status, hasMore, olderError, onLoadOlder, onRetry }: MessageListProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-4">
       {hasMore && status === "ready" ? (
@@ -79,6 +80,7 @@ export function MessageList({ messages, status, hasMore, onLoadOlder, onRetry }:
           Ver mensagens anteriores
         </Button>
       ) : null}
+      {olderError ? <p className="text-xs text-coral">{olderError}</p> : null}
       <MessageBody messages={messages} status={status} onRetry={onRetry} />
     </div>
   );

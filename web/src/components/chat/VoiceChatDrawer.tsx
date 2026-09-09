@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import type { ChannelId } from "../../../../shared/community.ts";
+import { focusVoiceChatDrawer } from "../../chat/drawerFocus.ts";
 import { countUnseen, seenIdsFrom } from "../../chat/unseen.ts";
 import { useChat } from "../../hooks/useChat.ts";
 import { readVoiceChatOpen, writeVoiceChatOpen } from "../../lib/storage.ts";
@@ -41,26 +42,40 @@ function useVoiceChatUnseen(
   return countUnseen(messages, seen, !open);
 }
 
-function toggleVoiceChat(
-  next: boolean,
-  setOpen: (open: boolean) => void,
-  heading: HTMLHeadingElement | null,
-  trigger: HTMLButtonElement | null,
-) {
-  writeVoiceChatOpen(next);
-  setOpen(next);
-  requestAnimationFrame(() => {
-    (next ? heading : trigger)?.focus();
-  });
-}
-
-export function VoiceChatDrawer({ channelId }: { channelId: ChannelId | null }) {
-  const chat = useChat(channelId);
-  const [open, setOpen] = useState(readVoiceChatOpen);
+function useVoiceChatFocus(open: boolean) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const unseen = useVoiceChatUnseen(channelId, open, chat.messages, chat.status);
+  const pendingFocus = useRef<"open" | "close" | null>(null);
 
+  useEffect(() => {
+    if (pendingFocus.current === "open" && open) {
+      pendingFocus.current = null;
+      focusVoiceChatDrawer(true, headingRef, triggerRef);
+    }
+    if (pendingFocus.current === "close" && !open) {
+      pendingFocus.current = null;
+      focusVoiceChatDrawer(false, headingRef, triggerRef);
+    }
+  }, [open]);
+
+  return { headingRef, triggerRef, pendingFocus };
+}
+
+function VoiceChatFrame({
+  open,
+  unseen,
+  chat,
+  headingRef,
+  triggerRef,
+  onToggle,
+}: {
+  open: boolean;
+  unseen: number;
+  chat: ReturnType<typeof useChat>;
+  headingRef: RefObject<HTMLHeadingElement | null>;
+  triggerRef: RefObject<HTMLButtonElement | null>;
+  onToggle: () => void;
+}) {
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-end">
       <div
@@ -77,7 +92,7 @@ export function VoiceChatDrawer({ channelId }: { channelId: ChannelId | null }) 
             className="w-full"
             aria-expanded={open}
             aria-controls={PANEL_ID}
-            onClick={() => toggleVoiceChat(!open, setOpen, headingRef.current, triggerRef.current)}
+            onClick={onToggle}
           >
             Chat
             {unseen > 0 ? (
@@ -92,5 +107,28 @@ export function VoiceChatDrawer({ channelId }: { channelId: ChannelId | null }) 
         </div>
       </div>
     </div>
+  );
+}
+
+export function VoiceChatDrawer({ channelId }: { channelId: ChannelId | null }) {
+  const chat = useChat(channelId);
+  const [open, setOpen] = useState(readVoiceChatOpen);
+  const { headingRef, triggerRef, pendingFocus } = useVoiceChatFocus(open);
+  const unseen = useVoiceChatUnseen(channelId, open, chat.messages, chat.status);
+
+  return (
+    <VoiceChatFrame
+      open={open}
+      unseen={unseen}
+      chat={chat}
+      headingRef={headingRef}
+      triggerRef={triggerRef}
+      onToggle={() => {
+        const next = !open;
+        writeVoiceChatOpen(next);
+        pendingFocus.current = next ? "open" : "close";
+        setOpen(next);
+      }}
+    />
   );
 }

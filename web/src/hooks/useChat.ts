@@ -5,13 +5,15 @@ import { parseMessageText } from "../../../shared/community.ts";
 import type { Profile } from "../auth/types.ts";
 import { useAuth } from "../auth/useAuth.ts";
 import { createRequestGuard } from "../lib/requestGuard.ts";
-import { hasMorePages, oldestCursor } from "../chat/cursor.ts";
+import { hasMorePages } from "../chat/cursor.ts";
 import {
   optimisticId,
   reverseNewestFirst,
   upsertMessages,
   type ChatMessage,
 } from "../chat/messages.ts";
+import { loadOlderMessages } from "../chat/older.ts";
+import { persistOptimistic, type MessageSetter } from "../chat/persist.ts";
 import {
   fetchDisplayNames,
   fetchMessagePage,
@@ -36,8 +38,6 @@ const MISSING_MESSAGE: ApiResult<never> = {
   ok: false,
   error: { code: "NOT_FOUND", message: "Mensagem não encontrada." },
 };
-
-type MessageSetter = (update: (current: ChatMessage[]) => ChatMessage[]) => void;
 
 async function bootstrapChannel(
   channelId: ChannelId,
@@ -89,59 +89,13 @@ function applyRealtimeInsert(
   });
 }
 
-async function loadOlderMessages(
-  channelId: ChannelId,
-  messages: ChatMessage[],
-  names: Map<string, string>,
-  stillOnChannel: () => boolean,
-  setMessages: MessageSetter,
-  setHasMore: (value: boolean) => void,
-  setStatus: (value: ChatStatus) => void,
-) {
-  const cursor = oldestCursor(messages);
-  if (!cursor) {
-    return;
-  }
-  const page = await fetchMessagePage(channelId, cursor);
-  if (!stillOnChannel()) {
-    return;
-  }
-  if (!page.ok) {
-    setStatus("error");
-    return;
-  }
-  await fetchDisplayNames(page.data.map((row) => row.author_id), names);
-  if (!stillOnChannel()) {
-    return;
-  }
-  const mapped = page.data.map((row) => toChatMessage(row, names.get(row.author_id) ?? "Usuário"));
-  setMessages((current) => upsertMessages(current, mapped));
-  setHasMore(hasMorePages(page.data.length));
-}
-
-async function persistOptimistic(optimistic: ChatMessage, setMessages: MessageSetter) {
-  const result = await insertChannelMessage({
-    channelId: optimistic.channelId,
-    authorId: optimistic.authorId,
-    content: optimistic.content,
-    clientNonce: optimistic.clientNonce,
-  });
-  if (!result.ok) {
-    setMessages((current) => upsertMessages(current, [{ ...optimistic, delivery: "failed" }]));
-    return result;
-  }
-  setMessages((current) =>
-    upsertMessages(current, [toChatMessage(result.data, optimistic.displayName)]),
-  );
-  return { ok: true as const, data: undefined };
-}
-
 async function sendChatMessage(input: {
   channelId: ChannelId | null;
   userId: string | undefined;
   displayName: string;
   names: Map<string, string>;
   setMessages: MessageSetter;
+  isCurrent: () => boolean;
   text: string;
 }): Promise<ApiResult<void>> {
   if (!input.userId) {
@@ -167,7 +121,7 @@ async function sendChatMessage(input: {
   };
   input.names.set(input.userId, input.displayName);
   input.setMessages((current) => upsertMessages(current, [optimistic]));
-  return persistOptimistic(optimistic, input.setMessages);
+  return persistOptimistic(optimistic, input.setMessages, input.isCurrent, insertChannelMessage);
 }
 
 async function retryChatMessage(input: {
@@ -175,6 +129,7 @@ async function retryChatMessage(input: {
   messages: ChatMessage[];
   userId: string | undefined;
   setMessages: MessageSetter;
+  isCurrent: () => boolean;
 }): Promise<ApiResult<void>> {
   const existing = input.messages.find((message) => message.clientNonce === input.clientNonce);
   if (!existing) {
@@ -185,7 +140,7 @@ async function retryChatMessage(input: {
   }
   const optimistic = { ...existing, delivery: "sending" as const };
   input.setMessages((current) => upsertMessages(current, [optimistic]));
-  return persistOptimistic(optimistic, input.setMessages);
+  return persistOptimistic(optimistic, input.setMessages, input.isCurrent, insertChannelMessage);
 }
 
 function useChatSubscription(
@@ -196,11 +151,13 @@ function useChatSubscription(
   setMessages: MessageSetter,
   setHasMore: (value: boolean) => void,
   setStatus: (value: ChatStatus) => void,
+  setOlderError: (value: string | null) => void,
 ) {
   const guard = useRef(createRequestGuard());
   useEffect(() => {
     const ticket = guard.current.next();
     names.current = new Map();
+    setOlderError(null);
     if (user && profile) {
       names.current.set(user.id, profile.display_name);
     }
@@ -220,36 +177,47 @@ function useChatSubscription(
       cancelled = true;
       unsubscribe();
     };
-  }, [channelId, names, profile, setHasMore, setMessages, setStatus, user]);
+  }, [channelId, names, profile, setHasMore, setMessages, setOlderError, setStatus, user]);
 }
 
 function useChatState(channelId: ChannelId | null, user: { id: string } | null, profile: Profile | null) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<ChatStatus>("idle");
   const [hasMore, setHasMore] = useState(false);
+  const [olderError, setOlderError] = useState<string | null>(null);
   const names = useRef(new Map<string, string>());
   const messagesRef = useRef(messages);
   const channelRef = useRef(channelId);
   messagesRef.current = messages;
   channelRef.current = channelId;
-  useChatSubscription(channelId, user, profile, names, setMessages, setHasMore, setStatus);
+  useChatSubscription(
+    channelId,
+    user,
+    profile,
+    names,
+    setMessages,
+    setHasMore,
+    setStatus,
+    setOlderError,
+  );
 
   const loadOlder = useCallback(async () => {
     if (!channelId) {
       return;
     }
-    await loadOlderMessages(
+    await loadOlderMessages({
       channelId,
-      messagesRef.current,
-      names.current,
-      () => channelRef.current === channelId,
+      messages: messagesRef.current,
+      stillOnChannel: () => channelRef.current === channelId,
       setMessages,
       setHasMore,
-      setStatus,
-    );
+      setOlderError,
+      fetchPage: fetchMessagePage,
+      resolveNames: (authorIds) => fetchDisplayNames(authorIds, names.current),
+    });
   }, [channelId]);
 
-  return { messages, status, hasMore, loadOlder, setMessages, names, messagesRef };
+  return { messages, status, hasMore, olderError, loadOlder, setMessages, names, messagesRef, channelRef };
 }
 
 export function useChat(channelId: ChannelId | null) {
@@ -263,24 +231,29 @@ export function useChat(channelId: ChannelId | null) {
         displayName: profile?.display_name ?? "Usuário",
         names: state.names.current,
         setMessages: state.setMessages,
+        isCurrent: () => state.channelRef.current === channelId,
         text,
       }),
-    [channelId, profile?.display_name, state.names, state.setMessages, user?.id],
+    [channelId, profile?.display_name, state.channelRef, state.names, state.setMessages, user?.id],
   );
   const retry = useCallback(
-    (clientNonce: string) =>
-      retryChatMessage({
+    (clientNonce: string) => {
+      const existing = state.messagesRef.current.find((message) => message.clientNonce === clientNonce);
+      return retryChatMessage({
         clientNonce,
         messages: state.messagesRef.current,
         userId: user?.id,
         setMessages: state.setMessages,
-      }),
-    [state.messagesRef, state.setMessages, user?.id],
+        isCurrent: () => existing != null && state.channelRef.current === existing.channelId,
+      });
+    },
+    [state.channelRef, state.messagesRef, state.setMessages, user?.id],
   );
   return {
     messages: state.messages,
     status: state.status,
     hasMore: state.hasMore,
+    olderError: state.olderError,
     loadOlder: state.loadOlder,
     send,
     retry,
