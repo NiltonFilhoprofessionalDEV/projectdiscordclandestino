@@ -354,6 +354,32 @@ describe("authorized community routes", () => {
     expect(acceptInvite).toHaveBeenNthCalledWith(1, MEMBER_ID, "raw-token");
   });
 
+  it("unexpected repository failures return 500 INTERNAL", async () => {
+    const createCommunity = vi.fn().mockResolvedValue({
+      ok: false,
+      error: {
+        code: "INTERNAL",
+        message: "Não foi possível concluir a operação.",
+      },
+    });
+    const api = testApp({ repository: { createCommunity } });
+
+    const res = await api.request("/api/communities", {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify({ name: "Turma", visibility: "public" }),
+    });
+
+    expect(res.status).toBe(500);
+    await expect(res.json()).resolves.toEqual({
+      ok: false,
+      error: {
+        code: "INTERNAL",
+        message: "Não foi possível concluir a operação.",
+      },
+    });
+  });
+
   it("returns 429 RATE_LIMITED with Retry-After", async () => {
     const api = testApp({
       allowRequest: () => ({ allowed: false, retryAfterSeconds: 17 }),

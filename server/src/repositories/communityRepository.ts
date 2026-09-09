@@ -79,7 +79,7 @@ export { deriveCommunitySlug } from "./mappers.ts";
 function wrap<T>(op: string, run: () => Promise<ApiResult<T>>): Promise<ApiResult<T>> {
   return run().catch(() => {
     console.error("repository error", { op });
-    return fail("VALIDATION", "Não foi possível concluir a operação.");
+    return fail("INTERNAL", "Não foi possível concluir a operação.");
   });
 }
 

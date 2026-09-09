@@ -11,7 +11,8 @@ export type ApiErrorCode =
   | "NOT_FOUND"
   | "VALIDATION"
   | "CONFLICT"
-  | "RATE_LIMITED";
+  | "RATE_LIMITED"
+  | "INTERNAL";
 
 export type ApiResult<T> =
   | { ok: true; data: T }

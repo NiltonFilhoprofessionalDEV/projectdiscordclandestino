@@ -9,6 +9,7 @@ const STATUS: Record<ApiErrorCode, ContentfulStatusCode> = {
   VALIDATION: 400,
   CONFLICT: 409,
   RATE_LIMITED: 429,
+  INTERNAL: 500,
 };
 
 export function apiJson<T>(

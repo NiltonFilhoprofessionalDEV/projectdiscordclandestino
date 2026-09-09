@@ -25,5 +25,5 @@ export function mapRepositoryError(error: {
     return fail("VALIDATION", "Convite inválido ou expirado.");
   }
   console.error("repository error", { code });
-  return fail("VALIDATION", "Não foi possível concluir a operação.");
+  return fail("INTERNAL", "Não foi possível concluir a operação.");
 }

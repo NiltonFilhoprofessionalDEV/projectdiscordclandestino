@@ -70,11 +70,10 @@ function parseAccessToken(authorizationHeader: string | undefined): string | nul
 }
 
 export function createUserClient(accessToken: string): SupabaseClient<Database> {
-  const apiKey = SUPABASE_PUBLISHABLE_KEY || SUPABASE_SECRET_KEY;
-  if (!SUPABASE_URL || !apiKey) {
-    throw new Error("Supabase do servidor não configurado.");
+  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+    throw new Error("Supabase público do servidor não configurado.");
   }
-  return createClient<Database>(SUPABASE_URL, apiKey, {
+  return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     global: {
       headers: { Authorization: `Bearer ${accessToken}` },
     },
