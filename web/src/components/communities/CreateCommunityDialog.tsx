@@ -70,6 +70,18 @@ function CommunityVisibilityFields({
   );
 }
 
+type CommunityCreateFormProps = {
+  name: string;
+  visibility: CreateCommunityInput["visibility"];
+  error: string | null;
+  pending: boolean;
+  nameRef: RefObject<HTMLInputElement | null>;
+  onName: (value: string) => void;
+  onVisibility: (value: CreateCommunityInput["visibility"]) => void;
+  onClose: () => void;
+  onSubmit: (event: FormEvent) => void;
+};
+
 function CommunityCreateForm({
   name,
   visibility,
@@ -80,17 +92,7 @@ function CommunityCreateForm({
   onVisibility,
   onClose,
   onSubmit,
-}: {
-  name: string;
-  visibility: CreateCommunityInput["visibility"];
-  error: string | null;
-  pending: boolean;
-  nameRef: RefObject<HTMLInputElement | null>;
-  onName: (value: string) => void;
-  onVisibility: (value: CreateCommunityInput["visibility"]) => void;
-  onClose: () => void;
-  onSubmit: (event: FormEvent) => void;
-}) {
+}: CommunityCreateFormProps) {
   return (
     <form className="mt-5" onSubmit={onSubmit}>
       <label className="text-sm font-medium text-haze" htmlFor="community-name">

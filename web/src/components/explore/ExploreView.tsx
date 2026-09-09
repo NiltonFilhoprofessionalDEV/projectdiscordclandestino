@@ -176,6 +176,16 @@ function ExploreSearch({
   );
 }
 
+type ExploreStatusProps = {
+  status: LoadStatus;
+  error: string | null;
+  isEmpty: boolean;
+  hasQuery: boolean;
+  onRetry: () => void;
+  onQuery: (value: string) => void;
+  searchRef: RefObject<HTMLInputElement | null>;
+};
+
 function ExploreStatus({
   status,
   error,
@@ -184,15 +194,7 @@ function ExploreStatus({
   onRetry,
   onQuery,
   searchRef,
-}: {
-  status: LoadStatus;
-  error: string | null;
-  isEmpty: boolean;
-  hasQuery: boolean;
-  onRetry: () => void;
-  onQuery: (value: string) => void;
-  searchRef: RefObject<HTMLInputElement | null>;
-}) {
+}: ExploreStatusProps) {
   if (status === "error") {
     return (
       <EmptyState

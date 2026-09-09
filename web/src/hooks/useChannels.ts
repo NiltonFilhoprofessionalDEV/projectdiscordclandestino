@@ -7,6 +7,24 @@ import { createChannel, fetchCommunityChannels } from "../services/api.ts";
 import { beginCommunityResourceLoad } from "./communityResource.ts";
 import type { LoadStatus } from "./useCommunities.ts";
 
+async function createCommunityChannel(
+  communityId: CommunityId | null,
+  input: CreateChannelInput,
+  reload: () => Promise<void>,
+) {
+  if (!communityId) {
+    return {
+      ok: false as const,
+      error: { code: "VALIDATION" as const, message: "Selecione uma comunidade." },
+    };
+  }
+  const result = await createChannel(communityId, input);
+  if (result.ok) {
+    await reload();
+  }
+  return result;
+}
+
 export function useChannels(communityId: CommunityId | null) {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [status, setStatus] = useState<LoadStatus>("idle");
@@ -41,21 +59,8 @@ export function useChannels(communityId: CommunityId | null) {
   }, [reload]);
 
   const grouped = useMemo(() => groupChannels(channels), [channels]);
-
   const create = useCallback(
-    async (input: CreateChannelInput) => {
-      if (!communityId) {
-        return {
-          ok: false as const,
-          error: { code: "VALIDATION" as const, message: "Selecione uma comunidade." },
-        };
-      }
-      const result = await createChannel(communityId, input);
-      if (result.ok) {
-        await reload();
-      }
-      return result;
-    },
+    (input: CreateChannelInput) => createCommunityChannel(communityId, input, reload),
     [communityId, reload],
   );
 

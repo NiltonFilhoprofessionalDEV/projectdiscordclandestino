@@ -60,6 +60,18 @@ function ChannelTypeFields({
   );
 }
 
+type ChannelCreateFormProps = {
+  name: string;
+  type: CreateChannelInput["type"];
+  error: string | null;
+  pending: boolean;
+  nameRef: RefObject<HTMLInputElement | null>;
+  onName: (value: string) => void;
+  onType: (value: CreateChannelInput["type"]) => void;
+  onClose: () => void;
+  onSubmit: (event: FormEvent) => void;
+};
+
 function ChannelCreateForm({
   name,
   type,
@@ -70,17 +82,7 @@ function ChannelCreateForm({
   onType,
   onClose,
   onSubmit,
-}: {
-  name: string;
-  type: CreateChannelInput["type"];
-  error: string | null;
-  pending: boolean;
-  nameRef: RefObject<HTMLInputElement | null>;
-  onName: (value: string) => void;
-  onType: (value: CreateChannelInput["type"]) => void;
-  onClose: () => void;
-  onSubmit: (event: FormEvent) => void;
-}) {
+}: ChannelCreateFormProps) {
   return (
     <form className="mt-5" onSubmit={onSubmit}>
       <label className="text-sm font-medium text-haze" htmlFor="channel-name">

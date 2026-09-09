@@ -104,6 +104,37 @@ type SidebarBodyProps = {
   onRetry: () => void;
 };
 
+function SidebarChannelLists({
+  text,
+  voice,
+  activeTextChannelId,
+  activeVoiceChannelId,
+  onSelectText,
+  onSelectVoice,
+}: Omit<SidebarBodyProps, "community" | "isMember" | "status" | "error" | "onRetry">) {
+  return (
+    <>
+      <ChannelSection
+        title="Texto"
+        label="Canais de texto"
+        channels={text}
+        activeId={activeTextChannelId}
+        icon={Hash}
+        onSelect={onSelectText}
+      />
+      <ChannelSection
+        title="Voz"
+        label="Canais de voz"
+        channels={voice}
+        activeId={activeVoiceChannelId}
+        connectedId={activeVoiceChannelId}
+        icon={Volume2}
+        onSelect={onSelectVoice}
+      />
+    </>
+  );
+}
+
 function SidebarBody({
   community,
   isMember,
@@ -141,25 +172,14 @@ function SidebarBody({
     return <p className="px-2 text-sm text-haze">Carregando canais…</p>;
   }
   return (
-    <>
-      <ChannelSection
-        title="Texto"
-        label="Canais de texto"
-        channels={text}
-        activeId={activeTextChannelId}
-        icon={Hash}
-        onSelect={onSelectText}
-      />
-      <ChannelSection
-        title="Voz"
-        label="Canais de voz"
-        channels={voice}
-        activeId={activeVoiceChannelId}
-        connectedId={activeVoiceChannelId}
-        icon={Volume2}
-        onSelect={onSelectVoice}
-      />
-    </>
+    <SidebarChannelLists
+      text={text}
+      voice={voice}
+      activeTextChannelId={activeTextChannelId}
+      activeVoiceChannelId={activeVoiceChannelId}
+      onSelectText={onSelectText}
+      onSelectVoice={onSelectVoice}
+    />
   );
 }
 
