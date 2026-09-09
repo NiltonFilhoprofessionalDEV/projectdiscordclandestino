@@ -22330,7 +22330,8 @@ function createToken(identity, displayName, roomName) {
     room: roomName,
     canPublish: true,
     canSubscribe: true,
-    canPublishData: true
+    canPublishData: true,
+    canUpdateOwnMetadata: true
   });
   return token.toJwt();
 }

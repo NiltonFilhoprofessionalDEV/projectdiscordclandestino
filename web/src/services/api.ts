@@ -2,9 +2,11 @@ import type {
   ApiResult,
   Channel,
   Community,
+  CommunityMembership,
   CommunitySummary,
   CreateChannelInput,
   CreateCommunityInput,
+  CreatedInvite,
   LiveKitTokenInput,
   LiveKitTokenResponse,
   UpdateChannelInput,
@@ -92,6 +94,20 @@ export function fetchLiveKitToken(channelId: ChannelId) {
     method: "POST",
     body: JSON.stringify(body),
   });
+}
+
+export function createInvite(communityId: CommunityId) {
+  return apiRequest<CreatedInvite>(`/api/communities/${communityId}/invites`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
+export function acceptInvite(token: string) {
+  return apiRequest<CommunityMembership>(
+    `/api/invites/${encodeURIComponent(token)}/accept`,
+    { method: "POST", body: JSON.stringify({}) },
+  );
 }
 
 function mapChannel(row: {

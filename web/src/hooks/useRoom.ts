@@ -68,10 +68,14 @@ async function connectVoice(
   await instance.connect(result.data.url, result.data.token);
   await instance.startAudio();
   if (profile) {
-    await instance.localParticipant.setName(profile.displayName);
-    await instance.localParticipant.setMetadata(
-      JSON.stringify({ avatarUrl: profile.avatarUrl }),
-    );
+    try {
+      await instance.localParticipant.setName(profile.displayName);
+      await instance.localParticipant.setMetadata(
+        JSON.stringify({ avatarUrl: profile.avatarUrl }),
+      );
+    } catch {
+      // Nome já vem no JWT; metadata (avatar) é best-effort e não deve derrubar a sala.
+    }
   }
   try {
     const enableMic = !readMicMuted();

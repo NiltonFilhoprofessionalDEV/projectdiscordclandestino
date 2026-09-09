@@ -1,5 +1,5 @@
 import type { RefObject, ReactNode } from "react";
-import { Hash, Pencil, Plus, Volume2 } from "lucide-react";
+import { Hash, Pencil, Plus, UserPlus, Volume2 } from "lucide-react";
 import type { Channel, CommunitySummary } from "../../../../shared/api.ts";
 import type { ChannelId } from "../../../../shared/community.ts";
 import type { ParticipantView } from "../../hooks/useParticipants.ts";
@@ -22,6 +22,7 @@ type ChannelSidebarProps = {
   onSelectText: (id: ChannelId) => void;
   onSelectVoice: (id: ChannelId) => void;
   onCreate: () => void;
+  onInvite: () => void;
   onEdit: (channel: Channel) => void;
   onRetry: () => void;
   createRef: RefObject<HTMLButtonElement | null>;
@@ -207,6 +208,7 @@ export function ChannelSidebar({
   onSelectText,
   onSelectVoice,
   onCreate,
+  onInvite,
   onEdit,
   onRetry,
   createRef,
@@ -267,7 +269,16 @@ export function ChannelSidebar({
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">{body}</div>
       {canManage ? (
-        <div className="border-t border-haze/10 p-3">
+        <div className="space-y-2 border-t border-haze/10 p-3">
+          <Button
+            type="button"
+            className="w-full"
+            onClick={onInvite}
+            aria-label="Convidar amigos"
+          >
+            <UserPlus className="size-4" />
+            Convidar
+          </Button>
           <Button ref={createRef} type="button" className="w-full" onClick={onCreate} aria-label="Criar canal">
             <Plus className="size-4" />
             Criar canal

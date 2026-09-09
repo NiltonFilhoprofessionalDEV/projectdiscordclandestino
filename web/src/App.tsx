@@ -1,9 +1,12 @@
 import { AuthProvider } from "./auth/AuthProvider.tsx";
 import { useAuth } from "./auth/useAuth.ts";
 import { Button } from "./components/ui/button.tsx";
+import { captureInviteFromLocation } from "./invites/path.ts";
 import { Home } from "./pages/Home.tsx";
 import { AuthPage } from "./pages/AuthPage.tsx";
 import { supabaseConfigError } from "./services/supabase.ts";
+
+captureInviteFromLocation();
 
 export function App() {
   if (supabaseConfigError) {

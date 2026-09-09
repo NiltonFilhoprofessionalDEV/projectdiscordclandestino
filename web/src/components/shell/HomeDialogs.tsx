@@ -7,20 +7,25 @@ import type {
   CreateCommunityInput,
   UpdateChannelInput,
 } from "../../../../shared/api.ts";
-import type { ChannelId } from "../../../../shared/community.ts";
+import type { ChannelId, CommunityId } from "../../../../shared/community.ts";
 import { CreateChannelDialog } from "../channels/CreateChannelDialog.tsx";
 import { EditChannelDialog } from "../channels/EditChannelDialog.tsx";
 import { CreateCommunityDialog } from "../communities/CreateCommunityDialog.tsx";
+import { InviteDialog } from "../invites/InviteDialog.tsx";
 import { DeviceSettings } from "../controls/DeviceSettings.tsx";
 
 type HomeDialogsProps = {
   createCommunityOpen: boolean;
   createChannelOpen: boolean;
+  inviteOpen: boolean;
   settingsOpen: boolean;
   editingChannel: Channel | null;
+  inviteCommunityId: CommunityId | null;
+  inviteCommunityName: string;
   room: Room | null;
   onCloseCommunity: () => void;
   onCloseChannel: () => void;
+  onCloseInvite: () => void;
   onCloseSettings: () => void;
   onCloseEditChannel: () => void;
   onCreateCommunity: (input: CreateCommunityInput) => Promise<ApiResult<Community>>;
@@ -36,11 +41,15 @@ type HomeDialogsProps = {
 export function HomeDialogs({
   createCommunityOpen,
   createChannelOpen,
+  inviteOpen,
   settingsOpen,
   editingChannel,
+  inviteCommunityId,
+  inviteCommunityName,
   room,
   onCloseCommunity,
   onCloseChannel,
+  onCloseInvite,
   onCloseSettings,
   onCloseEditChannel,
   onCreateCommunity,
@@ -62,6 +71,12 @@ export function HomeDialogs({
         onClose={onCloseChannel}
         onCreate={onCreateChannel}
         onCreated={onCreatedChannel}
+      />
+      <InviteDialog
+        open={inviteOpen}
+        communityId={inviteCommunityId}
+        communityName={inviteCommunityName}
+        onClose={onCloseInvite}
       />
       <EditChannelDialog
         channel={editingChannel}

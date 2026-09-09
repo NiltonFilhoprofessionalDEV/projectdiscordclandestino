@@ -75,16 +75,24 @@ function HomeDialogHost({
   channels,
   session,
   dialogs,
-}: Pick<HomeWorkspaceProps, "communities" | "nav" | "channels" | "session" | "dialogs">) {
+  selectedCommunity,
+}: Pick<
+  HomeWorkspaceProps,
+  "communities" | "nav" | "channels" | "session" | "dialogs" | "selectedCommunity"
+>) {
   return (
     <HomeDialogs
       createCommunityOpen={dialogs.createCommunityOpen}
       createChannelOpen={dialogs.createChannelOpen}
+      inviteOpen={dialogs.inviteOpen}
       settingsOpen={dialogs.settingsOpen}
       editingChannel={dialogs.editingChannel}
+      inviteCommunityId={selectedCommunity?.id ?? null}
+      inviteCommunityName={selectedCommunity?.name ?? "comunidade"}
       room={session.voice.room}
       onCloseCommunity={dialogs.closeCommunity}
       onCloseChannel={dialogs.closeChannel}
+      onCloseInvite={dialogs.closeInvite}
       onCloseSettings={dialogs.closeSettings}
       onCloseEditChannel={dialogs.closeEditChannel}
       onCreateCommunity={communities.create}

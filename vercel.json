@@ -8,7 +8,8 @@
     { "source": "/api/channels/(.*)", "destination": "/api/gateway" },
     { "source": "/api/invites/(.*)", "destination": "/api/gateway" },
     { "source": "/api/livekit/(.*)", "destination": "/api/gateway" },
-    { "source": "/api/rooms", "destination": "/api/gateway" }
+    { "source": "/api/rooms", "destination": "/api/gateway" },
+    { "source": "/invite/(.*)", "destination": "/index.html" }
   ],
   "functions": {
     "api/gateway.js": {

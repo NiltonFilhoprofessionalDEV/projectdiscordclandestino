@@ -6,6 +6,7 @@ export function useHomeDialogState() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [createCommunityOpen, setCreateCommunityOpen] = useState(false);
   const [createChannelOpen, setCreateChannelOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
   const createCommunityRef = useRef<HTMLButtonElement>(null);
   const createChannelRef = useRef<HTMLButtonElement>(null);
@@ -31,6 +32,7 @@ export function useHomeDialogState() {
     settingsOpen,
     createCommunityOpen,
     createChannelOpen,
+    inviteOpen,
     editingChannel,
     createCommunityRef,
     createChannelRef,
@@ -38,6 +40,7 @@ export function useHomeDialogState() {
     openSettings: () => setSettingsOpen(true),
     openCreateCommunity: () => setCreateCommunityOpen(true),
     openCreateChannel: () => setCreateChannelOpen(true),
+    openInvite: () => setInviteOpen(true),
     openEditChannel: (channel: Channel) => setEditingChannel(channel),
     closeSettings: () => setSettingsOpen(false),
     closeCommunity: () => {
@@ -48,6 +51,7 @@ export function useHomeDialogState() {
       setCreateChannelOpen(false);
       requestAnimationFrame(restoreChannelFocus);
     },
+    closeInvite: () => setInviteOpen(false),
     closeEditChannel: () => setEditingChannel(null),
   };
 }

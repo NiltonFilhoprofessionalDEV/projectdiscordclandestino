@@ -76,6 +76,7 @@ function HomeSidebar({
       onSelectText={nav.selectText}
       onSelectVoice={nav.selectVoice}
       onCreate={dialogs.openCreateChannel}
+      onInvite={dialogs.openInvite}
       onEdit={onEditChannel}
       onRetry={() => void channels.retry()}
       createRef={dialogs.createChannelRef}

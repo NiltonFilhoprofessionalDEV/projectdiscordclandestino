@@ -29,6 +29,7 @@ export function createToken(
     canPublish: true,
     canSubscribe: true,
     canPublishData: true,
+    canUpdateOwnMetadata: true,
   });
 
   return token.toJwt();
