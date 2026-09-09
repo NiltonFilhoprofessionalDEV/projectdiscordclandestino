@@ -164,17 +164,17 @@ describe("parseMessageText", () => {
     });
   });
 
-  it("rejects messages longer than 500 characters", () => {
-    expect(parseMessageText("x".repeat(501))).toEqual({
+  it("rejects messages longer than 2000 characters", () => {
+    expect(parseMessageText("x".repeat(2001))).toEqual({
       ok: false,
-      error: "A mensagem pode ter no máximo 500 caracteres.",
+      error: "A mensagem pode ter no máximo 2000 caracteres.",
     });
   });
 
   it("accepts messages at the maximum length", () => {
-    expect(parseMessageText("x".repeat(500))).toEqual({
+    expect(parseMessageText("x".repeat(2000))).toEqual({
       ok: true,
-      value: "x".repeat(500),
+      value: "x".repeat(2000),
     });
   });
 

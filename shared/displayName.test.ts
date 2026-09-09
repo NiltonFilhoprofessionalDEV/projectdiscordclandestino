@@ -45,6 +45,6 @@ describe("parseChatText", () => {
 
   it("rejects empty and oversized text", () => {
     expect(parseChatText("  ").ok).toBe(false);
-    expect(parseChatText("x".repeat(501)).ok).toBe(false);
+    expect(parseChatText("x".repeat(2001)).ok).toBe(false);
   });
 });

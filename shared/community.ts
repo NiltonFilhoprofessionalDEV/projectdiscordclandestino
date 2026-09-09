@@ -8,7 +8,7 @@ export type ChannelType = "text" | "voice";
 const COMMUNITY_MIN_LENGTH = 2;
 const COMMUNITY_MAX_LENGTH = 48;
 const CHANNEL_MAX_LENGTH = 48;
-const MESSAGE_MAX_LENGTH = 500;
+const MESSAGE_MAX_LENGTH = 2000;
 
 const INVALID_MARKUP = /[<>]/;
 const CONTROL_CHARS = /[\u0000-\u001F\u007F]/;
@@ -86,7 +86,7 @@ export function parseMessageText(raw: string): ParseResult {
   if (value.length > MESSAGE_MAX_LENGTH) {
     return {
       ok: false,
-      error: "A mensagem pode ter no máximo 500 caracteres.",
+      error: "A mensagem pode ter no máximo 2000 caracteres.",
     };
   }
 

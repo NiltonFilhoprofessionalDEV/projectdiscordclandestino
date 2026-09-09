@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { Smile } from "lucide-react";
+import { SendHorizontal, Smile } from "lucide-react";
 import type { ApiResult } from "../../../../shared/api.ts";
 import { parseMessageText } from "../../../../shared/community.ts";
 import { CHAT_EMOJIS, insertEmojiAt } from "../../chat/emojis.ts";
@@ -111,7 +111,7 @@ export function MessageComposer({ onSend, onRetry, failedNonce }: MessageCompose
           </div>
         </div>
       ) : null}
-      <form onSubmit={(event) => void handleSubmit(event)} className="flex items-end gap-2">
+      <form onSubmit={(event) => void handleSubmit(event)} className="flex items-end gap-1.5">
         <div className="relative min-w-0 flex-1">
           <textarea
             ref={textareaRef}
@@ -120,8 +120,9 @@ export function MessageComposer({ onSend, onRetry, failedNonce }: MessageCompose
             onKeyDown={handleKeyDown}
             placeholder="Escreva uma mensagem"
             aria-label="Mensagem"
-            rows={2}
-            className="focus-ring min-h-11 max-h-32 w-full resize-y rounded-xl border border-haze/15 bg-abyss/70 px-3 py-2.5 pr-11 text-sm text-cloud placeholder:text-haze"
+            rows={4}
+            maxLength={2000}
+            className="focus-ring min-h-28 max-h-56 w-full resize-y rounded-xl border border-haze/15 bg-abyss/70 px-3 py-2.5 pr-11 text-sm text-cloud placeholder:text-haze"
           />
           <Button
             type="button"
@@ -135,11 +136,19 @@ export function MessageComposer({ onSend, onRetry, failedNonce }: MessageCompose
             <Smile className="size-4" />
           </Button>
         </div>
-        <Button type="submit" variant="solid" className="shrink-0">
-          Enviar
+        <Button
+          type="submit"
+          size="icon"
+          variant="solid"
+          className="size-10 shrink-0"
+          aria-label="Enviar mensagem"
+        >
+          <SendHorizontal className="size-4" />
         </Button>
       </form>
-      <p className="mt-1.5 text-[11px] text-haze">Enter envia · Shift+Enter nova linha</p>
+      <p className="mt-1.5 text-[11px] text-haze">
+        Enter envia · Shift+Enter nova linha · até 2000 caracteres
+      </p>
       {failedNonce ? (
         <Button type="button" className="mt-2" onClick={() => void onRetry(failedNonce)}>
           Tentar de novo
