@@ -134,17 +134,22 @@ describe("parseChannelName", () => {
 });
 
 describe("parseMessageText", () => {
-  it("trims and collapses repeated whitespace", () => {
+  it("preserves accents, markup, emoji and newlines", () => {
     expect(parseMessageText("  Olá   mundo ")).toEqual({
       ok: true,
       value: "Olá mundo",
     });
-  });
-
-  it("preserves accents", () => {
-    expect(parseMessageText("Reunião às 10h")).toEqual({
+    expect(parseMessageText("Reunião às 10h 🎮")).toEqual({
       ok: true,
-      value: "Reunião às 10h",
+      value: "Reunião às 10h 🎮",
+    });
+    expect(parseMessageText("<script>oi</script>")).toEqual({
+      ok: true,
+      value: "<script>oi</script>",
+    });
+    expect(parseMessageText("linha1\n\nlinha2")).toEqual({
+      ok: true,
+      value: "linha1\n\nlinha2",
     });
   });
 
@@ -173,18 +178,10 @@ describe("parseMessageText", () => {
     });
   });
 
-  it("rejects markup and control characters", () => {
-    expect(parseMessageText("<script>")).toEqual({
-      ok: false,
-      error: "A mensagem não pode conter caracteres inválidos.",
-    });
-    expect(parseMessageText("ok>no")).toEqual({
-      ok: false,
-      error: "A mensagem não pode conter caracteres inválidos.",
-    });
+  it("strips control characters but keeps text", () => {
     expect(parseMessageText("ok\u0007no")).toEqual({
-      ok: false,
-      error: "A mensagem não pode conter caracteres inválidos.",
+      ok: true,
+      value: "okno",
     });
   });
 });

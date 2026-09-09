@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { MessageCircle, X } from "lucide-react";
 import type { ChannelId } from "../../../../shared/community.ts";
 import { focusVoiceChatDrawer } from "../../chat/drawerFocus.ts";
 import { countUnseen, seenIdsFrom } from "../../chat/unseen.ts";
@@ -79,57 +80,99 @@ function useVoiceChatFocus(open: boolean) {
   return { headingRef, triggerRef, pendingFocus };
 }
 
+function UnseenBadge({ unseen }: { unseen: number }) {
+  if (unseen <= 0) {
+    return null;
+  }
+  return (
+    <span
+      className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-coral text-[10px] font-bold text-white ring-2 ring-night"
+      aria-hidden
+    >
+      {unseen > 9 ? "9+" : unseen}
+    </span>
+  );
+}
+
 function VoiceChatFrame({
   open,
   unseen,
   chat,
   headingRef,
   triggerRef,
-  onToggle,
+  onClose,
+  onOpen,
 }: {
   open: boolean;
   unseen: number;
   chat: ReturnType<typeof useChat>;
   headingRef: RefObject<HTMLHeadingElement | null>;
   triggerRef: RefObject<HTMLButtonElement | null>;
-  onToggle: () => void;
+  onClose: () => void;
+  onOpen: () => void;
 }) {
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   return (
-    <div className="pointer-events-none absolute inset-y-0 right-0 z-10 flex max-w-full items-stretch justify-end">
-      <div
-        className={cn(
-          "pointer-events-auto flex max-h-full flex-col border-l border-haze/10 bg-night/95 backdrop-blur-md",
-          open ? "h-full w-full md:w-80" : "h-auto self-end p-3",
-        )}
-      >
-        <div className="flex items-center gap-2 p-3">
+    <div className="pointer-events-none absolute inset-0 z-20">
+      {open ? (
+        <div
+          id={PANEL_ID}
+          className="pointer-events-auto absolute inset-y-3 right-3 flex w-[min(100%-1.5rem,22rem)] flex-col overflow-hidden rounded-2xl border border-haze/15 bg-night/95 shadow-[0_18px_50px_rgba(0,0,0,0.45)] backdrop-blur-md"
+        >
+          <header className="flex items-center gap-2 border-b border-haze/10 px-3 py-2.5">
+            <h2
+              id={HEADING_ID}
+              ref={headingRef}
+              tabIndex={-1}
+              className="min-w-0 flex-1 truncate font-display text-base text-cloud outline-none"
+            >
+              Chat
+            </h2>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="size-8 shrink-0"
+              aria-label="Fechar chat"
+              onClick={onClose}
+            >
+              <X className="size-4" />
+            </Button>
+          </header>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <ChatPanel chat={chat} embedded />
+          </div>
+        </div>
+      ) : (
+        <div className="pointer-events-auto absolute right-4 bottom-4">
           <Button
             ref={triggerRef}
             type="button"
             variant="live"
-            className="relative w-full"
-            aria-expanded={open}
+            size="icon"
+            className={cn("relative size-12 rounded-full shadow-lg")}
+            aria-expanded={false}
             aria-controls={PANEL_ID}
-            aria-label={unseen > 0 ? `Chat, ${unseen} mensagens novas` : "Chat"}
-            onClick={onToggle}
+            aria-label={unseen > 0 ? `Abrir chat, ${unseen} mensagens novas` : "Abrir chat"}
+            onClick={onOpen}
           >
-            Chat
-            {unseen > 0 ? (
-              <span
-                className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-coral text-[10px] font-bold text-white ring-2 ring-night"
-                aria-hidden
-              >
-                {unseen > 9 ? "9+" : unseen}
-              </span>
-            ) : null}
+            <MessageCircle className="size-5" />
+            <UnseenBadge unseen={unseen} />
           </Button>
         </div>
-        <div id={PANEL_ID} hidden={!open} className={open ? "flex min-h-0 flex-1 flex-col" : undefined}>
-          {open ? (
-            <ChatPanel chat={chat} headingId={HEADING_ID} headingRef={headingRef} title="Chat" />
-          ) : null}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -147,6 +190,12 @@ export function VoiceChatDrawer({ channelId }: { channelId: ChannelId | null }) 
     user?.id ?? null,
   );
 
+  function setChatOpen(next: boolean) {
+    writeVoiceChatOpen(next);
+    pendingFocus.current = next ? "open" : "close";
+    setOpen(next);
+  }
+
   return (
     <VoiceChatFrame
       open={open}
@@ -154,12 +203,8 @@ export function VoiceChatDrawer({ channelId }: { channelId: ChannelId | null }) 
       chat={chat}
       headingRef={headingRef}
       triggerRef={triggerRef}
-      onToggle={() => {
-        const next = !open;
-        writeVoiceChatOpen(next);
-        pendingFocus.current = next ? "open" : "close";
-        setOpen(next);
-      }}
+      onOpen={() => setChatOpen(true)}
+      onClose={() => setChatOpen(false)}
     />
   );
 }

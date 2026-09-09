@@ -32,20 +32,25 @@ describe("VoiceChatDrawer", () => {
     localStorage.clear();
   });
 
-  it("focuses the heading after the drawer has opened, not from a closed ref snapshot", async () => {
+  it("opens from the floating button and closes with the header control", async () => {
     render(<VoiceChatDrawer channelId={"companion-1" as ChannelId} />);
-    const trigger = screen.getByRole("button", { name: "Chat" });
-    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    const trigger = screen.getByRole("button", { name: "Abrir chat" });
     expect(screen.queryByRole("heading", { name: "Chat" })).toBeNull();
 
     await act(async () => {
       trigger.click();
     });
     const heading = screen.getByRole("heading", { name: "Chat" });
-    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByRole("button", { name: "Fechar chat" })).toBeTruthy();
 
     await waitFor(() => {
       expect(document.activeElement).toBe(heading);
     });
+
+    await act(async () => {
+      screen.getByRole("button", { name: "Fechar chat" }).click();
+    });
+    expect(screen.queryByRole("heading", { name: "Chat" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Abrir chat" })).toBeTruthy();
   });
 });

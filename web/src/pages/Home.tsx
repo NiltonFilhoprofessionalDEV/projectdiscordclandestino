@@ -1,5 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
+import { X } from "lucide-react";
 import type { CommunityId } from "../../../shared/community.ts";
 import type { Profile } from "../auth/AuthProvider.tsx";
 import { useAuth } from "../auth/useAuth.ts";
@@ -15,11 +16,57 @@ import { useHomeNavigation } from "../hooks/useHomeNavigation.ts";
 import { useHomeVoice } from "../hooks/useHomeVoice.ts";
 import { useMembers } from "../hooks/useMembers.ts";
 import { useSyncActiveTextChannel } from "../hooks/useSyncActiveTextChannel.ts";
+import { Button } from "../components/ui/button.tsx";
 
 type HomeProps = {
   user: User;
   profile: Profile;
 };
+
+function InviteToast({
+  status,
+  message,
+  onDismiss,
+}: {
+  status: "accepting" | "done" | "error";
+  message: string | null;
+  onDismiss: () => void;
+}) {
+  useEffect(() => {
+    if (status !== "done" && status !== "error") {
+      return;
+    }
+    const timer = window.setTimeout(onDismiss, 4000);
+    return () => window.clearTimeout(timer);
+  }, [status, onDismiss]);
+
+  return (
+    <div
+      className="fixed top-3 right-3 left-3 z-40 mx-auto flex max-w-md items-start gap-3 rounded-xl border border-haze/15 bg-deck px-4 py-3 text-sm shadow-lg sm:left-auto"
+      role={status === "error" ? "alert" : "status"}
+    >
+      <div className="min-w-0 flex-1">
+        {status === "accepting" ? (
+          <p className="text-haze">Entrando na comunidade pelo convite…</p>
+        ) : null}
+        {status === "done" ? <p className="text-cloud">{message}</p> : null}
+        {status === "error" ? <p className="text-coral">{message}</p> : null}
+      </div>
+      {status !== "accepting" ? (
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          className="size-8 shrink-0"
+          aria-label="Fechar aviso"
+          onClick={onDismiss}
+        >
+          <X className="size-4" />
+        </Button>
+      ) : null}
+    </div>
+  );
+}
 
 export function Home({ user, profile }: HomeProps) {
   const { signOut } = useAuth();
@@ -34,6 +81,15 @@ export function Home({ user, profile }: HomeProps) {
     [communities, nav],
   );
   const invite = useAcceptPendingInvite(onJoinedCommunity);
+  const [inviteHidden, setInviteHidden] = useState(false);
+  const dismissInvite = useCallback(() => setInviteHidden(true), []);
+
+  useEffect(() => {
+    if (invite.status === "accepting" || invite.status === "done" || invite.status === "error") {
+      setInviteHidden(false);
+    }
+  }, [invite.status]);
+
   const selectedCommunity =
     communities.communities.find((item) => item.id === communities.selectedId) ?? null;
   const member = isMemberShell(selectedCommunity);
@@ -60,23 +116,18 @@ export function Home({ user, profile }: HomeProps) {
     nav.setActiveTextChannelId,
   );
 
+  const showInviteToast =
+    !inviteHidden &&
+    (invite.status === "accepting" || invite.status === "error" || invite.status === "done");
+
   return (
     <>
-      {invite.status === "accepting" || invite.status === "error" || invite.status === "done" ? (
-        <div
-          className="fixed top-3 right-3 left-3 z-40 mx-auto max-w-md rounded-xl border border-haze/15 bg-deck px-4 py-3 text-sm shadow-lg sm:left-auto"
-          role="status"
-        >
-          {invite.status === "accepting" ? (
-            <p className="text-haze">Entrando na comunidade pelo convite…</p>
-          ) : null}
-          {invite.status === "done" ? <p className="text-cloud">{invite.message}</p> : null}
-          {invite.status === "error" ? (
-            <p className="text-coral" role="alert">
-              {invite.message}
-            </p>
-          ) : null}
-        </div>
+      {showInviteToast && invite.status !== "idle" ? (
+        <InviteToast
+          status={invite.status}
+          message={invite.message}
+          onDismiss={dismissInvite}
+        />
       ) : null}
       <HomeWorkspace
         user={user}

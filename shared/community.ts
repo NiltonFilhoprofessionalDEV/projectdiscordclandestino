@@ -12,9 +12,19 @@ const MESSAGE_MAX_LENGTH = 500;
 
 const INVALID_MARKUP = /[<>]/;
 const CONTROL_CHARS = /[\u0000-\u001F\u007F]/;
+const MESSAGE_CONTROL_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
 
 function normalizeWhitespace(raw: string): string {
   return raw.replace(/\s+/g, " ").trim();
+}
+
+function normalizeMessageText(raw: string): string {
+  return raw
+    .replace(/\r\n/g, "\n")
+    .replace(MESSAGE_CONTROL_CHARS, "")
+    .replace(/[^\S\n]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function hasInvalidChars(value: string): boolean {
@@ -67,7 +77,7 @@ export function parseChannelName(raw: string): ParseResult {
 }
 
 export function parseMessageText(raw: string): ParseResult {
-  const value = normalizeWhitespace(raw);
+  const value = normalizeMessageText(raw);
 
   if (!value) {
     return { ok: false, error: "Digite uma mensagem." };
@@ -77,13 +87,6 @@ export function parseMessageText(raw: string): ParseResult {
     return {
       ok: false,
       error: "A mensagem pode ter no máximo 500 caracteres.",
-    };
-  }
-
-  if (hasInvalidChars(value)) {
-    return {
-      ok: false,
-      error: "A mensagem não pode conter caracteres inválidos.",
     };
   }
 

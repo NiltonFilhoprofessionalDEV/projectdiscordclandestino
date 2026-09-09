@@ -4,7 +4,7 @@ import type { ChannelId } from "../../../../shared/community.ts";
 import { useAuth } from "../../auth/useAuth.ts";
 import type { Profile } from "../../auth/AuthProvider.tsx";
 import { canManageCommunity } from "../../communities/roles.ts";
-import { enrichFriendsWithCallPresence } from "../../friends/presence.ts";
+import { enrichFriendsWithCallPresence, occupancyIdentitySet } from "../../friends/presence.ts";
 import { FriendsPanel } from "../friends/FriendsPanel.tsx";
 import { MemberPanel } from "../members/MemberPanel.tsx";
 import type { useChannels } from "../../hooks/useChannels.ts";
@@ -47,18 +47,19 @@ function HomeGrid(props: HomeWorkspaceProps) {
       .filter((participant) => !participant.isLocal)
       .map((participant) => participant.identity),
   );
+  const occupancy = useVoiceOccupancy(
+    props.member ? (props.selectedCommunity?.id ?? null) : null,
+    props.member,
+  );
   const friendsForPanel = {
     ...props.friends,
     friends: enrichFriendsWithCallPresence(
       props.friends.friends,
       liveIds,
       voiceChannel?.name ?? null,
+      occupancyIdentitySet(occupancy.byChannel),
     ),
   };
-  const occupancy = useVoiceOccupancy(
-    props.member ? (props.selectedCommunity?.id ?? null) : null,
-    props.member,
-  );
 
   return (
     <div className="grid h-dvh w-dvw overflow-hidden bg-night text-cloud md:grid-cols-[76px_256px_minmax(0,1fr)] xl:grid-cols-[76px_256px_minmax(0,1fr)_288px]">

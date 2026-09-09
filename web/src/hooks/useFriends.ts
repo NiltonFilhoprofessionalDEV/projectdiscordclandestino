@@ -27,7 +27,7 @@ type ProfileRow = {
   last_seen_at: string | null;
 };
 
-const STALE_MS = 60_000;
+const STALE_MS = 120_000;
 
 function mapPresence(
   value: string | null | undefined,
@@ -37,7 +37,7 @@ function mapPresence(
     return "offline";
   }
   if (!lastSeenAt) {
-    return "offline";
+    return value;
   }
   const age = Date.now() - new Date(lastSeenAt).getTime();
   if (Number.isNaN(age) || age > STALE_MS) {
@@ -210,7 +210,7 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
       }
     };
     beat();
-    const heartbeat = window.setInterval(beat, 10000);
+    const heartbeat = window.setInterval(beat, 8000);
 
     const onVisible = () => {
       if (document.visibilityState === "visible") {

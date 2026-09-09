@@ -1,6 +1,7 @@
 import type { Ref } from "react";
 import { lastFailedNonce } from "../../chat/messages.ts";
 import type { useChat } from "../../hooks/useChat.ts";
+import { cn } from "../../lib/utils.ts";
 import { MessageComposer } from "./MessageComposer.tsx";
 import { MessageList } from "./MessageList.tsx";
 
@@ -9,6 +10,7 @@ type ChatPanelProps = {
   headingId?: string;
   headingRef?: Ref<HTMLHeadingElement>;
   title?: string;
+  embedded?: boolean;
 };
 
 export function ChatPanel({
@@ -16,22 +18,30 @@ export function ChatPanel({
   headingId,
   headingRef,
   title = "Conversa",
+  embedded = false,
 }: ChatPanelProps) {
   const failedNonce = lastFailedNonce(chat.messages);
 
   return (
-    <section className="surface flex h-full min-h-0 flex-col border-y-0 border-r-0">
-      <header className="border-b border-haze/10 px-5 py-5">
-        <h2
-          id={headingId}
-          ref={headingRef}
-          tabIndex={headingRef ? -1 : undefined}
-          className="font-display text-lg text-cloud outline-none"
-        >
-          {title}
-        </h2>
-        <p className="mt-1 text-xs text-haze">Mensagens desta sala</p>
-      </header>
+    <section
+      className={cn(
+        "flex h-full min-h-0 flex-col",
+        embedded ? "bg-transparent" : "surface border-y-0 border-r-0",
+      )}
+    >
+      {embedded ? null : (
+        <header className="border-b border-haze/10 px-5 py-5">
+          <h2
+            id={headingId}
+            ref={headingRef}
+            tabIndex={headingRef ? -1 : undefined}
+            className="font-display text-lg text-cloud outline-none"
+          >
+            {title}
+          </h2>
+          <p className="mt-1 text-xs text-haze">Mensagens desta sala</p>
+        </header>
+      )}
       <MessageList
         messages={chat.messages}
         status={chat.status}

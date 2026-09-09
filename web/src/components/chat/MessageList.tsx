@@ -38,7 +38,9 @@ function MessageArticle({
   return (
     <article className="rounded-xl bg-abyss/50 px-3 py-2.5">
       <p className="text-xs font-semibold text-[#aab9ff]">{message.displayName}</p>
-      <p className="mt-0.5 wrap-break-word text-sm text-cloud">{message.content}</p>
+      <p className="mt-0.5 wrap-break-word whitespace-pre-wrap text-sm text-cloud">
+        {message.content}
+      </p>
       <MessageStatus message={message} onRetry={onRetry} />
     </article>
   );
