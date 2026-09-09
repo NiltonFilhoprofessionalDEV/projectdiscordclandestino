@@ -9,7 +9,11 @@ import {
 } from "./config.ts";
 import { ROOMS, type RoomId } from "../../shared/rooms.ts";
 
-export function createToken(displayName: string, roomId: RoomId): Promise<string> {
+export function voiceRoomName(communityId: string, channelId: string): string {
+  return `community:${communityId}:voice:${channelId}`;
+}
+
+export function createToken(displayName: string, roomName: string): Promise<string> {
   const token = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
     identity: makeParticipantIdentity(displayName),
     name: displayName,
@@ -18,7 +22,7 @@ export function createToken(displayName: string, roomId: RoomId): Promise<string
 
   token.addGrant({
     roomJoin: true,
-    room: roomId,
+    room: roomName,
     canPublish: true,
     canSubscribe: true,
     canPublishData: true,

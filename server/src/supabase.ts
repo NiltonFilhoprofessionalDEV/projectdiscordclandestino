@@ -1,6 +1,10 @@
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
 import type { Database } from "../../shared/database.types.ts";
-import { SUPABASE_SECRET_KEY, SUPABASE_URL } from "./config.ts";
+import {
+  SUPABASE_PUBLISHABLE_KEY,
+  SUPABASE_SECRET_KEY,
+  SUPABASE_URL,
+} from "./config.ts";
 
 export type AuthResult =
   | { ok: true; user: User }
@@ -65,16 +69,33 @@ function parseAccessToken(authorizationHeader: string | undefined): string | nul
   return token;
 }
 
+export function createUserClient(accessToken: string): SupabaseClient<Database> {
+  const apiKey = SUPABASE_PUBLISHABLE_KEY || SUPABASE_SECRET_KEY;
+  if (!SUPABASE_URL || !apiKey) {
+    throw new Error("Supabase do servidor não configurado.");
+  }
+  return createClient<Database>(SUPABASE_URL, apiKey, {
+    global: {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+}
+
 export async function requireUser(
   authorizationHeader: string | undefined,
-  client: AuthClient = getSupabase(),
+  client?: AuthClient,
 ): Promise<AuthResult> {
   const accessToken = parseAccessToken(authorizationHeader);
   if (!accessToken) {
     return UNAUTHENTICATED;
   }
 
-  const { data, error } = await client.auth.getUser(accessToken);
+  const { data, error } = await (client ?? getSupabase()).auth.getUser(accessToken);
   if (error || !data.user) {
     return UNAUTHENTICATED;
   }

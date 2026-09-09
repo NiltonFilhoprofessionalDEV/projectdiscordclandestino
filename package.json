@@ -21,6 +21,7 @@
     "supabase:types": "supabase gen types typescript --local > shared/database.types.ts"
   },
   "dependencies": {
+    "@hono/node-server": "^1.19.0",
     "hono": "^4.9.8",
     "livekit-server-sdk": "^2.13.3"
   },
