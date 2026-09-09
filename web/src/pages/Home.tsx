@@ -1,29 +1,29 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { ConnectionState } from "livekit-client";
-import { Headphones, Menu } from "lucide-react";
-import { parseDisplayName } from "../../../shared/displayName.ts";
-import { getRoomLabel, type RoomId } from "../../../shared/rooms.ts";
 import type { Profile } from "../auth/AuthProvider.tsx";
 import { useAuth } from "../auth/useAuth.ts";
+import { ChannelSidebar } from "../components/channels/ChannelSidebar.tsx";
+import { CreateChannelDialog } from "../components/channels/CreateChannelDialog.tsx";
 import { ChatPanel } from "../components/chat/ChatPanel.tsx";
+import { CommunityRail } from "../components/communities/CommunityRail.tsx";
+import { CreateCommunityDialog } from "../components/communities/CreateCommunityDialog.tsx";
 import { ControlBar } from "../components/controls/ControlBar.tsx";
-import { ConnectionBadge } from "../components/controls/ConnectionBadge.tsx";
 import { DeviceSettings } from "../components/controls/DeviceSettings.tsx";
 import { ExploreView } from "../components/explore/ExploreView.tsx";
-import { MediaTile } from "../components/participants/MediaTile.tsx";
-import { ParticipantList } from "../components/participants/ParticipantList.tsx";
-import { VideoGrid } from "../components/participants/VideoGrid.tsx";
-import { NavigationPanel } from "../components/shell/NavigationPanel.tsx";
-import { ProfilePanel } from "../components/shell/ProfilePanel.tsx";
-import { ServerRail } from "../components/shell/ServerRail.tsx";
-import { Button } from "../components/ui/button.tsx";
+import { MemberPanel } from "../components/members/MemberPanel.tsx";
+import { ShellHeader } from "../components/shell/ShellHeader.tsx";
+import { VoiceStage } from "../components/voice/VoiceStage.tsx";
+import { canManageCommunity } from "../communities/roles.ts";
+import { useChannels } from "../hooks/useChannels.ts";
 import { useChat } from "../hooks/useChat.ts";
+import { useCommunities } from "../hooks/useCommunities.ts";
 import { useConnectionQuality } from "../hooks/useConnectionQuality.ts";
+import { useHomeNavigation } from "../hooks/useHomeNavigation.ts";
 import { useMedia } from "../hooks/useMedia.ts";
+import { useMembers } from "../hooks/useMembers.ts";
 import { activeScreenShare, useParticipants } from "../hooks/useParticipants.ts";
-import { useOccupancy } from "../hooks/useOccupancy.ts";
 import { useRoom } from "../hooks/useRoom.ts";
+import { centerSurfaceLabel } from "../shell/selection.ts";
 
 type HomeProps = {
   user: User;
@@ -32,202 +32,175 @@ type HomeProps = {
 
 export function Home({ user, profile }: HomeProps) {
   const { signOut } = useAuth();
-  const { rooms, error: occupancyError } = useOccupancy();
-  const [displayName, setDisplayName] = useState(profile.display_name);
-  const [activeRoomId, setActiveRoomId] = useState<RoomId | null>(null);
-  const [draftName, setDraftName] = useState(profile.display_name);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const communities = useCommunities();
+  const channels = useChannels(communities.selectedId);
+  const members = useMembers(communities.selectedId);
+  const nav = useHomeNavigation();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [query, setQuery] = useState("");
-
-  const { room, connectionState, error, leave, findScreenOwner } = useRoom(
-    displayName,
-    activeRoomId,
-  );
+  const [createCommunityOpen, setCreateCommunityOpen] = useState(false);
+  const [createChannelOpen, setCreateChannelOpen] = useState(false);
+  const createCommunityRef = useRef<HTMLButtonElement>(null);
+  const createChannelRef = useRef<HTMLButtonElement>(null);
+  const { room, connectionState, error, leave, findScreenOwner } = useRoom(nav.activeVoiceChannelId);
   const participants = useParticipants(room).map((participant) =>
     participant.isLocal
-      ? { ...participant, name: participant.name || displayName }
+      ? { ...participant, name: participant.name || profile.display_name }
       : participant,
   );
   const media = useMedia(room, findScreenOwner);
-  const { messages, send } = useChat(room, displayName);
+  const chat = useChat(room, profile.display_name);
   const { quality, rttMs } = useConnectionQuality(room);
-  const screen = activeScreenShare(participants);
-  const canScreenShare = Boolean(navigator.mediaDevices?.getDisplayMedia);
-  const hasCamera = participants.some((participant) => participant.cameraPublication);
-  const liveRooms = useMemo(
-    () => rooms.filter((item) => item.occupantCount > 0).slice(0, 4),
-    [rooms],
-  );
+  const selectedCommunity =
+    communities.communities.find((item) => item.id === communities.selectedId) ?? null;
 
-  function selectRoom(id: RoomId) {
-    setActiveRoomId(id);
-    setSidebarOpen(false);
-  }
-
-  async function handleLeave() {
-    await leave();
-    setActiveRoomId(null);
-  }
-
-  function commitRename() {
-    const parsed = parseDisplayName(draftName);
-    if (parsed.ok) {
-      setDisplayName(parsed.value);
+  useEffect(() => {
+    const belongs = channels.text.some((item) => item.id === nav.activeTextChannelId);
+    if (!belongs) {
+      nav.setActiveTextChannelId(channels.text[0]?.id ?? null);
     }
-  }
+  }, [channels.text, nav.activeTextChannelId, nav.setActiveTextChannelId]);
 
-  const navigation = (
-    <NavigationPanel
-      rooms={rooms}
-      activeRoomId={activeRoomId}
-      draftName={draftName}
-      occupancyError={occupancyError}
-      onExplore={() => {
-        setActiveRoomId(null);
-        setSidebarOpen(false);
-      }}
-      onSelect={selectRoom}
-      onDraftName={setDraftName}
-      onCommitName={commitRename}
+  const closeCreateCommunity = useCallback(() => {
+    setCreateCommunityOpen(false);
+    requestAnimationFrame(() => createCommunityRef.current?.focus());
+  }, []);
+  const closeCreateChannel = useCallback(() => {
+    setCreateChannelOpen(false);
+    requestAnimationFrame(() => createChannelRef.current?.focus());
+  }, []);
+
+  const rail = (
+    <CommunityRail
+      communities={communities.communities}
+      selectedId={communities.selectedId}
+      exploring={nav.surface === "explore"}
+      displayName={profile.display_name}
+      voiceActive={nav.activeVoiceChannelId !== null}
+      onExplore={nav.explore}
+      onSelect={(id) => nav.openCommunity(id, communities.select)}
+      onCreate={() => setCreateCommunityOpen(true)}
+      createRef={createCommunityRef}
+    />
+  );
+  const sidebar = (
+    <ChannelSidebar
+      community={selectedCommunity}
+      text={channels.text}
+      voice={channels.voice}
+      activeTextChannelId={nav.activeTextChannelId}
+      activeVoiceChannelId={nav.activeVoiceChannelId}
+      canManage={canManageCommunity(selectedCommunity?.role ?? null)}
+      status={channels.status}
+      error={channels.error}
+      onSelectText={nav.selectText}
+      onSelectVoice={nav.selectVoice}
+      onCreate={() => setCreateChannelOpen(true)}
+      onRetry={() => void channels.retry()}
+      createRef={createChannelRef}
     />
   );
 
   return (
-    <div className="min-h-dvh bg-night text-cloud md:p-3">
-      <div className="mx-auto flex min-h-dvh max-w-[1600px] overflow-hidden bg-night md:min-h-[calc(100dvh-1.5rem)] md:rounded-[1.75rem] md:border md:border-white/8 md:shadow-glow">
-        <ServerRail
-          rooms={rooms}
-          activeRoomId={activeRoomId}
-          displayName={displayName}
-          onExplore={() => setActiveRoomId(null)}
-          onSelect={selectRoom}
-        />
-        <div className="hidden md:flex">{navigation}</div>
-        {sidebarOpen ? (
-          <div className="fixed inset-0 z-40 flex md:hidden">
-            <button
-              type="button"
-              className="flex-1 bg-abyss/80 backdrop-blur-sm"
-              aria-label="Fechar salas"
-              onClick={() => setSidebarOpen(false)}
-            />
-            {navigation}
-          </div>
-        ) : null}
-
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="glass-bar flex min-h-16 items-center gap-3 border-x-0 border-t-0 px-4 lg:px-6">
-          <Button
-            type="button"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setSidebarOpen(true)}
-            aria-label="Abrir salas"
-          >
-            <Menu className="size-5" />
-          </Button>
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate font-display text-xl">
-              {activeRoomId ? getRoomLabel(activeRoomId) : "Explore"}
-            </h1>
-            {activeRoomId ? (
-              <ConnectionBadge state={connectionState} quality={quality} rttMs={rttMs} />
-            ) : (
-              <p className="text-xs text-haze">Encontre sua próxima conversa</p>
-            )}
-          </div>
-          <Button type="button" onClick={() => void signOut()} title={user.email ?? profile.display_name}>
-            Sair
-          </Button>
-        </header>
-
-        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+    <>
+      <div className="grid h-dvh w-dvw overflow-hidden bg-night text-cloud md:grid-cols-[76px_256px_minmax(0,1fr)] xl:grid-cols-[76px_256px_minmax(0,1fr)_288px]">
+        <div className="hidden md:flex">{rail}</div>
+        <div className="hidden md:flex">{sidebar}</div>
+        <div className="flex min-w-0 flex-col">
+          <ShellHeader
+            communityName={selectedCommunity?.name ?? "Comunidades"}
+            surfaceLabel={centerSurfaceLabel({
+              surface: nav.surface,
+              textChannel: channels.text.find((item) => item.id === nav.activeTextChannelId),
+              voiceChannel: channels.voice.find((item) => item.id === nav.activeVoiceChannelId),
+            })}
+            voiceActive={nav.activeVoiceChannelId !== null}
+            connectionState={connectionState}
+            quality={quality}
+            rttMs={rttMs}
+            accountTitle={user.email ?? profile.display_name}
+            onOpenSidebar={() => nav.setSidebarOpen(true)}
+            onSignOut={() => void signOut()}
+          />
           <main className="relative min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
-            {!activeRoomId ? (
+            {nav.surface === "explore" ? (
               <ExploreView
-                rooms={rooms}
+                communities={communities.communities}
                 query={query}
                 onQuery={setQuery}
-                onSelect={selectRoom}
-                occupancyError={occupancyError}
+                onSelect={(id) => nav.openCommunity(id, communities.select)}
+                status={communities.status}
+                error={communities.error}
+                onRetry={() => void communities.retry()}
               />
-            ) : (
-              <>
-                {error ? <p className="mb-3 text-sm text-coral">{error}</p> : null}
-                {connectionState === ConnectionState.Connected && participants.length === 0 ? (
-                  <p className="text-haze">Ninguém mais por aqui ainda.</p>
-                ) : null}
-                {screen?.screenPublication ? (
-                  <div className="mb-4">
-                    <p className="mb-2 text-sm text-electric">
-                      {screen.name} está compartilhando a tela
-                    </p>
-                    <MediaTile
-                      publication={screen.screenPublication}
-                      label={screen.name}
-                      large
-                      muteElement={screen.isLocal}
-                    />
-                  </div>
-                ) : null}
-                {connectionState === ConnectionState.Connected && !hasCamera ? (
-                  <div className="surface-raised flex min-h-72 flex-col items-center justify-center rounded-[1.5rem] px-6 text-center">
-                    <span className="flex size-16 items-center justify-center rounded-2xl bg-electric/14 text-electric ring-1 ring-electric/25">
-                      <Headphones className="size-7" />
-                    </span>
-                    <h2 className="mt-5 font-display text-2xl text-cloud">
-                      A conversa está acontecendo
-                    </h2>
-                    <p className="mt-2 max-w-sm text-sm leading-relaxed text-haze">
-                      Ligue a câmera quando quiser. Sua voz já está conectada à sala.
-                    </p>
-                  </div>
-                ) : null}
-                <VideoGrid participants={participants} />
-                <div className="mt-6 xl:hidden">
-                  <h2 className="mb-2 text-xs font-semibold tracking-wide text-haze uppercase">
-                    Participantes
-                  </h2>
-                  <ParticipantList participants={participants} />
-                </div>
-              </>
-            )}
+            ) : null}
+            {nav.surface === "text" ? (
+              <ChatPanel messages={chat.messages} onSend={chat.send} />
+            ) : null}
+            {nav.surface === "voice" ? (
+              <VoiceStage
+                error={error}
+                connectionState={connectionState}
+                participants={participants}
+                screen={activeScreenShare(participants)}
+              />
+            ) : null}
           </main>
-          {activeRoomId ? (
-            <div className="w-full p-4 pt-0 lg:w-80 lg:p-0">
-              <ChatPanel messages={messages} onSend={send} />
-            </div>
+          {nav.activeVoiceChannelId ? (
+            <ControlBar
+              micOn={media.micOn}
+              cameraOn={media.cameraOn}
+              screenOn={media.screenOn}
+              canScreenShare={Boolean(navigator.mediaDevices?.getDisplayMedia)}
+              onToggleMic={() => void media.toggleMic()}
+              onToggleCamera={() => void media.toggleCamera()}
+              onToggleScreen={() => void media.toggleScreen()}
+              onSettings={() => setSettingsOpen(true)}
+              onLeave={() => {
+                void leave();
+                nav.leaveVoice();
+              }}
+            />
           ) : null}
         </div>
-
-        {activeRoomId ? (
-          <ControlBar
-            micOn={media.micOn}
-            cameraOn={media.cameraOn}
-            screenOn={media.screenOn}
-            canScreenShare={canScreenShare}
-            onToggleMic={() => void media.toggleMic()}
-            onToggleCamera={() => void media.toggleCamera()}
-            onToggleScreen={() => void media.toggleScreen()}
-            onSettings={() => setSettingsOpen(true)}
-            onLeave={() => void handleLeave()}
-          />
-        ) : null}
+        <MemberPanel
+          members={members.members}
+          status={members.status}
+          error={members.error}
+          participants={participants}
+          voiceActive={nav.activeVoiceChannelId !== null}
+          onRetry={() => void members.retry()}
+        />
       </div>
-
-      <ProfilePanel
-        displayName={displayName}
-        activeRoomId={activeRoomId}
-        participants={participants}
-        liveRooms={liveRooms}
-        onSelect={selectRoom}
+      {nav.sidebarOpen ? (
+        <div className="fixed inset-0 z-40 flex md:hidden">
+          <div className="flex h-full">
+            {rail}
+            {sidebar}
+          </div>
+          <button
+            type="button"
+            className="flex-1 bg-abyss/80 backdrop-blur-sm"
+            aria-label="Fechar menu"
+            onClick={() => nav.setSidebarOpen(false)}
+          />
+        </div>
+      ) : null}
+      <CreateCommunityDialog
+        open={createCommunityOpen}
+        onClose={closeCreateCommunity}
+        onCreate={communities.create}
+        onCreated={(community) => nav.openCommunity(community.id, communities.select)}
       />
-
+      <CreateChannelDialog
+        open={createChannelOpen}
+        onClose={closeCreateChannel}
+        onCreate={channels.create}
+        onCreated={nav.createdChannel}
+      />
       {settingsOpen && room ? (
         <DeviceSettings room={room} onClose={() => setSettingsOpen(false)} />
       ) : null}
-      </div>
-    </div>
+    </>
   );
 }

@@ -1,83 +1,71 @@
 import { useRef } from "react";
-import { ArrowUpRight, Radio, Search, Users } from "lucide-react";
-import type { RoomId } from "../../../../shared/rooms.ts";
-import type { RoomOccupancy } from "../../services/api.ts";
-import { Input } from "../ui/input.tsx";
+import { ArrowUpRight, Radio, Search } from "lucide-react";
+import type { CommunitySummary } from "../../../../shared/api.ts";
+import type { CommunityId } from "../../../../shared/community.ts";
+import { filterExploreCommunities } from "../../communities/lists.ts";
+import type { LoadStatus } from "../../hooks/useCommunities.ts";
 import { cn } from "../../lib/utils.ts";
+import { Input } from "../ui/input.tsx";
+import { Button } from "../ui/button.tsx";
 import { PulseLine } from "../shell/PulseLine.tsx";
 
-const ROOM_PRESENTATION: Record<
-  RoomId,
-  { eyebrow: string; description: string; accent: string }
-> = {
-  geral: {
-    eyebrow: "Conversa aberta",
-    description: "Assuntos do dia e encontros espontâneos.",
-    accent: "from-electric to-[#49b8ff]",
-  },
-  jogos: {
-    eyebrow: "Squad online",
-    description: "Monte o time e entre na partida.",
-    accent: "from-pulse to-[#c05cff]",
-  },
-  reuniao: {
-    eyebrow: "Ponto de encontro",
-    description: "Alinhe ideias com áudio claro e direto.",
-    accent: "from-[#ff8a66] to-coral",
-  },
-  desenvolvimento: {
-    eyebrow: "Build em conjunto",
-    description: "Código, produto e decisões técnicas.",
-    accent: "from-[#39c6b4] to-electric",
-  },
-};
+const ACCENTS = [
+  "from-electric to-[#49b8ff]",
+  "from-pulse to-[#c05cff]",
+  "from-[#ff8a66] to-coral",
+  "from-[#39c6b4] to-electric",
+];
 
 type ExploreViewProps = {
-  rooms: RoomOccupancy[];
+  communities: CommunitySummary[];
   query: string;
   onQuery: (value: string) => void;
-  onSelect: (id: RoomId) => void;
-  occupancyError: string | null;
+  onSelect: (id: CommunityId) => void;
+  status: LoadStatus;
+  error: string | null;
+  onRetry: () => void;
 };
 
-function occupancyLabel(count: number): string {
-  return count === 1 ? "1 pessoa agora" : `${count} pessoas agora`;
+function accentFor(id: string): string {
+  let hash = 0;
+  for (const char of id) {
+    hash = (hash + char.charCodeAt(0)) % ACCENTS.length;
+  }
+  return ACCENTS[hash] ?? ACCENTS[0];
 }
 
-type RoomCardProps = {
-  room: RoomOccupancy;
-  onSelect: (id: RoomId) => void;
-};
+function visibilityLabel(community: CommunitySummary): string {
+  if (community.role) {
+    return community.visibility === "private" ? "Sua comunidade privada" : "Você participa";
+  }
+  return "Comunidade pública";
+}
 
-function RoomCard({ room, onSelect }: RoomCardProps) {
-  const presentation = ROOM_PRESENTATION[room.id];
+function CommunityCard({
+  community,
+  onSelect,
+}: {
+  community: CommunitySummary;
+  onSelect: (id: CommunityId) => void;
+}) {
   return (
     <button
       type="button"
-      onClick={() => onSelect(room.id)}
-      aria-label={`Entrar na sala ${room.label}, ${occupancyLabel(room.occupantCount)}`}
+      onClick={() => onSelect(community.id)}
+      aria-label={`Abrir ${community.name}`}
       className="focus-ring surface-raised group flex min-h-40 overflow-hidden rounded-[1.35rem] text-left transition hover:-translate-y-0.5 hover:border-electric/30"
     >
       <span
-        className={cn(
-          "w-2 shrink-0 bg-linear-to-b transition group-hover:w-3",
-          presentation.accent,
-        )}
+        className={cn("w-2 shrink-0 bg-linear-to-b transition group-hover:w-3", accentFor(community.id))}
         aria-hidden
       />
       <span className="flex flex-1 flex-col p-5">
         <span className="text-[11px] font-semibold tracking-[0.14em] text-haze uppercase">
-          {presentation.eyebrow}
+          {visibilityLabel(community)}
         </span>
-        <span className="mt-2 font-display text-xl text-cloud">{room.label}</span>
-        <span className="mt-1 text-sm leading-relaxed text-haze">
-          {presentation.description}
-        </span>
-        <span className="mt-auto flex items-end justify-between pt-5">
-          <span className="flex items-center gap-1.5 text-xs text-haze">
-            <Users className="size-3.5" />
-            {occupancyLabel(room.occupantCount)}
-          </span>
+        <span className="mt-2 font-display text-xl text-cloud">{community.name}</span>
+        <span className="mt-1 text-sm leading-relaxed text-haze">/{community.slug}</span>
+        <span className="mt-auto flex items-end justify-end pt-5">
           <span className="flex items-center gap-1 text-sm font-semibold text-[#aab9ff]">
             Entrar <ArrowUpRight className="size-4" />
           </span>
@@ -87,32 +75,54 @@ function RoomCard({ room, onSelect }: RoomCardProps) {
   );
 }
 
+function EmptyState({
+  title,
+  detail,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  detail: string;
+  actionLabel: string;
+  onAction: () => void;
+}) {
+  return (
+    <div className="surface rounded-[1.35rem] px-5 py-10 text-center">
+      <p className="font-semibold text-cloud">{title}</p>
+      <p className="mt-1 text-sm text-haze">{detail}</p>
+      <Button type="button" className="mt-5" onClick={onAction}>
+        {actionLabel}
+      </Button>
+    </div>
+  );
+}
+
 export function ExploreView({
-  rooms,
+  communities,
   query,
   onQuery,
   onSelect,
-  occupancyError,
+  status,
+  error,
+  onRetry,
 }: ExploreViewProps) {
   const searchRef = useRef<HTMLInputElement>(null);
-  const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
-  const matchingRooms = rooms.filter((room) =>
-    room.label.toLocaleLowerCase("pt-BR").includes(normalizedQuery),
-  );
-  const liveRooms = matchingRooms.filter((room) => room.occupantCount > 0);
+  const { joined, discoverable } = filterExploreCommunities(communities, query);
+  const hasQuery = query.trim().length > 0;
+  const isEmpty = joined.length === 0 && discoverable.length === 0;
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-7">
+    <div className="flex w-full flex-col gap-7">
       <div className="flex justify-center lg:justify-end">
-        <label className="relative w-full max-w-md" htmlFor="room-search">
-          <span className="sr-only">Buscar salas</span>
+        <label className="relative w-full max-w-md" htmlFor="community-search">
+          <span className="sr-only">Buscar comunidades</span>
           <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-haze" />
           <Input
             ref={searchRef}
-            id="room-search"
+            id="community-search"
             value={query}
             onChange={(event) => onQuery(event.target.value)}
-            placeholder="Buscar uma sala"
+            placeholder="Buscar uma comunidade"
             className="h-11 pl-11"
           />
         </label>
@@ -121,68 +131,73 @@ export function ExploreView({
       <section className="surface-raised relative grid overflow-hidden rounded-[1.6rem] p-6 sm:p-8 lg:min-h-56 lg:grid-cols-[1fr_0.7fr] lg:items-center">
         <div className="relative z-10">
           <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.16em] text-[#aab9ff] uppercase">
-            <Radio className="size-4 text-coral" /> Salas abertas
+            <Radio className="size-4 text-coral" /> Comunidades
           </p>
           <h2 className="mt-4 max-w-xl font-display text-2xl leading-tight text-cloud sm:text-3xl lg:text-4xl">
             Encontre sua próxima conversa.
           </h2>
           <p className="mt-3 max-w-lg text-sm leading-relaxed text-haze">
-            Entre em uma sala, encontre sua turma e comece a falar. Sem cadastro,
-            sem espera.
-          </p>
-          <p className="mt-5 text-xs font-semibold text-electric">
-            {rooms.length} {rooms.length === 1 ? "sala disponível" : "salas disponíveis"}
+            Entre nas comunidades de que você já faz parte ou descubra espaços públicos.
           </p>
         </div>
         <div className="relative hidden h-24 lg:block" aria-hidden>
           <span className="absolute top-2 right-4 size-20 rounded-[1.4rem] bg-pulse/20 ring-1 ring-pulse/30" />
           <span className="absolute right-24 bottom-0 size-16 rounded-[1.2rem] bg-electric/20 ring-1 ring-electric/30" />
-          <span className="absolute right-0 bottom-1 size-12 rounded-xl bg-coral/18 ring-1 ring-coral/25" />
           <PulseLine active className="absolute top-1/2 right-0 w-full" />
         </div>
       </section>
 
-      {occupancyError ? <p className="text-sm text-coral">{occupancyError}</p> : null}
+      {status === "error" ? (
+        <EmptyState
+          title="Não foi possível carregar as comunidades."
+          detail={error ?? "Tente novamente em instantes."}
+          actionLabel="Tentar de novo"
+          onAction={onRetry}
+        />
+      ) : null}
 
-      {!normalizedQuery && liveRooms.length > 0 ? (
+      {status === "ready" && isEmpty && !hasQuery ? (
+        <EmptyState
+          title="Nenhuma comunidade por aqui."
+          detail="Crie a primeira ou peça um convite."
+          actionLabel="Atualizar"
+          onAction={onRetry}
+        />
+      ) : null}
+
+      {status === "ready" && isEmpty && hasQuery ? (
+        <EmptyState
+          title="Nenhuma comunidade encontrada."
+          detail="Limpe a busca ou tente outro nome."
+          actionLabel="Limpar busca"
+          onAction={() => {
+            onQuery("");
+            requestAnimationFrame(() => searchRef.current?.focus());
+          }}
+        />
+      ) : null}
+
+      {joined.length > 0 ? (
         <section>
-          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-cloud">
-            <span className="size-2 rounded-full bg-coral shadow-[0_0_12px_rgba(255,93,115,0.65)]" />
-            Ao vivo agora
-          </h3>
+          <h3 className="mb-4 text-sm font-semibold text-cloud">Suas comunidades</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            {liveRooms.map((room) => (
-              <RoomCard key={room.id} room={room} onSelect={onSelect} />
+            {joined.map((community) => (
+              <CommunityCard key={community.id} community={community} onSelect={onSelect} />
             ))}
           </div>
         </section>
       ) : null}
 
-      <section>
-        <h3 className="mb-4 text-sm font-semibold text-cloud">Todas as salas</h3>
-        {matchingRooms.length === 0 ? (
-          <div className="surface rounded-[1.35rem] px-5 py-10 text-center">
-            <p className="font-semibold text-cloud">Nenhuma sala encontrada.</p>
-            <p className="mt-1 text-sm text-haze">Limpe a busca ou tente outro nome.</p>
-            <button
-              type="button"
-              onClick={() => {
-                onQuery("");
-                requestAnimationFrame(() => searchRef.current?.focus());
-              }}
-              className="focus-ring mt-5 min-h-11 rounded-xl px-4 text-sm font-semibold text-[#aab9ff] hover:bg-white/5"
-            >
-              Limpar busca
-            </button>
-          </div>
-        ) : (
+      {discoverable.length > 0 ? (
+        <section>
+          <h3 className="mb-4 text-sm font-semibold text-cloud">Comunidades públicas</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            {matchingRooms.map((room) => (
-              <RoomCard key={room.id} room={room} onSelect={onSelect} />
+            {discoverable.map((community) => (
+              <CommunityCard key={community.id} community={community} onSelect={onSelect} />
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      ) : null}
     </div>
   );
 }

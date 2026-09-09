@@ -6,16 +6,68 @@ import {
   type RemoteTrack,
   type Room,
 } from "livekit-client";
-import type { RoomId } from "../../../shared/rooms.ts";
-import { fetchToken } from "../services/api.ts";
+import type { ChannelId } from "../../../shared/community.ts";
+import { readMicMuted } from "../lib/storage.ts";
+import { fetchLiveKitToken } from "../services/api.ts";
 import {
   attachRemoteAudio,
   createLiveKitRoom,
   detachTrack,
 } from "../services/livekit.ts";
-import { readMicMuted } from "../lib/storage.ts";
 
-export function useRoom(displayName: string, roomId: RoomId | null) {
+function onTrackSubscribed(track: RemoteTrack) {
+  attachRemoteAudio(track);
+}
+
+function onTrackUnsubscribed(track: RemoteTrack) {
+  detachTrack(track);
+}
+
+function findScreenShareOwner(room: Room | null): string | null {
+  if (!room) {
+    return null;
+  }
+  if (room.localParticipant.isScreenShareEnabled) {
+    return room.localParticipant.name || room.localParticipant.identity;
+  }
+  for (const participant of room.remoteParticipants.values()) {
+    const hasShare = Array.from(participant.trackPublications.values()).some(
+      (pub) => pub.source === Track.Source.ScreenShare && !pub.isMuted && pub.track,
+    );
+    if (hasShare) {
+      return participant.name || participant.identity;
+    }
+  }
+  return null;
+}
+
+async function connectVoice(
+  instance: Room,
+  channelId: ChannelId,
+  cancelled: () => boolean,
+  setError: (value: string | null) => void,
+  setConnectionState: (value: ConnectionState) => void,
+) {
+  setError(null);
+  const result = await fetchLiveKitToken(channelId);
+  if (cancelled()) {
+    return;
+  }
+  if (!result.ok) {
+    setError(result.error.message);
+    setConnectionState(ConnectionState.Disconnected);
+    return;
+  }
+  await instance.connect(result.data.url, result.data.token);
+  await instance.startAudio();
+  try {
+    await instance.localParticipant.setMicrophoneEnabled(!readMicMuted());
+  } catch {
+    setError("Microfone indisponível. Você ainda pode ouvir a sala.");
+  }
+}
+
+export function useRoom(channelId: ChannelId | null) {
   const roomRef = useRef<Room | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
   const [connectionState, setConnectionState] = useState(ConnectionState.Disconnected);
@@ -32,88 +84,45 @@ export function useRoom(displayName: string, roomId: RoomId | null) {
   }, []);
 
   useEffect(() => {
-    if (!roomId) {
+    if (!channelId) {
       if (roomRef.current) {
         void leave();
       }
       return;
     }
-
     let cancelled = false;
     const instance = createLiveKitRoom();
+    const onState = (state: ConnectionState) => setConnectionState(state);
     roomRef.current = instance;
     setRoom(instance);
-
-    const onState = (state: ConnectionState) => {
-      setConnectionState(state);
-    };
-
     instance.on(RoomEvent.ConnectionStateChanged, onState);
-    instance.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
-      attachRemoteAudio(track);
-    });
-    instance.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
-      detachTrack(track);
-    });
-
-    async function connect() {
-      try {
-        setError(null);
-        const { token, url } = await fetchToken(displayName, roomId!);
-        if (cancelled) {
-          return;
-        }
-        await instance.connect(url, token);
-        await instance.startAudio();
-        try {
-          await instance.localParticipant.setMicrophoneEnabled(!readMicMuted());
-        } catch {
-          setError("Microfone indisponível. Você ainda pode ouvir a sala.");
-        }
-      } catch (err) {
+    instance.on(RoomEvent.TrackSubscribed, onTrackSubscribed);
+    instance.on(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
+    void connectVoice(instance, channelId, () => cancelled, setError, setConnectionState).catch(
+      (err: unknown) => {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Falha ao conectar.");
           setConnectionState(ConnectionState.Disconnected);
         }
-      }
-    }
-
-    void connect();
-
+      },
+    );
     return () => {
       cancelled = true;
       instance.off(RoomEvent.ConnectionStateChanged, onState);
+      instance.off(RoomEvent.TrackSubscribed, onTrackSubscribed);
+      instance.off(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
       void instance.disconnect();
       if (roomRef.current === instance) {
         roomRef.current = null;
       }
     };
-  }, [displayName, roomId, leave]);
-
-  const findScreenOwner = useCallback((): string | null => {
-    const current = roomRef.current;
-    if (!current) {
-      return null;
-    }
-    if (current.localParticipant.isScreenShareEnabled) {
-      return current.localParticipant.name || current.localParticipant.identity;
-    }
-    for (const participant of current.remoteParticipants.values()) {
-      const hasShare = Array.from(participant.trackPublications.values()).some(
-        (pub) => pub.source === Track.Source.ScreenShare && !pub.isMuted && pub.track,
-      );
-      if (hasShare) {
-        return participant.name || participant.identity;
-      }
-    }
-    return null;
-  }, []);
+  }, [channelId, leave]);
 
   return {
     room,
     connectionState,
     error,
     leave,
-    findScreenOwner,
+    findScreenOwner: useCallback(() => findScreenShareOwner(roomRef.current), []),
   };
 }
