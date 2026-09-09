@@ -117,15 +117,12 @@ function HomeCenter({
 }
 
 function HomeShellHeader({
-  user,
-  profile,
   nav,
   selectedCommunity,
   channels,
   session,
   dialogs,
-  onSignOut,
-}: Omit<HomeMainProps, "communities" | "query" | "onQuery" | "companionChannelId">) {
+}: Omit<HomeMainProps, "communities" | "query" | "onQuery" | "companionChannelId" | "user" | "profile" | "onSignOut">) {
   return (
     <ShellHeader
       communityName={selectedCommunity?.name ?? "Comunidades"}
@@ -138,9 +135,7 @@ function HomeShellHeader({
       connectionState={session.voice.connectionState}
       quality={session.quality}
       rttMs={session.rttMs}
-      accountTitle={user.email ?? profile.display_name}
       onOpenSidebar={() => nav.setSidebarOpen(true)}
-      onSignOut={onSignOut}
       menuRef={dialogs.menuRef}
     />
   );
@@ -157,10 +152,12 @@ function HomeCallBar({
   return (
     <ControlBar
       micOn={session.media.micOn}
+      voiceActivityOn={session.media.voiceActivityOn}
       cameraOn={session.media.cameraOn}
       screenOn={session.media.screenOn}
       canScreenShare={Boolean(navigator.mediaDevices?.getDisplayMedia)}
       onToggleMic={() => void session.media.toggleMic()}
+      onToggleVoiceActivity={session.media.toggleVoiceActivity}
       onToggleCamera={() => void session.media.toggleCamera()}
       onToggleScreen={() => void session.media.toggleScreen()}
       onSettings={dialogs.openSettings}
@@ -168,6 +165,10 @@ function HomeCallBar({
         void session.voice.leave();
         nav.leaveVoice();
       }}
+      outputVolume={session.outputVolume}
+      outputMuted={session.outputMuted}
+      onOutputVolume={session.setOutputVolume}
+      onToggleOutputMute={() => session.setOutputMuted((current) => !current)}
     />
   );
 }

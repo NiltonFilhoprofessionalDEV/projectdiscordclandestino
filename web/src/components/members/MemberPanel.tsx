@@ -12,6 +12,7 @@ type MemberPanelProps = {
   participants: ParticipantView[];
   voiceActive: boolean;
   onRetry: () => void;
+  embedded?: boolean;
 };
 
 function roleLabel(role: CommunityMember["role"]): string {
@@ -82,15 +83,16 @@ export function MemberPanel({
   participants,
   voiceActive,
   onRetry,
+  embedded = false,
 }: MemberPanelProps) {
-  return (
-    <aside className="surface hidden h-full w-72 shrink-0 flex-col gap-6 border-y-0 border-r-0 p-5 xl:flex">
+  const body = (
+    <>
       <div>
         <h2 className="px-1 text-xs font-semibold tracking-[0.14em] text-haze uppercase">Membros</h2>
         <MemberRoster status={status} error={error} members={members} onRetry={onRetry} />
       </div>
       {voiceActive ? (
-        <div>
+        <div className="mt-6">
           <h2 className="mb-3 px-1 text-xs font-semibold tracking-[0.14em] text-haze uppercase">
             Na chamada
           </h2>
@@ -103,6 +105,16 @@ export function MemberPanel({
           )}
         </div>
       ) : null}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="flex flex-col gap-2">{body}</div>;
+  }
+
+  return (
+    <aside className="surface hidden h-full w-72 shrink-0 flex-col gap-6 border-y-0 border-r-0 p-5 xl:flex">
+      {body}
     </aside>
   );
 }

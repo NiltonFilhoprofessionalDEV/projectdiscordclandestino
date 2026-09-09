@@ -7,6 +7,7 @@ import type {
   CreateCommunityInput,
   LiveKitTokenInput,
   LiveKitTokenResponse,
+  UpdateChannelInput,
 } from "../../../shared/api.ts";
 import type { ChannelId, CommunityId, CommunityRole } from "../../../shared/community.ts";
 import type { RoomId } from "../../../shared/rooms.ts";
@@ -74,6 +75,13 @@ export function createCommunity(input: CreateCommunityInput) {
 export function createChannel(communityId: CommunityId, input: CreateChannelInput) {
   return apiRequest<Channel>(`/api/communities/${communityId}/channels`, {
     method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateChannel(channelId: ChannelId, input: UpdateChannelInput) {
+  return apiRequest<Channel>(`/api/channels/${channelId}`, {
+    method: "PATCH",
     body: JSON.stringify(input),
   });
 }

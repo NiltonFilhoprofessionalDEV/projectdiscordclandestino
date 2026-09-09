@@ -1,10 +1,12 @@
 import { useCallback, useRef, useState } from "react";
+import type { Channel } from "../../../shared/api.ts";
 import { isDisplayed, pickFocusTarget } from "../lib/focusRestore.ts";
 
 export function useHomeDialogState() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [createCommunityOpen, setCreateCommunityOpen] = useState(false);
   const [createChannelOpen, setCreateChannelOpen] = useState(false);
+  const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
   const createCommunityRef = useRef<HTMLButtonElement>(null);
   const createChannelRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLButtonElement>(null);
@@ -29,12 +31,14 @@ export function useHomeDialogState() {
     settingsOpen,
     createCommunityOpen,
     createChannelOpen,
+    editingChannel,
     createCommunityRef,
     createChannelRef,
     menuRef,
     openSettings: () => setSettingsOpen(true),
     openCreateCommunity: () => setCreateCommunityOpen(true),
     openCreateChannel: () => setCreateChannelOpen(true),
+    openEditChannel: (channel: Channel) => setEditingChannel(channel),
     closeSettings: () => setSettingsOpen(false),
     closeCommunity: () => {
       setCreateCommunityOpen(false);
@@ -44,5 +48,6 @@ export function useHomeDialogState() {
       setCreateChannelOpen(false);
       requestAnimationFrame(restoreChannelFocus);
     },
+    closeEditChannel: () => setEditingChannel(null),
   };
 }

@@ -10,6 +10,7 @@ type CommunityRailProps = {
   selectedId: CommunityId | null;
   exploring: boolean;
   displayName: string;
+  avatarUrl: string | null;
   voiceActive: boolean;
   onExplore: () => void;
   onSelect: (id: CommunityId) => void;
@@ -63,6 +64,7 @@ export function CommunityRail({
   selectedId,
   exploring,
   displayName,
+  avatarUrl,
   voiceActive,
   onExplore,
   onSelect,
@@ -104,17 +106,29 @@ export function CommunityRail({
       >
         <Plus className="size-5" />
       </button>
-      <RailFooter voiceActive={voiceActive} displayName={displayName} />
+      <RailFooter voiceActive={voiceActive} displayName={displayName} avatarUrl={avatarUrl} />
     </nav>
   );
 }
 
-function RailFooter({ voiceActive, displayName }: { voiceActive: boolean; displayName: string }) {
+function RailFooter({
+  voiceActive,
+  displayName,
+  avatarUrl,
+}: {
+  voiceActive: boolean;
+  displayName: string;
+  avatarUrl: string | null;
+}) {
   return (
     <div className="mt-auto flex w-full flex-col items-center gap-3 px-3">
       <PulseLine active={voiceActive} className="w-full" />
-      <span className="flex size-10 items-center justify-center rounded-xl bg-deck text-[11px] font-semibold text-cloud ring-1 ring-haze/15">
-        {initials(displayName)}
+      <span className="flex size-10 items-center justify-center overflow-hidden rounded-xl bg-deck text-[11px] font-semibold text-cloud ring-1 ring-haze/15">
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" className="size-full object-cover" />
+        ) : (
+          initials(displayName)
+        )}
       </span>
     </div>
   );

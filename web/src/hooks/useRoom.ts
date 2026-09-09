@@ -3,7 +3,9 @@ import {
   ConnectionState,
   RoomEvent,
   Track,
+  type RemoteParticipant,
   type RemoteTrack,
+  type RemoteTrackPublication,
   type Room,
 } from "livekit-client";
 import type { ChannelId } from "../../../shared/community.ts";
@@ -15,8 +17,12 @@ import {
   detachTrack,
 } from "../services/livekit.ts";
 
-function onTrackSubscribed(track: RemoteTrack) {
-  attachRemoteAudio(track);
+function onTrackSubscribed(
+  track: RemoteTrack,
+  publication: RemoteTrackPublication,
+  participant: RemoteParticipant,
+) {
+  attachRemoteAudio(track, participant, publication);
 }
 
 function onTrackUnsubscribed(track: RemoteTrack) {
@@ -47,6 +53,7 @@ async function connectVoice(
   cancelled: () => boolean,
   setError: (value: string | null) => void,
   setConnectionState: (value: ConnectionState) => void,
+  profile?: { displayName: string; avatarUrl: string | null },
 ) {
   setError(null);
   const result = await fetchLiveKitToken(channelId);
@@ -60,14 +67,42 @@ async function connectVoice(
   }
   await instance.connect(result.data.url, result.data.token);
   await instance.startAudio();
+  if (profile) {
+    await instance.localParticipant.setName(profile.displayName);
+    await instance.localParticipant.setMetadata(
+      JSON.stringify({ avatarUrl: profile.avatarUrl }),
+    );
+  }
   try {
-    await instance.localParticipant.setMicrophoneEnabled(!readMicMuted());
+    const enableMic = !readMicMuted();
+    if (enableMic) {
+      try {
+        await instance.localParticipant.setMicrophoneEnabled(true, {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          voiceIsolation: true,
+          channelCount: 1,
+        });
+      } catch {
+        await instance.localParticipant.setMicrophoneEnabled(true, {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        });
+      }
+    } else {
+      await instance.localParticipant.setMicrophoneEnabled(false);
+    }
   } catch {
     setError("Microfone indisponível. Você ainda pode ouvir a sala.");
   }
 }
 
-export function useRoom(channelId: ChannelId | null) {
+export function useRoom(
+  channelId: ChannelId | null,
+  profile?: { displayName: string; avatarUrl: string | null },
+) {
   const roomRef = useRef<Room | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
   const [connectionState, setConnectionState] = useState(ConnectionState.Disconnected);
@@ -98,14 +133,19 @@ export function useRoom(channelId: ChannelId | null) {
     instance.on(RoomEvent.ConnectionStateChanged, onState);
     instance.on(RoomEvent.TrackSubscribed, onTrackSubscribed);
     instance.on(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
-    void connectVoice(instance, channelId, () => cancelled, setError, setConnectionState).catch(
-      (err: unknown) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Falha ao conectar.");
-          setConnectionState(ConnectionState.Disconnected);
-        }
-      },
-    );
+    void connectVoice(
+      instance,
+      channelId,
+      () => cancelled,
+      setError,
+      setConnectionState,
+      profile,
+    ).catch((err: unknown) => {
+      if (!cancelled) {
+        setError(err instanceof Error ? err.message : "Falha ao conectar.");
+        setConnectionState(ConnectionState.Disconnected);
+      }
+    });
     return () => {
       cancelled = true;
       instance.off(RoomEvent.ConnectionStateChanged, onState);
@@ -116,7 +156,7 @@ export function useRoom(channelId: ChannelId | null) {
         roomRef.current = null;
       }
     };
-  }, [channelId, leave]);
+  }, [channelId, leave, profile?.avatarUrl, profile?.displayName]);
 
   return {
     room,

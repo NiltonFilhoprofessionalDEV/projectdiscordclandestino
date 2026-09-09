@@ -13,6 +13,7 @@ export type ParticipantView = {
   isLocal: boolean;
   isSpeaking: boolean;
   micOn: boolean;
+  avatarUrl: string | null;
   cameraPublication: TrackPublication | null;
   screenPublication: TrackPublication | null;
 };
@@ -33,6 +34,19 @@ function publicationOf(participant: Participant, source: Track.Source) {
   return pub;
 }
 
+function readAvatar(participant: Participant): string | null {
+  try {
+    const raw = participant.metadata;
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw) as { avatarUrl?: unknown };
+    return typeof parsed.avatarUrl === "string" && parsed.avatarUrl ? parsed.avatarUrl : null;
+  } catch {
+    return null;
+  }
+}
+
 function toView(participant: Participant, isLocal: boolean): ParticipantView {
   return {
     identity: participant.identity,
@@ -40,6 +54,7 @@ function toView(participant: Participant, isLocal: boolean): ParticipantView {
     isLocal,
     isSpeaking: participant.isSpeaking,
     micOn: participant.isMicrophoneEnabled,
+    avatarUrl: readAvatar(participant),
     cameraPublication: publicationOf(participant, Track.Source.Camera),
     screenPublication: publicationOf(participant, Track.Source.ScreenShare),
   };

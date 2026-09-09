@@ -1,4 +1,6 @@
 import type { CommunitySummary } from "../../../../shared/api.ts";
+import type { Channel } from "../../../../shared/api.ts";
+import type { ParticipantView } from "../../hooks/useParticipants.ts";
 import { ChannelSidebar } from "../channels/ChannelSidebar.tsx";
 import { CommunityRail } from "../communities/CommunityRail.tsx";
 import { canManageCommunity } from "../../communities/roles.ts";
@@ -16,6 +18,11 @@ type HomeNavProps = {
   channels: ReturnType<typeof useChannels>;
   dialogs: ReturnType<typeof useHomeDialogState>;
   displayName: string;
+  avatarUrl: string | null;
+  accountTitle: string;
+  onSignOut: () => void;
+  onEditChannel: (channel: Channel) => void;
+  voiceParticipants: ParticipantView[];
 };
 
 function HomeRail({
@@ -23,13 +30,15 @@ function HomeRail({
   nav,
   dialogs,
   displayName,
-}: Pick<HomeNavProps, "communities" | "nav" | "dialogs" | "displayName">) {
+  avatarUrl,
+}: Pick<HomeNavProps, "communities" | "nav" | "dialogs" | "displayName" | "avatarUrl">) {
   return (
     <CommunityRail
       communities={communities.communities}
       selectedId={communities.selectedId}
       exploring={nav.surface === "explore"}
       displayName={displayName}
+      avatarUrl={avatarUrl}
       voiceActive={nav.activeVoiceChannelId !== null}
       onExplore={nav.explore}
       onSelect={(id) => nav.openCommunity(id, communities.select)}
@@ -45,7 +54,13 @@ function HomeSidebar({
   member,
   channels,
   dialogs,
-}: Omit<HomeNavProps, "displayName" | "communities">) {
+  displayName,
+  avatarUrl,
+  accountTitle,
+  onSignOut,
+  onEditChannel,
+  voiceParticipants,
+}: Omit<HomeNavProps, "communities">) {
   return (
     <ChannelSidebar
       community={selectedCommunity}
@@ -54,14 +69,20 @@ function HomeSidebar({
       voice={channels.voice}
       activeTextChannelId={nav.activeTextChannelId}
       activeVoiceChannelId={nav.activeVoiceChannelId}
+      voiceParticipants={voiceParticipants}
       canManage={canManageCommunity(selectedCommunity?.role ?? null)}
       status={channels.status}
       error={channels.error}
       onSelectText={nav.selectText}
       onSelectVoice={nav.selectVoice}
       onCreate={dialogs.openCreateChannel}
+      onEdit={onEditChannel}
       onRetry={() => void channels.retry()}
       createRef={dialogs.createChannelRef}
+      displayName={displayName}
+      avatarUrl={avatarUrl}
+      accountTitle={accountTitle}
+      onSignOut={onSignOut}
     />
   );
 }

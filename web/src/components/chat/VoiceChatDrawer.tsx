@@ -77,11 +77,11 @@ function VoiceChatFrame({
   onToggle: () => void;
 }) {
   return (
-    <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-end">
+    <div className="pointer-events-none absolute inset-y-0 right-0 z-10 flex max-w-full items-stretch justify-end">
       <div
         className={cn(
-          "pointer-events-auto flex max-h-full flex-col",
-          open ? "h-full w-full md:w-80" : "p-3",
+          "pointer-events-auto flex max-h-full flex-col border-l border-haze/10 bg-night/95 backdrop-blur-md",
+          open ? "h-full w-full md:w-80" : "h-auto self-end p-3",
         )}
       >
         <div className="flex items-center gap-2 p-3">

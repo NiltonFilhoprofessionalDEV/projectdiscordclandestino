@@ -7,6 +7,7 @@ import { HomeWorkspace } from "../components/shell/HomeWorkspace.tsx";
 import { isMemberShell } from "../communities/roles.ts";
 import { useChannels } from "../hooks/useChannels.ts";
 import { useCommunities } from "../hooks/useCommunities.ts";
+import { useFriends } from "../hooks/useFriends.ts";
 import { useHomeDialogState } from "../hooks/useHomeDialogState.ts";
 import { useHomeNavigation } from "../hooks/useHomeNavigation.ts";
 import { useHomeVoice } from "../hooks/useHomeVoice.ts";
@@ -28,14 +29,19 @@ export function Home({ user, profile }: HomeProps) {
   const memberCommunityId = member ? communities.selectedId : null;
   const channels = useChannels(memberCommunityId);
   const members = useMembers(memberCommunityId);
-  const session = useHomeVoice(nav.activeVoiceChannelId, profile.display_name);
+  const voiceChannel = channels.voice.find((item) => item.id === nav.activeVoiceChannelId) ?? null;
+  const session = useHomeVoice(
+    nav.activeVoiceChannelId,
+    profile.display_name,
+    profile.avatar_url,
+  );
+  const friends = useFriends(
+    user.id,
+    voiceChannel ? `Em voz: ${voiceChannel.name}` : null,
+  );
   const dialogs = useHomeDialogState();
   const [query, setQuery] = useState("");
-  const companionChannelId = companionChatChannelId(
-    "voice",
-    null,
-    channels.voice.find((item) => item.id === nav.activeVoiceChannelId) ?? null,
-  );
+  const companionChannelId = companionChatChannelId("voice", null, voiceChannel);
   useSyncActiveTextChannel(channels.status, channels.text, nav.activeTextChannelId, nav.setActiveTextChannelId);
 
   return (
@@ -48,6 +54,7 @@ export function Home({ user, profile }: HomeProps) {
       member={member}
       channels={channels}
       members={members}
+      friends={friends}
       session={session}
       dialogs={dialogs}
       query={query}

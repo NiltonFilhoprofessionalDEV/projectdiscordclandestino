@@ -1,9 +1,9 @@
+import { useEffect, useRef, useState } from "react";
 import { ConnectionState } from "livekit-client";
-import { Headphones } from "lucide-react";
+import { Maximize2, Volume2, VolumeX } from "lucide-react";
 import type { ParticipantView } from "../../hooks/useParticipants.ts";
-import { MediaTile } from "../participants/MediaTile.tsx";
-import { ParticipantList } from "../participants/ParticipantList.tsx";
-import { VideoGrid } from "../participants/VideoGrid.tsx";
+import { setScreenShareAudioOutput } from "../../services/livekit.ts";
+import { ParticipantTile } from "../participants/ParticipantTile.tsx";
 
 type VoiceStageProps = {
   error: string | null;
@@ -12,41 +12,91 @@ type VoiceStageProps = {
   screen: ParticipantView | null | undefined;
 };
 
-export function VoiceStage({ error, connectionState, participants, screen }: VoiceStageProps) {
-  const hasCamera = participants.some((participant) => participant.cameraPublication);
+function ScreenShareStage({ screen }: { screen: ParticipantView }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(false);
+  const publication = screen.screenPublication!;
 
+  useEffect(() => {
+    const el = ref.current;
+    const track = publication.track;
+    if (!el || !track) {
+      return;
+    }
+    track.attach(el);
+    el.muted = Boolean(screen.isLocal);
+    el.playsInline = true;
+    el.autoplay = true;
+    void el.play().catch(() => undefined);
+    return () => {
+      track.detach(el);
+    };
+  }, [publication, publication.track, screen.isLocal]);
+
+  useEffect(() => {
+    setScreenShareAudioOutput(volume, muted);
+  }, [muted, volume]);
+
+  return (
+    <div className="mb-4">
+      <p className="mb-2 text-sm text-electric">{screen.name} está compartilhando a tela</p>
+      <figure className="surface-raised relative overflow-hidden rounded-[1.5rem]">
+        <video
+          ref={ref}
+          className="h-full max-h-[55vh] w-full object-contain bg-black"
+          autoPlay
+          playsInline
+          muted={screen.isLocal}
+        />
+        <button
+          type="button"
+          className="glass-bar absolute top-3 right-3 rounded-md p-2 text-cloud hover:bg-white/15"
+          aria-label="Abrir em tela cheia"
+          onClick={() => void ref.current?.requestFullscreen()}
+        >
+          <Maximize2 className="size-4" />
+        </button>
+        {!screen.isLocal ? (
+          <div className="glass-bar absolute right-3 bottom-3 flex items-center gap-2 rounded-lg px-3 py-2">
+            <button
+              type="button"
+              onClick={() => setMuted((current) => !current)}
+              aria-label={muted ? "Ativar áudio da transmissão" : "Mutar transmissão"}
+            >
+              {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
+            </button>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round(volume * 100)}
+              onChange={(event) => setVolume(Number(event.target.value) / 100)}
+              aria-label="Volume da transmissão"
+              className="w-28 accent-electric"
+            />
+          </div>
+        ) : null}
+        <figcaption className="glass-bar absolute bottom-3 left-3 rounded-lg px-3 py-1.5 text-xs text-cloud">
+          {screen.name}
+        </figcaption>
+      </figure>
+    </div>
+  );
+}
+
+export function VoiceStage({ error, connectionState, participants, screen }: VoiceStageProps) {
   return (
     <>
       {error ? <p className="mb-3 text-sm text-coral">{error}</p> : null}
       {connectionState === ConnectionState.Connected && participants.length === 0 ? (
         <p className="text-haze">Ninguém mais por aqui ainda.</p>
       ) : null}
-      {screen?.screenPublication ? (
-        <div className="mb-4">
-          <p className="mb-2 text-sm text-electric">{screen.name} está compartilhando a tela</p>
-          <MediaTile
-            publication={screen.screenPublication}
-            label={screen.name}
-            large
-            muteElement={screen.isLocal}
-          />
-        </div>
-      ) : null}
-      {connectionState === ConnectionState.Connected && !hasCamera ? (
-        <div className="surface-raised flex min-h-72 flex-col items-center justify-center rounded-[1.5rem] px-6 text-center">
-          <span className="flex size-16 items-center justify-center rounded-2xl bg-electric/14 text-electric ring-1 ring-electric/25">
-            <Headphones className="size-7" />
-          </span>
-          <h2 className="mt-5 font-display text-2xl text-cloud">A conversa está acontecendo</h2>
-          <p className="mt-2 max-w-sm text-sm leading-relaxed text-haze">
-            Ligue a câmera quando quiser. Sua voz já está conectada ao canal.
-          </p>
-        </div>
-      ) : null}
-      <VideoGrid participants={participants} />
-      <div className="mt-6 xl:hidden">
-        <h2 className="mb-2 text-xs font-semibold tracking-wide text-haze uppercase">Participantes</h2>
-        <ParticipantList participants={participants} />
+      {screen?.screenPublication ? <ScreenShareStage screen={screen} /> : null}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {participants.map((participant) => (
+          <ParticipantTile key={participant.identity} participant={participant} />
+        ))}
       </div>
     </>
   );

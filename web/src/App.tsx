@@ -3,8 +3,19 @@ import { useAuth } from "./auth/useAuth.ts";
 import { Button } from "./components/ui/button.tsx";
 import { Home } from "./pages/Home.tsx";
 import { AuthPage } from "./pages/AuthPage.tsx";
+import { supabaseConfigError } from "./services/supabase.ts";
 
 export function App() {
+  if (supabaseConfigError) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center bg-night px-5">
+        <p className="max-w-lg text-center text-coral" role="alert">
+          {supabaseConfigError}
+        </p>
+      </main>
+    );
+  }
+
   return (
     <AuthProvider>
       <AppGate />

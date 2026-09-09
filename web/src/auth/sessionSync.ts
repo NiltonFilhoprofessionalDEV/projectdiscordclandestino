@@ -23,6 +23,26 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
   return data;
 }
 
+function avatarFromUser(user: User): string | null {
+  const meta = user.user_metadata ?? {};
+  const value = meta.avatar_url ?? meta.picture;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+async function syncAvatar(user: User, profile: Profile): Promise<Profile> {
+  const avatarUrl = avatarFromUser(user);
+  if (!avatarUrl || profile.avatar_url === avatarUrl) {
+    return profile;
+  }
+  const { data } = await supabase
+    .from("profiles")
+    .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
+    .eq("id", user.id)
+    .select("id, display_name, avatar_url, created_at, updated_at")
+    .maybeSingle();
+  return data ?? { ...profile, avatar_url: avatarUrl };
+}
+
 export async function applySession(next: Session | null, sink: SessionSink) {
   if (sink.isCancelled()) {
     return;
@@ -34,13 +54,17 @@ export async function applySession(next: Session | null, sink: SessionSink) {
     sink.setError(null);
     return;
   }
-  const nextProfile = await fetchProfile(next.user.id);
+  const loaded = await fetchProfile(next.user.id);
   if (sink.isCancelled()) {
     return;
   }
-  if (!nextProfile) {
+  if (!loaded) {
     sink.setProfile(null);
     sink.setError("Não foi possível carregar seu perfil.");
+    return;
+  }
+  const nextProfile = await syncAvatar(next.user, loaded);
+  if (sink.isCancelled()) {
     return;
   }
   sink.setProfile(nextProfile);

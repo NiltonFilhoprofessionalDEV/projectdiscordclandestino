@@ -2,9 +2,11 @@ import type { User } from "@supabase/supabase-js";
 import type { CommunitySummary } from "../../../../shared/api.ts";
 import type { ChannelId } from "../../../../shared/community.ts";
 import type { Profile } from "../../auth/AuthProvider.tsx";
+import { FriendsPanel } from "../friends/FriendsPanel.tsx";
 import { MemberPanel } from "../members/MemberPanel.tsx";
 import type { useChannels } from "../../hooks/useChannels.ts";
 import type { useCommunities } from "../../hooks/useCommunities.ts";
+import type { useFriends } from "../../hooks/useFriends.ts";
 import type { useHomeDialogState } from "../../hooks/useHomeDialogState.ts";
 import type { useHomeNavigation } from "../../hooks/useHomeNavigation.ts";
 import type { useHomeVoice } from "../../hooks/useHomeVoice.ts";
@@ -22,6 +24,7 @@ type HomeWorkspaceProps = {
   member: boolean;
   channels: ReturnType<typeof useChannels>;
   members: ReturnType<typeof useMembers>;
+  friends: ReturnType<typeof useFriends>;
   session: ReturnType<typeof useHomeVoice>;
   dialogs: ReturnType<typeof useHomeDialogState>;
   query: string;
@@ -41,16 +44,27 @@ function HomeGrid(props: HomeWorkspaceProps) {
         channels={props.channels}
         dialogs={props.dialogs}
         displayName={props.profile.display_name}
+        avatarUrl={props.profile.avatar_url}
+        accountTitle={props.user.email ?? props.profile.display_name}
+        onSignOut={props.onSignOut}
+        onEditChannel={props.dialogs.openEditChannel}
+        voiceParticipants={props.session.participants}
       />
       <HomeMain {...props} />
-      <MemberPanel
-        members={props.members.members}
-        status={props.members.status}
-        error={props.members.error}
-        participants={props.session.participants}
-        voiceActive={props.nav.activeVoiceChannelId !== null}
-        onRetry={() => void props.members.retry()}
-      />
+      <aside className="surface hidden h-full w-72 shrink-0 flex-col overflow-y-auto border-y-0 border-r-0 xl:flex">
+        <FriendsPanel friends={props.friends} />
+        <div className="border-t border-haze/10 p-5">
+          <MemberPanel
+            members={props.members.members}
+            status={props.members.status}
+            error={props.members.error}
+            participants={props.session.participants}
+            voiceActive={props.nav.activeVoiceChannelId !== null}
+            onRetry={() => void props.members.retry()}
+            embedded
+          />
+        </div>
+      </aside>
     </div>
   );
 }
@@ -67,12 +81,15 @@ function HomeDialogHost({
       createCommunityOpen={dialogs.createCommunityOpen}
       createChannelOpen={dialogs.createChannelOpen}
       settingsOpen={dialogs.settingsOpen}
+      editingChannel={dialogs.editingChannel}
       room={session.voice.room}
       onCloseCommunity={dialogs.closeCommunity}
       onCloseChannel={dialogs.closeChannel}
       onCloseSettings={dialogs.closeSettings}
+      onCloseEditChannel={dialogs.closeEditChannel}
       onCreateCommunity={communities.create}
       onCreateChannel={channels.create}
+      onUpdateChannel={channels.update}
       onCreatedCommunity={(community) => nav.openCommunity(community.id, communities.select)}
       onCreatedChannel={nav.createdChannel}
     />

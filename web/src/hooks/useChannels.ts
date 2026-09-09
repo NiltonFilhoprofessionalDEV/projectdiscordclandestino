@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Channel, CreateChannelInput } from "../../../shared/api.ts";
-import type { CommunityId } from "../../../shared/community.ts";
+import type { Channel, CreateChannelInput, UpdateChannelInput } from "../../../shared/api.ts";
+import type { ChannelId, CommunityId } from "../../../shared/community.ts";
 import { groupChannels } from "../channels/groups.ts";
 import { createRequestGuard } from "../lib/requestGuard.ts";
-import { createChannel, fetchCommunityChannels } from "../services/api.ts";
+import { createChannel, fetchCommunityChannels, updateChannel } from "../services/api.ts";
 import { beginCommunityResourceLoad } from "./communityResource.ts";
 import type { LoadStatus } from "./useCommunities.ts";
 
@@ -63,6 +63,16 @@ export function useChannels(communityId: CommunityId | null) {
     (input: CreateChannelInput) => createCommunityChannel(communityId, input, reload),
     [communityId, reload],
   );
+  const update = useCallback(
+    async (channelId: ChannelId, input: UpdateChannelInput) => {
+      const result = await updateChannel(channelId, input);
+      if (result.ok) {
+        await reload();
+      }
+      return result;
+    },
+    [reload],
+  );
 
-  return { ...grouped, status, error, create, retry: reload };
+  return { ...grouped, status, error, create, update, retry: reload };
 }

@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { ScreenSharePresets, VideoPresets, type Room } from "livekit-client";
 import { toast } from "sonner";
-import { writeMicMuted } from "../lib/storage.ts";
+import {
+  readVoiceActivityOn,
+  writeMicMuted,
+  writeVoiceActivityOn,
+} from "../lib/storage.ts";
+import { useVoiceActivityGate } from "./useVoiceActivityGate.ts";
 
 const CAMERA_OPTIONS = [
   { facingMode: "user" as const, resolution: VideoPresets.h360.resolution },
@@ -9,6 +14,14 @@ const CAMERA_OPTIONS = [
   { facingMode: "user" as const },
   {},
 ];
+
+const MIC_CAPTURE = {
+  echoCancellation: true,
+  noiseSuppression: true,
+  autoGainControl: true,
+  voiceIsolation: true,
+  channelCount: 1,
+} as const;
 
 function cameraErrorMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error ?? "");
@@ -41,10 +54,23 @@ async function enableCamera(room: Room) {
   throw lastError;
 }
 
+async function enableMicrophone(room: Room) {
+  try {
+    await room.localParticipant.setMicrophoneEnabled(true, MIC_CAPTURE);
+  } catch {
+    await room.localParticipant.setMicrophoneEnabled(true, {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+    });
+  }
+}
+
 export function useMedia(room: Room | null, findScreenOwner: () => string | null) {
   const [micOn, setMicOn] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
   const [screenOn, setScreenOn] = useState(false);
+  const [voiceActivityOn, setVoiceActivityOn] = useState(readVoiceActivityOn);
 
   useEffect(() => {
     if (!room) {
@@ -65,19 +91,33 @@ export function useMedia(room: Room | null, findScreenOwner: () => string | null
     return () => window.clearInterval(id);
   }, [room]);
 
+  useVoiceActivityGate(room, micOn, voiceActivityOn);
+
   const toggleMic = useCallback(async () => {
     if (!room) {
       return;
     }
     const next = !room.localParticipant.isMicrophoneEnabled;
     try {
-      await room.localParticipant.setMicrophoneEnabled(next);
+      if (next) {
+        await enableMicrophone(room);
+      } else {
+        await room.localParticipant.setMicrophoneEnabled(false);
+      }
       writeMicMuted(!next);
       setMicOn(next);
     } catch {
       toast.error("Não foi possível usar o microfone.");
     }
   }, [room]);
+
+  const toggleVoiceActivity = useCallback(() => {
+    setVoiceActivityOn((current) => {
+      const next = !current;
+      writeVoiceActivityOn(next);
+      return next;
+    });
+  }, []);
 
   const toggleCamera = useCallback(async () => {
     if (!room) {
@@ -132,5 +172,14 @@ export function useMedia(room: Room | null, findScreenOwner: () => string | null
     }
   }, [findScreenOwner, room]);
 
-  return { micOn, cameraOn, screenOn, toggleMic, toggleCamera, toggleScreen };
+  return {
+    micOn,
+    cameraOn,
+    screenOn,
+    voiceActivityOn,
+    toggleMic,
+    toggleVoiceActivity,
+    toggleCamera,
+    toggleScreen,
+  };
 }
