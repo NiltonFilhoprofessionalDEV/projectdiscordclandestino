@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import type { Profile } from "../auth/AuthProvider.tsx";
 import { useAuth } from "../auth/useAuth.ts";
+import { companionChatChannelId } from "../chat/channel.ts";
 import { HomeWorkspace } from "../components/shell/HomeWorkspace.tsx";
 import { isMemberShell } from "../communities/roles.ts";
 import { useChannels } from "../hooks/useChannels.ts";
@@ -30,6 +31,11 @@ export function Home({ user, profile }: HomeProps) {
   const session = useHomeVoice(nav.activeVoiceChannelId, profile.display_name);
   const dialogs = useHomeDialogState();
   const [query, setQuery] = useState("");
+  const companionChannelId = companionChatChannelId(
+    "voice",
+    null,
+    channels.voice.find((item) => item.id === nav.activeVoiceChannelId) ?? null,
+  );
   useSyncActiveTextChannel(channels.status, channels.text, nav.activeTextChannelId, nav.setActiveTextChannelId);
 
   return (
@@ -46,6 +52,7 @@ export function Home({ user, profile }: HomeProps) {
       dialogs={dialogs}
       query={query}
       onQuery={setQuery}
+      companionChannelId={companionChannelId}
       onSignOut={() => void signOut()}
     />
   );

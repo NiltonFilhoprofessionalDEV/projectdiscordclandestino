@@ -1,5 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import type { CommunitySummary } from "../../../../shared/api.ts";
+import type { ChannelId } from "../../../../shared/community.ts";
 import type { Profile } from "../../auth/AuthProvider.tsx";
 import { MemberPanel } from "../members/MemberPanel.tsx";
 import type { useChannels } from "../../hooks/useChannels.ts";
@@ -25,6 +26,7 @@ type HomeWorkspaceProps = {
   dialogs: ReturnType<typeof useHomeDialogState>;
   query: string;
   onQuery: (value: string) => void;
+  companionChannelId: ChannelId | null;
   onSignOut: () => void;
 };
 

@@ -1,5 +1,4 @@
 import type { ChannelId } from "../../../shared/community.ts";
-import { useChat } from "./useChat.ts";
 import { useConnectionQuality } from "./useConnectionQuality.ts";
 import { useMedia } from "./useMedia.ts";
 import { useParticipants } from "./useParticipants.ts";
@@ -13,7 +12,6 @@ export function useHomeVoice(channelId: ChannelId | null, displayName: string) {
       : participant,
   );
   const media = useMedia(voice.room, voice.findScreenOwner);
-  const chat = useChat(voice.room, displayName);
   const { quality, rttMs } = useConnectionQuality(voice.room);
-  return { voice, participants, media, chat, quality, rttMs };
+  return { voice, participants, media, quality, rttMs };
 }
