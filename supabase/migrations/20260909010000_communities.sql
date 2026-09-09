@@ -75,6 +75,160 @@ create index messages_channel_cursor_idx
 create index invites_community_id_idx
   on public.invites(community_id);
 
+create function public.enforce_message_immutable_fields()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.channel_id is distinct from old.channel_id
+     or new.author_id is distinct from old.author_id
+     or new.client_nonce is distinct from old.client_nonce then
+    raise exception 'Message channel_id, author_id, and client_nonce are immutable'
+      using errcode = '23514';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger enforce_message_immutable_fields
+  before update on public.messages
+  for each row execute function public.enforce_message_immutable_fields();
+
+create function public.enforce_voice_companion_invariant()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  current_channel public.channels;
+begin
+  select *
+  into current_channel
+  from public.channels
+  where id = new.id;
+
+  if not found then
+    return new;
+  end if;
+
+  if current_channel.type = 'voice'
+     and not exists (
+       select 1
+       from public.channels companion
+       where companion.id = current_channel.companion_text_channel_id
+         and companion.type = 'text'
+         and companion.community_id = current_channel.community_id
+     ) then
+    raise exception 'Voice channel requires a companion text channel in the same community'
+      using errcode = '23514';
+  end if;
+
+  if exists (
+    select 1
+    from public.channels voice
+    where voice.companion_text_channel_id = current_channel.id
+      and (
+        current_channel.type <> 'text'
+        or current_channel.community_id <> voice.community_id
+      )
+  ) then
+    raise exception 'Voice channel requires a companion text channel in the same community'
+      using errcode = '23514';
+  end if;
+
+  return new;
+end;
+$$;
+
+create constraint trigger enforce_voice_companion_invariant
+  after insert or update on public.channels
+  deferrable initially deferred
+  for each row execute function public.enforce_voice_companion_invariant();
+
+create function public.enforce_community_owner_invariant()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  target_community_id uuid;
+  owner_count bigint;
+  aligned_owner_count bigint;
+begin
+  if tg_table_name = 'communities' then
+    target_community_id := case when tg_op = 'DELETE' then old.id else new.id end;
+  else
+    if tg_op = 'UPDATE'
+       and old.community_id is distinct from new.community_id
+       and exists (
+         select 1 from public.communities where id = old.community_id
+       )
+       and not exists (
+         select 1
+         from public.communities
+         join public.community_members members
+           on members.community_id = communities.id
+         where communities.id = old.community_id
+           and members.role = 'owner'
+           and members.user_id = communities.owner_id
+       ) then
+      raise exception 'Community must have exactly one owner aligned with owner_id'
+        using errcode = '23514';
+    end if;
+
+    target_community_id := case
+      when tg_op = 'DELETE' then old.community_id
+      else new.community_id
+    end;
+  end if;
+
+  if not exists (
+    select 1 from public.communities where id = target_community_id
+  ) then
+    if tg_op = 'DELETE' then
+      return old;
+    end if;
+    return new;
+  end if;
+
+  select
+    count(*) filter (where members.role = 'owner'),
+    count(*) filter (
+      where members.role = 'owner'
+        and members.user_id = communities.owner_id
+    )
+  into owner_count, aligned_owner_count
+  from public.communities
+  left join public.community_members members
+    on members.community_id = communities.id
+  where communities.id = target_community_id
+  group by communities.owner_id;
+
+  if owner_count <> 1 or aligned_owner_count <> 1 then
+    raise exception 'Community must have exactly one owner aligned with owner_id'
+      using errcode = '23514';
+  end if;
+
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+  return new;
+end;
+$$;
+
+create constraint trigger enforce_community_owner_from_community
+  after insert or update or delete on public.communities
+  deferrable initially deferred
+  for each row execute function public.enforce_community_owner_invariant();
+
+create constraint trigger enforce_community_owner_from_membership
+  after insert or update or delete on public.community_members
+  deferrable initially deferred
+  for each row execute function public.enforce_community_owner_invariant();
+
 create function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -369,11 +523,12 @@ create policy "authors or managers update messages"
   )
   with check (
     author_id = (select auth.uid())
-    or exists (
+    and exists (
       select 1
       from public.channels
       where channels.id = messages.channel_id
-        and public.can_manage_community(channels.community_id)
+        and channels.type = 'text'
+        and public.is_community_member(channels.community_id)
     )
   );
 
@@ -414,6 +569,9 @@ create policy "managers delete invites"
   using (public.can_manage_community(community_id));
 
 revoke all on function public.handle_new_user() from public;
+revoke all on function public.enforce_message_immutable_fields() from public;
+revoke all on function public.enforce_voice_companion_invariant() from public;
+revoke all on function public.enforce_community_owner_invariant() from public;
 revoke all on function public.create_community(text, text, public.community_visibility) from public;
 revoke all on function public.accept_invite(text) from public;
 revoke all on function public.is_community_member(uuid) from public;

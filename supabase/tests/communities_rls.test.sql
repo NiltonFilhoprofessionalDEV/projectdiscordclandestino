@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(33);
+select plan(46);
 
 select has_type('public', 'community_visibility', 'community_visibility enum exists');
 select has_type('public', 'community_role', 'community_role enum exists');
@@ -69,9 +69,54 @@ values
   );
 
 select is(
-  (select count(*) from public.profiles),
+  (
+    select count(*)
+    from public.profiles
+    where id in (
+      '00000000-0000-0000-0000-000000000001',
+      '00000000-0000-0000-0000-000000000002'
+    )
+  ),
   2::bigint,
   'profile trigger creates both profiles'
+);
+
+select is(
+  (
+    select count(*)
+    from public.communities
+    where name = 'Salas'
+      and slug = 'salas'
+      and visibility = 'public'
+  ),
+  1::bigint,
+  'local seed creates the public Salas community'
+);
+
+select is(
+  (
+    select count(*)
+    from public.community_members
+    join public.communities
+      on communities.id = community_members.community_id
+    where communities.slug = 'salas'
+      and community_members.role = 'owner'
+      and community_members.user_id = communities.owner_id
+  ),
+  1::bigint,
+  'seeded Salas community has one aligned owner'
+);
+
+select is(
+  (
+    select count(*)
+    from public.channels
+    join public.communities
+      on communities.id = channels.community_id
+    where communities.slug = 'salas'
+  ),
+  3::bigint,
+  'seeded Salas community has three default channels'
 );
 
 set local role authenticated;
@@ -127,7 +172,7 @@ select set_config('request.jwt.claim.sub', '', true);
 
 select results_eq(
   $$select slug from public.communities order by slug$$,
-  $$values ('public-community'::text)$$,
+  $$values ('public-community'::text), ('salas'::text)$$,
   'anonymous reads only public communities'
 );
 
@@ -240,6 +285,58 @@ select results_eq(
   $$,
   $$values (1::bigint)$$,
   'member posts to a text channel'
+);
+
+select throws_ok(
+  $$
+    update public.messages
+    set channel_id = (
+      select channels.id
+      from public.channels
+      join test_context on test_context.value = channels.community_id
+      where test_context.key = 'private'
+        and channels.type = 'voice'
+    )
+    where client_nonce = '10000000-0000-0000-0000-000000000002'
+  $$,
+  '23514',
+  'Message channel_id, author_id, and client_nonce are immutable',
+  'member cannot move a message to a voice channel'
+);
+
+update public.messages
+set channel_id = (
+  select channels.id
+  from public.channels
+  join test_context on test_context.value = channels.community_id
+  where test_context.key = 'private'
+    and channels.type = 'text'
+    and channels.name = 'geral'
+)
+where client_nonce = '10000000-0000-0000-0000-000000000002';
+
+select throws_ok(
+  $$
+    update public.messages
+    set client_nonce = '10000000-0000-0000-0000-000000000099'
+    where client_nonce = '10000000-0000-0000-0000-000000000002'
+  $$,
+  '23514',
+  'Message channel_id, author_id, and client_nonce are immutable',
+  'member cannot change a message client nonce'
+);
+
+update public.messages
+set client_nonce = '10000000-0000-0000-0000-000000000002'
+where client_nonce = '10000000-0000-0000-0000-000000000099';
+
+select lives_ok(
+  $$
+    update public.messages
+    set content = 'Edited by author', edited_at = now()
+    where client_nonce = '10000000-0000-0000-0000-000000000002'
+  $$,
+  'author can edit mutable message fields'
 );
 
 select throws_ok(
@@ -373,6 +470,28 @@ select lives_ok(
   'admin creates channels'
 );
 
+select throws_ok(
+  $$
+    update public.messages
+    set author_id = '00000000-0000-0000-0000-000000000001'
+    where client_nonce = '10000000-0000-0000-0000-000000000002'
+  $$,
+  '23514',
+  'Message channel_id, author_id, and client_nonce are immutable',
+  'admin cannot change a message author'
+);
+
+select throws_ok(
+  $$
+    update public.messages
+    set content = 'Rewritten by admin'
+    where client_nonce = '10000000-0000-0000-0000-000000000001'
+  $$,
+  '42501',
+  'new row violates row-level security policy for table "messages"',
+  'admin cannot rewrite another author message'
+);
+
 select results_eq(
   $$
     with changed as (
@@ -409,6 +528,117 @@ select results_eq(
   $$,
   $$values (1::bigint)$$,
   'owner can manage member roles'
+);
+
+reset role;
+set constraints all immediate;
+
+select throws_ok(
+  $$
+    insert into public.channels (
+      community_id,
+      name,
+      type,
+      position,
+      created_by
+    )
+    select
+      value,
+      'invalid-voice',
+      'voice',
+      50,
+      '00000000-0000-0000-0000-000000000001'
+    from test_context
+    where key = 'private'
+  $$,
+  '23514',
+  'Voice channel requires a companion text channel in the same community',
+  'voice channel requires a companion'
+);
+
+select throws_ok(
+  $$
+    insert into public.channels (
+      community_id,
+      name,
+      type,
+      position,
+      companion_text_channel_id,
+      created_by
+    )
+    select
+      private_context.value,
+      'cross-community-voice',
+      'voice',
+      51,
+      public_channel.id,
+      '00000000-0000-0000-0000-000000000001'
+    from test_context private_context
+    cross join public.channels public_channel
+    join test_context public_context
+      on public_context.value = public_channel.community_id
+    where private_context.key = 'private'
+      and public_context.key = 'public'
+      and public_channel.type = 'text'
+      and public_channel.name = 'geral'
+  $$,
+  '23514',
+  'Voice channel requires a companion text channel in the same community',
+  'voice companion must belong to the same community'
+);
+
+select throws_ok(
+  $$
+    insert into public.channels (
+      community_id,
+      name,
+      type,
+      position,
+      companion_text_channel_id,
+      created_by
+    )
+    select
+      value,
+      'voice-as-companion',
+      'voice',
+      52,
+      (
+        select id
+        from public.channels
+        where community_id = test_context.value
+          and type = 'voice'
+      ),
+      '00000000-0000-0000-0000-000000000001'
+    from test_context
+    where key = 'private'
+  $$,
+  '23514',
+  'Voice channel requires a companion text channel in the same community',
+  'voice companion must be a text channel'
+);
+
+select throws_ok(
+  $$
+    delete from public.community_members
+    using public.communities
+    where communities.id = community_members.community_id
+      and communities.slug = 'salas'
+      and community_members.role = 'owner'
+  $$,
+  '23514',
+  'Community must have exactly one owner aligned with owner_id',
+  'community owner membership cannot be removed'
+);
+
+select throws_ok(
+  $$
+    update public.communities
+    set owner_id = '00000000-0000-0000-0000-000000000002'
+    where id = (select value from test_context where key = 'public')
+  $$,
+  '23514',
+  'Community must have exactly one owner aligned with owner_id',
+  'community owner_id must match its owner membership'
 );
 
 select * from finish();
