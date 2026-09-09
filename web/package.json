@@ -38,9 +38,11 @@
     "node": ">=22"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.3",
     "@types/node": "^24.3.1",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
+    "happy-dom": "^20.14.0",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   }
