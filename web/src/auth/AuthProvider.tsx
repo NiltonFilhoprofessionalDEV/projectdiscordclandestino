@@ -20,6 +20,10 @@ export type AuthContextValue = {
   loading: boolean;
   error: string | null;
   signOut: () => Promise<void>;
+  updateProfile: (input: {
+    displayName: string;
+    avatarUrl: string | null;
+  }) => Promise<string | null>;
 };
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -70,9 +74,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
     await supabase.auth.signOut();
   }, []);
 
+  const updateProfile = useCallback(
+    async (input: { displayName: string; avatarUrl: string | null }) => {
+      if (!user) {
+        return "Sessão inválida.";
+      }
+      const { data, error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          display_name: input.displayName,
+          avatar_url: input.avatarUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id)
+        .select("id, display_name, avatar_url, created_at, updated_at")
+        .maybeSingle();
+      if (updateError || !data) {
+        return "Não foi possível salvar o perfil.";
+      }
+      setProfile((current) => (current ? { ...current, ...data } : data));
+      return null;
+    },
+    [user],
+  );
+
   const value = useMemo(
-    () => ({ session, user, profile, loading, error, signOut }),
-    [session, user, profile, loading, error, signOut],
+    () => ({ session, user, profile, loading, error, signOut, updateProfile }),
+    [session, user, profile, loading, error, signOut, updateProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

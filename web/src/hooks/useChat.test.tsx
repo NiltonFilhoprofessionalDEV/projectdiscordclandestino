@@ -18,6 +18,7 @@ const auth = vi.hoisted(() => ({
   loading: false,
   error: null,
   signOut: async () => undefined,
+  updateProfile: async () => null,
 }));
 
 const fetchMessagePage = vi.hoisted(() => vi.fn());

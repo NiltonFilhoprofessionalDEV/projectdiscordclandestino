@@ -84,6 +84,7 @@ function HomeSidebar({
       avatarUrl={avatarUrl}
       accountTitle={accountTitle}
       onSignOut={onSignOut}
+      onOpenProfile={dialogs.openProfile}
     />
   );
 }

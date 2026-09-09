@@ -30,8 +30,12 @@ function avatarFromUser(user: User): string | null {
 }
 
 async function syncAvatar(user: User, profile: Profile): Promise<Profile> {
+  // Don't overwrite a custom/uploaded avatar with the Google picture.
+  if (profile.avatar_url) {
+    return profile;
+  }
   const avatarUrl = avatarFromUser(user);
-  if (!avatarUrl || profile.avatar_url === avatarUrl) {
+  if (!avatarUrl) {
     return profile;
   }
   const { data } = await supabase

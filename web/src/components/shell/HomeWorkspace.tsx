@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import type { CommunitySummary } from "../../../../shared/api.ts";
 import type { ChannelId } from "../../../../shared/community.ts";
+import { useAuth } from "../../auth/useAuth.ts";
 import type { Profile } from "../../auth/AuthProvider.tsx";
 import { canManageCommunity } from "../../communities/roles.ts";
 import { FriendsPanel } from "../friends/FriendsPanel.tsx";
@@ -81,6 +82,8 @@ function HomeGrid(props: HomeWorkspaceProps) {
 }
 
 function HomeDialogHost({
+  user,
+  profile,
   communities,
   nav,
   channels,
@@ -89,26 +92,39 @@ function HomeDialogHost({
   selectedCommunity,
 }: Pick<
   HomeWorkspaceProps,
-  "communities" | "nav" | "channels" | "session" | "dialogs" | "selectedCommunity"
+  | "user"
+  | "profile"
+  | "communities"
+  | "nav"
+  | "channels"
+  | "session"
+  | "dialogs"
+  | "selectedCommunity"
 >) {
+  const { updateProfile } = useAuth();
   return (
     <HomeDialogs
       createCommunityOpen={dialogs.createCommunityOpen}
       createChannelOpen={dialogs.createChannelOpen}
       inviteOpen={dialogs.inviteOpen}
+      profileOpen={dialogs.profileOpen}
       settingsOpen={dialogs.settingsOpen}
       editingChannel={dialogs.editingChannel}
       inviteCommunityId={selectedCommunity?.id ?? null}
       inviteCommunityName={selectedCommunity?.name ?? "comunidade"}
+      userId={user.id}
+      profile={profile}
       room={session.voice.room}
       onCloseCommunity={dialogs.closeCommunity}
       onCloseChannel={dialogs.closeChannel}
       onCloseInvite={dialogs.closeInvite}
+      onCloseProfile={dialogs.closeProfile}
       onCloseSettings={dialogs.closeSettings}
       onCloseEditChannel={dialogs.closeEditChannel}
       onCreateCommunity={communities.create}
       onCreateChannel={channels.create}
       onUpdateChannel={channels.update}
+      onSaveProfile={updateProfile}
       onCreatedCommunity={(community) => nav.openCommunity(community.id, communities.select)}
       onCreatedChannel={nav.createdChannel}
     />

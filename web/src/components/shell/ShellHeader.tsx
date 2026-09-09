@@ -57,11 +57,13 @@ export function UserFooterBar({
   avatarUrl,
   accountTitle,
   onSignOut,
+  onOpenProfile,
 }: {
   displayName: string;
   avatarUrl: string | null;
   accountTitle: string;
   onSignOut: () => void;
+  onOpenProfile?: () => void;
 }) {
   const initials = displayName
     .trim()
@@ -73,15 +75,23 @@ export function UserFooterBar({
 
   return (
     <div className="flex items-center gap-2 border-t border-haze/10 bg-abyss/80 px-3 py-2">
-      <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-deck text-[11px] font-semibold text-cloud ring-1 ring-haze/15">
-        {avatarUrl ? <img src={avatarUrl} alt="" className="size-full object-cover" /> : initials}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-cloud" title={accountTitle}>
-          {displayName}
-        </p>
-        <p className="truncate text-[11px] text-haze">Online</p>
-      </div>
+      <button
+        type="button"
+        className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-1 py-1 text-left transition hover:bg-white/5"
+        onClick={onOpenProfile}
+        aria-label="Editar perfil"
+        title="Editar perfil"
+      >
+        <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-deck text-[11px] font-semibold text-cloud ring-1 ring-haze/15">
+          {avatarUrl ? <img src={avatarUrl} alt="" className="size-full object-cover" /> : initials}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium text-cloud" title={accountTitle}>
+            {displayName}
+          </span>
+          <span className="block truncate text-[11px] text-haze">Editar perfil</span>
+        </span>
+      </button>
       <Button
         type="button"
         size="icon"

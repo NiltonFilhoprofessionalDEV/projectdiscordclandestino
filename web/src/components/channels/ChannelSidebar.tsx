@@ -30,6 +30,7 @@ type ChannelSidebarProps = {
   avatarUrl: string | null;
   accountTitle: string;
   onSignOut: () => void;
+  onOpenProfile: () => void;
 };
 
 function VoiceMemberRow({ participant }: { participant: ParticipantView }) {
@@ -216,6 +217,7 @@ export function ChannelSidebar({
   avatarUrl,
   accountTitle,
   onSignOut,
+  onOpenProfile,
 }: ChannelSidebarProps) {
   let body: ReactNode;
   if (!community) {
@@ -290,6 +292,7 @@ export function ChannelSidebar({
         avatarUrl={avatarUrl}
         accountTitle={accountTitle}
         onSignOut={onSignOut}
+        onOpenProfile={onOpenProfile}
       />
     </aside>
   );
