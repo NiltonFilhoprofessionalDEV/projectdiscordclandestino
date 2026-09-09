@@ -69,6 +69,8 @@ function snapshot(room: Room): ParticipantView[] {
   ];
 }
 
+const SPEAKING_POLL_MS = 120;
+
 export function useParticipants(room: Room | null): ParticipantView[] {
   const [participants, setParticipants] = useState<ParticipantView[]>([]);
 
@@ -103,8 +105,11 @@ export function useParticipants(room: Room | null): ParticipantView[] {
 
     const handler = () => refresh();
     events.forEach((event) => room.on(event, handler as never));
+    // Poll leve: isSpeaking muda com frequência e ActiveSpeakersChanged às vezes atrasa.
+    const pollId = window.setInterval(refresh, SPEAKING_POLL_MS);
     return () => {
       events.forEach((event) => room.off(event, handler as never));
+      window.clearInterval(pollId);
     };
   }, [room, refresh]);
 
@@ -114,4 +119,3 @@ export function useParticipants(room: Room | null): ParticipantView[] {
 export function activeScreenShare(participants: ParticipantView[]): ParticipantView | null {
   return participants.find((participant) => participant.screenPublication) ?? null;
 }
-

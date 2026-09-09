@@ -9,6 +9,7 @@ const summary = (role: CommunitySummary["role"]): CommunitySummary => ({
   slug: "salas",
   visibility: "public",
   role,
+  avatarUrl: null,
 });
 
 describe("canManageCommunity", () => {

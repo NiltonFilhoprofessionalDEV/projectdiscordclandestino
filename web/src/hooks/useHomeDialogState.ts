@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
-import type { Channel } from "../../../shared/api.ts";
+import type { Channel, CommunitySummary } from "../../../shared/api.ts";
+import type { ChannelId } from "../../../shared/community.ts";
 import { isDisplayed, pickFocusTarget } from "../lib/focusRestore.ts";
 
 export function useHomeDialogState() {
@@ -9,6 +10,9 @@ export function useHomeDialogState() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
+  const [editingCommunity, setEditingCommunity] = useState<CommunitySummary | null>(null);
+  const [pendingVoiceChannelId, setPendingVoiceChannelId] = useState<ChannelId | null>(null);
+  const [screenShareOpen, setScreenShareOpen] = useState(false);
   const createCommunityRef = useRef<HTMLButtonElement>(null);
   const createChannelRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLButtonElement>(null);
@@ -36,6 +40,9 @@ export function useHomeDialogState() {
     inviteOpen,
     profileOpen,
     editingChannel,
+    editingCommunity,
+    pendingVoiceChannelId,
+    screenShareOpen,
     createCommunityRef,
     createChannelRef,
     menuRef,
@@ -45,6 +52,9 @@ export function useHomeDialogState() {
     openInvite: () => setInviteOpen(true),
     openProfile: () => setProfileOpen(true),
     openEditChannel: (channel: Channel) => setEditingChannel(channel),
+    openEditCommunity: (community: CommunitySummary) => setEditingCommunity(community),
+    openSwitchVoice: (id: ChannelId) => setPendingVoiceChannelId(id),
+    openScreenShare: () => setScreenShareOpen(true),
     closeSettings: () => setSettingsOpen(false),
     closeCommunity: () => {
       setCreateCommunityOpen(false);
@@ -57,5 +67,8 @@ export function useHomeDialogState() {
     closeInvite: () => setInviteOpen(false),
     closeProfile: () => setProfileOpen(false),
     closeEditChannel: () => setEditingChannel(null),
+    closeEditCommunity: () => setEditingCommunity(null),
+    closeSwitchVoice: () => setPendingVoiceChannelId(null),
+    closeScreenShare: () => setScreenShareOpen(false),
   };
 }

@@ -3,6 +3,7 @@ import type { ApiResult, Channel, CreateChannelInput } from "../../../../shared/
 import { parseChannelName } from "../../../../shared/community.ts";
 import { Button } from "../ui/button.tsx";
 import { Input } from "../ui/input.tsx";
+import { Radio } from "../ui/radio.tsx";
 import { AppDialog } from "../shell/AppDialog.tsx";
 
 type CreateChannelDialogProps = {
@@ -49,11 +50,11 @@ function ChannelTypeFields({
     <fieldset className="mt-5">
       <legend className="text-sm font-medium text-haze">Tipo</legend>
       <label className="mt-3 flex min-h-11 items-center gap-3 text-sm text-cloud">
-        <input type="radio" name="channel-type" checked={type === "text"} onChange={() => onType("text")} />
+        <Radio name="channel-type" checked={type === "text"} onChange={() => onType("text")} />
         Texto
       </label>
       <label className="flex min-h-11 items-center gap-3 text-sm text-cloud">
-        <input type="radio" name="channel-type" checked={type === "voice"} onChange={() => onType("voice")} />
+        <Radio name="channel-type" checked={type === "voice"} onChange={() => onType("voice")} />
         Voz
       </label>
     </fieldset>
@@ -104,10 +105,10 @@ function ChannelCreateForm({
         </p>
       ) : null}
       <div className="mt-6 flex justify-end gap-2">
-        <Button type="button" onClick={onClose}>
+        <Button type="button" variant="ghost" onClick={onClose}>
           Cancelar
         </Button>
-        <Button type="submit" variant="solid" disabled={pending}>
+        <Button type="submit" variant="primary" disabled={pending}>
           Criar
         </Button>
       </div>

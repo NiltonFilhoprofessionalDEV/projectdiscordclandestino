@@ -12,18 +12,23 @@ export function useHomeVoice(
   channelId: ChannelId | null,
   displayName: string,
   avatarUrl: string | null = null,
+  avatarByIdentity: Record<string, string | null> = {},
 ) {
   const voice = useRoom(channelId, { displayName, avatarUrl });
-  const participants = useParticipants(voice.room).map((participant) =>
-    participant.isLocal
-      ? {
-          ...participant,
-          name: participant.name || displayName,
-          avatarUrl: participant.avatarUrl || avatarUrl,
-        }
-      : participant,
-  );
   const media = useMedia(voice.room, voice.findScreenOwner);
+  const participants = useParticipants(voice.room).map((participant) => {
+    const fromProfile = avatarByIdentity[participant.identity] ?? null;
+    const resolvedAvatar =
+      participant.avatarUrl || (participant.isLocal ? avatarUrl : null) || fromProfile;
+    const speaking =
+      participant.isSpeaking || (participant.isLocal && media.localSpeaking);
+    return {
+      ...participant,
+      name: participant.isLocal ? participant.name || displayName : participant.name,
+      avatarUrl: resolvedAvatar,
+      isSpeaking: speaking,
+    };
+  });
   const { quality, rttMs } = useConnectionQuality(voice.room);
   const [outputVolume, setOutputVolume] = useState(1);
   const [outputMuted, setOutputMuted] = useState(false);

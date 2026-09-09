@@ -8,7 +8,7 @@ export function centerSurfaceLabel(input: {
   voiceChannel: Channel | undefined;
 }): string {
   if (input.surface === "explore") {
-    return "Explore";
+    return "Explorar";
   }
   if (input.surface === "preview") {
     return "Não membro";

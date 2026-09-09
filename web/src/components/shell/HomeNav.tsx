@@ -1,5 +1,6 @@
 import type { CommunitySummary } from "../../../../shared/api.ts";
 import type { Channel } from "../../../../shared/api.ts";
+import type { ChannelId } from "../../../../shared/community.ts";
 import type { ParticipantView } from "../../hooks/useParticipants.ts";
 import { ChannelSidebar } from "../channels/ChannelSidebar.tsx";
 import { CommunityRail } from "../communities/CommunityRail.tsx";
@@ -9,6 +10,7 @@ import type { useCommunities } from "../../hooks/useCommunities.ts";
 import type { useHomeDialogState } from "../../hooks/useHomeDialogState.ts";
 import type { useHomeNavigation } from "../../hooks/useHomeNavigation.ts";
 import type { VoiceOccupant } from "../../services/api.ts";
+import { needsVoiceSwitchConfirm } from "../../voice/switch.ts";
 import { ShellNavColumns } from "./ShellNavColumns.tsx";
 
 type HomeNavProps = {
@@ -31,16 +33,12 @@ function HomeRail({
   communities,
   nav,
   dialogs,
-  displayName,
-  avatarUrl,
-}: Pick<HomeNavProps, "communities" | "nav" | "dialogs" | "displayName" | "avatarUrl">) {
+}: Pick<HomeNavProps, "communities" | "nav" | "dialogs">) {
   return (
     <CommunityRail
       communities={communities.communities}
       selectedId={communities.selectedId}
       exploring={nav.surface === "explore"}
-      displayName={displayName}
-      avatarUrl={avatarUrl}
       voiceActive={nav.activeVoiceChannelId !== null}
       onExplore={nav.explore}
       onSelect={(id) => nav.openCommunity(id, communities.select)}
@@ -78,10 +76,21 @@ function HomeSidebar({
       status={channels.status}
       error={channels.error}
       onSelectText={nav.selectText}
-      onSelectVoice={nav.selectVoice}
+      onSelectVoice={(id: ChannelId) => {
+        if (needsVoiceSwitchConfirm(nav.activeVoiceChannelId, id)) {
+          dialogs.openSwitchVoice(id);
+          return;
+        }
+        nav.selectVoice(id);
+      }}
       onCreate={dialogs.openCreateChannel}
       onInvite={dialogs.openInvite}
       onEdit={onEditChannel}
+      onEditCommunity={
+        selectedCommunity?.role === "owner"
+          ? () => dialogs.openEditCommunity(selectedCommunity)
+          : undefined
+      }
       onRetry={() => void channels.retry()}
       createRef={dialogs.createChannelRef}
       displayName={displayName}
@@ -89,6 +98,7 @@ function HomeSidebar({
       accountTitle={accountTitle}
       onSignOut={onSignOut}
       onOpenProfile={dialogs.openProfile}
+      onOpenSettings={dialogs.openSettings}
     />
   );
 }

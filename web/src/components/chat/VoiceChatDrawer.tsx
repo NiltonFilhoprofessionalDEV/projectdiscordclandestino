@@ -8,11 +8,17 @@ import { useChat } from "../../hooks/useChat.ts";
 import { playMessageSound } from "../../lib/sounds.ts";
 import { readVoiceChatOpen, writeVoiceChatOpen } from "../../lib/storage.ts";
 import { cn } from "../../lib/utils.ts";
-import { Button } from "../ui/button.tsx";
+import { IconButton } from "../ui/button.tsx";
+import { Icon } from "../ui/icon.tsx";
+import { Tooltip } from "../ui/tooltip.tsx";
 import { ChatPanel } from "./ChatPanel.tsx";
 
 const PANEL_ID = "voice-chat-panel";
 const HEADING_ID = "voice-chat-heading";
+
+/** Espaço da barra de controles + faixa nativa do Chrome ao transmitir. */
+const CONTROLS_CLEARANCE =
+  "bottom-[calc(5.25rem+var(--chrome-share-inset,0px)+env(safe-area-inset-bottom,0px))] sm:bottom-[calc(5.75rem+var(--chrome-share-inset,0px))]";
 
 function useVoiceChatUnseen(
   channelId: ChannelId | null,
@@ -86,7 +92,7 @@ function UnseenBadge({ unseen }: { unseen: number }) {
   }
   return (
     <span
-      className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-coral text-[10px] font-bold text-white ring-2 ring-night"
+      className="absolute -top-1 -right-1 control-badge size-4 min-h-4 bg-coral px-0 text-[10px] font-bold text-white ring-2 ring-night"
       aria-hidden
     >
       {unseen > 9 ? "9+" : unseen}
@@ -129,48 +135,52 @@ function VoiceChatFrame({
       {open ? (
         <div
           id={PANEL_ID}
-          className="pointer-events-auto absolute inset-y-3 right-3 flex w-[min(100%-1.5rem,22rem)] flex-col overflow-hidden rounded-2xl border border-haze/15 bg-night/95 shadow-[0_18px_50px_rgba(0,0,0,0.45)] backdrop-blur-md"
+          className={cn(
+            "pointer-events-auto absolute inset-x-2 flex max-h-[min(62dvh,28rem)] w-auto flex-col overflow-hidden rounded-[18px] border border-white/[0.08] bg-[#12131D]/96 shadow-[0_20px_50px_rgba(0,0,0,0.55)] backdrop-blur-md md:inset-x-auto md:top-3 md:right-3 md:max-h-none md:w-[min(100%-1.5rem,22rem)]",
+            CONTROLS_CLEARANCE,
+          )}
         >
-          <header className="flex items-center gap-2 border-b border-haze/10 px-3 py-2.5">
+          <header className="flex shrink-0 items-center gap-2 border-b border-white/[0.07] px-3 py-2.5">
             <h2
               id={HEADING_ID}
               ref={headingRef}
               tabIndex={-1}
-              className="min-w-0 flex-1 truncate font-display text-base text-cloud outline-none"
+              className="min-w-0 flex-1 truncate font-display text-base font-bold text-cloud outline-none"
             >
               Chat
             </h2>
-            <Button
+            <IconButton
               type="button"
-              size="icon"
+              size="iconSm"
               variant="ghost"
-              className="size-8 shrink-0"
+              className="shrink-0"
               aria-label="Fechar chat"
               onClick={onClose}
             >
-              <X className="size-4" />
-            </Button>
+              <Icon icon={X} size="action" />
+            </IconButton>
           </header>
-          <div className="flex min-h-0 flex-1 flex-col">
-            <ChatPanel chat={chat} embedded />
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <ChatPanel chat={chat} embedded showWelcome={false} />
           </div>
         </div>
       ) : (
-        <div className="pointer-events-auto absolute right-4 bottom-4">
-          <Button
-            ref={triggerRef}
-            type="button"
-            variant="live"
-            size="icon"
-            className={cn("relative size-12 rounded-full shadow-lg")}
-            aria-expanded={false}
-            aria-controls={PANEL_ID}
-            aria-label={unseen > 0 ? `Abrir chat, ${unseen} mensagens novas` : "Abrir chat"}
-            onClick={onOpen}
-          >
-            <MessageCircle className="size-5" />
-            <UnseenBadge unseen={unseen} />
-          </Button>
+        <div className={cn("pointer-events-auto absolute right-3", CONTROLS_CLEARANCE)}>
+          <Tooltip label="Abrir chat">
+            <IconButton
+              ref={triggerRef}
+              type="button"
+              variant="send"
+              className="relative mb-1 size-12 rounded-[14px]"
+              aria-expanded={false}
+              aria-controls={PANEL_ID}
+              aria-label={unseen > 0 ? `Abrir chat, ${unseen} mensagens novas` : "Abrir chat"}
+              onClick={onOpen}
+            >
+              <Icon icon={MessageCircle} />
+              <UnseenBadge unseen={unseen} />
+            </IconButton>
+          </Tooltip>
         </div>
       )}
     </div>

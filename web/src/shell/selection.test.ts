@@ -29,7 +29,7 @@ describe("centerSurfaceLabel", () => {
         textChannel: text,
         voiceChannel: voice,
       }),
-    ).toBe("Explore");
+    ).toBe("Explorar");
   });
 
   it("names the selected text channel while voice can remain connected", () => {

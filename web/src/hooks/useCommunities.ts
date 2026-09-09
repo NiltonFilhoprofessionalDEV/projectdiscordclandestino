@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CommunitySummary, CreateCommunityInput } from "../../../shared/api.ts";
+import type {
+  CommunitySummary,
+  CreateCommunityInput,
+  UpdateCommunityInput,
+} from "../../../shared/api.ts";
 import type { CommunityId } from "../../../shared/community.ts";
 import { createRequestGuard } from "../lib/requestGuard.ts";
-import { createCommunity, fetchCommunities } from "../services/api.ts";
+import { createCommunity, fetchCommunities, updateCommunity } from "../services/api.ts";
 
 export type LoadStatus = "idle" | "loading" | "ready" | "error";
 
@@ -51,5 +55,16 @@ export function useCommunities() {
     [reload],
   );
 
-  return { communities, selectedId, select, create, status, error, retry: reload };
+  const update = useCallback(
+    async (communityId: CommunityId, input: UpdateCommunityInput) => {
+      const result = await updateCommunity(communityId, input);
+      if (result.ok) {
+        await reload();
+      }
+      return result;
+    },
+    [reload],
+  );
+
+  return { communities, selectedId, select, create, update, status, error, retry: reload };
 }

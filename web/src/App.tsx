@@ -1,6 +1,7 @@
 import { AuthProvider } from "./auth/AuthProvider.tsx";
 import { useAuth } from "./auth/useAuth.ts";
 import { Button } from "./components/ui/button.tsx";
+import { Loading } from "./components/ui/loading.tsx";
 import { captureInviteFromLocation } from "./invites/path.ts";
 import { Home } from "./pages/Home.tsx";
 import { AuthPage } from "./pages/AuthPage.tsx";
@@ -32,7 +33,7 @@ function AppGate() {
   if (loading) {
     return (
       <main className="flex min-h-dvh items-center justify-center bg-night px-5">
-        <p className="text-haze">Carregando sessão…</p>
+        <Loading label="Carregando sessão…" />
       </main>
     );
   }
@@ -43,7 +44,7 @@ function AppGate() {
         <p className="text-coral" role="alert">
           {error}
         </p>
-        <Button type="button" variant="solid" onClick={() => void signOut()}>
+        <Button type="button" variant="primary" onClick={() => void signOut()}>
           Sair
         </Button>
       </main>

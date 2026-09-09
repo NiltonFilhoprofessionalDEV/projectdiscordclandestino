@@ -3,9 +3,10 @@ import type {
   CommunitySummary,
   VoiceAccess,
   ApiResult,
+  CreateCommunityInput,
+  UpdateCommunityInput,
 } from "../../../shared/api.ts";
 import type { ChannelId, CommunityId } from "../../../shared/community.ts";
-import type { CreateCommunityInput } from "../../../shared/api.ts";
 import type { DbClient } from "./client.ts";
 import { fail, mapRepositoryError } from "./errors.ts";
 import { deriveCommunitySlug, mapCommunity } from "./mappers.ts";
@@ -17,7 +18,7 @@ export async function listCommunities(
   const [{ data: communities, error }, { data: memberships, error: membershipError }] =
     await Promise.all(
       [
-        client.from("communities").select("id, name, slug, visibility").order("name"),
+        client.from("communities").select("id, name, slug, visibility, avatar_url").order("name"),
         client
           .from("community_members")
           .select("community_id, role")
@@ -41,8 +42,45 @@ export async function listCommunities(
       slug: row.slug,
       visibility: row.visibility,
       role: roleByCommunity.get(row.id) ?? null,
+      avatarUrl: row.avatar_url ?? null,
     })),
   };
+}
+
+export async function updateCommunity(
+  client: DbClient,
+  communityId: string,
+  input: UpdateCommunityInput,
+): Promise<ApiResult<Community>> {
+  const patch: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+  if (input.name !== undefined) {
+    patch.name = input.name;
+    patch.slug = deriveCommunitySlug(input.name);
+  }
+  if (input.visibility !== undefined) {
+    patch.visibility = input.visibility;
+  }
+  if (input.avatarUrl !== undefined) {
+    patch.avatar_url = input.avatarUrl;
+  }
+  const { data, error } = await client
+    .from("communities")
+    .update(patch)
+    .eq("id", communityId)
+    .select("*")
+    .maybeSingle();
+  if (error) {
+    if (error.code === "23505") {
+      return fail("CONFLICT", "Já existe uma comunidade com esse nome.");
+    }
+    return mapRepositoryError(error);
+  }
+  if (!data) {
+    return fail("FORBIDDEN", "Sem permissão para editar esta comunidade.");
+  }
+  return { ok: true, data: mapCommunity(data) };
 }
 
 export async function createCommunity(

@@ -4,6 +4,7 @@ import { createInvite } from "../../services/api.ts";
 import { inviteUrl } from "../../invites/path.ts";
 import { Button } from "../ui/button.tsx";
 import { Input } from "../ui/input.tsx";
+import { Loading } from "../ui/loading.tsx";
 import { AppDialog } from "../shell/AppDialog.tsx";
 
 type InviteDialogProps = {
@@ -70,7 +71,7 @@ export function InviteDialog({
       onClose={onClose}
     >
       <div className="mt-5 space-y-3">
-        {pending ? <p className="text-sm text-haze">Gerando link…</p> : null}
+        {pending ? <Loading label="Gerando link…" /> : null}
         {error ? (
           <p className="text-sm text-coral" role="alert">
             {error}
@@ -86,7 +87,7 @@ export function InviteDialog({
               <Button type="button" variant="ghost" onClick={onClose}>
                 Fechar
               </Button>
-              <Button type="button" variant="solid" onClick={() => void copyLink()}>
+              <Button type="button" variant="primary" onClick={() => void copyLink()}>
                 {copied ? "Copiado" : "Copiar link"}
               </Button>
             </div>
@@ -94,7 +95,7 @@ export function InviteDialog({
         ) : null}
         {!pending && !link && error ? (
           <div className="flex justify-end pt-2">
-            <Button type="button" onClick={onClose}>
+            <Button type="button" variant="secondary" onClick={onClose}>
               Fechar
             </Button>
           </div>

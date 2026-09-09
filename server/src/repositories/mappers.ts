@@ -23,6 +23,7 @@ export function mapCommunity(row: CommunityRow): Community {
     name: row.name,
     slug: row.slug,
     visibility: row.visibility,
+    avatarUrl: row.avatar_url ?? null,
     createdAt: row.created_at,
   };
 }

@@ -8,6 +8,7 @@ import type {
   CreateInviteInput,
   CreatedInvite,
   UpdateChannelInput,
+  UpdateCommunityInput,
   VoiceAccess,
   ApiResult,
 } from "../../../shared/api.ts";
@@ -20,6 +21,7 @@ import {
   getCommunity as loadCommunity,
   listCommunities as queryCommunities,
   listMemberVoiceChannels as queryMemberVoiceChannels,
+  updateCommunity as patchCommunity,
 } from "./communityQueries.ts";
 import {
   createChannel as insertCommunityChannel,
@@ -41,6 +43,11 @@ export type CommunityRepository = {
   getCommunity(
     userId: string,
     communityId: string,
+  ): Promise<ApiResult<Community>>;
+  updateCommunity(
+    userId: string,
+    communityId: string,
+    input: UpdateCommunityInput,
   ): Promise<ApiResult<Community>>;
   createChannel(
     userId: string,
@@ -96,6 +103,8 @@ export function createCommunityRepository(client: DbClient): CommunityRepository
       wrap("createCommunity", () => insertCommunity(client, input)),
     getCommunity: (_userId, communityId) =>
       wrap("getCommunity", () => loadCommunity(client, communityId)),
+    updateCommunity: (_userId, communityId, input) =>
+      wrap("updateCommunity", () => patchCommunity(client, communityId, input)),
     createChannel: (userId, communityId, input) =>
       wrap("createChannel", () =>
         insertCommunityChannel(client, userId, communityId, input),

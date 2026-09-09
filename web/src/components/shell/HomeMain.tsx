@@ -33,6 +33,7 @@ type HomeMainProps = {
   onQuery: (value: string) => void;
   companionChannelId: ChannelId | null;
   onSignOut: () => void;
+  onOpenPeople: () => void;
 };
 
 function chooseCommunity(
@@ -47,27 +48,77 @@ function chooseCommunity(
   nav.previewCommunity(community.id, select);
 }
 
-function HomeTextChat({ channelId }: { channelId: ChannelId | null }) {
+function HomeTextChat({
+  channelId,
+  channelName,
+}: {
+  channelId: ChannelId | null;
+  channelName: string;
+}) {
   const chat = useChat(channelId);
-  return <ChatPanel chat={chat} />;
+  return <ChatPanel chat={chat} title={channelName} embedded showWelcome />;
 }
 
 function HomeVoicePane({
   session,
   companionChannelId,
+  dialogs,
+  onLeaveVoice,
 }: {
   session: ReturnType<typeof useHomeVoice>;
   companionChannelId: ChannelId | null;
+  dialogs: ReturnType<typeof useHomeDialogState>;
+  onLeaveVoice: () => void;
 }) {
+  const screen = activeScreenShare(session.participants);
+  const sharing = Boolean(screen?.screenPublication);
+  const localSharing = session.media.screenOn;
   return (
-    <div className="relative flex min-h-0 flex-1 overflow-hidden">
-      <div className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
+    <div
+      className="relative flex min-h-0 flex-1 overflow-hidden bg-night"
+      style={{
+        ["--chrome-share-inset" as string]: localSharing ? "4rem" : "0px",
+      }}
+    >
+      <div
+        className={cn(
+          "min-h-0 flex-1 px-3 pt-3 pb-[calc(7.5rem+var(--chrome-share-inset,0px))] sm:px-4 sm:pt-4 sm:pb-[calc(7rem+var(--chrome-share-inset,0px))] lg:px-6 lg:pt-6",
+          sharing ? "flex flex-col overflow-hidden" : "overflow-y-auto",
+        )}
+      >
         <VoiceStage
           error={session.voice.error}
           connectionState={session.voice.connectionState}
           participants={session.participants}
-          screen={activeScreenShare(session.participants)}
+          screen={screen}
         />
+      </div>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-center px-2 pb-[max(0.5rem,calc(var(--chrome-share-inset,0px)+env(safe-area-inset-bottom)))] sm:px-3 sm:pb-[calc(1rem+var(--chrome-share-inset,0px))]">
+        <div className="pointer-events-auto w-full max-w-lg sm:w-auto">
+          <ControlBar
+            micOn={session.media.micOn}
+            voiceActivityOn={session.media.voiceActivityOn}
+            cameraOn={session.media.cameraOn}
+            screenOn={session.media.screenOn}
+            canScreenShare={Boolean(navigator.mediaDevices?.getDisplayMedia)}
+            onToggleMic={() => void session.media.toggleMic()}
+            onToggleVoiceActivity={session.media.toggleVoiceActivity}
+            onToggleCamera={() => void session.media.toggleCamera()}
+            onToggleScreen={() => {
+              if (session.media.screenOn) {
+                dialogs.openScreenShare();
+                return;
+              }
+              void session.media.startScreen();
+            }}
+            onSettings={dialogs.openSettings}
+            onLeave={onLeaveVoice}
+            outputVolume={session.outputVolume}
+            outputMuted={session.outputMuted}
+            onOutputVolume={session.setOutputVolume}
+            onToggleOutputMute={() => session.setOutputMuted((current) => !current)}
+          />
+        </div>
       </div>
       <VoiceChatDrawer channelId={companionChannelId} />
     </div>
@@ -82,9 +133,19 @@ function HomeCenter({
   query,
   onQuery,
   companionChannelId,
+  channels,
+  dialogs,
 }: Pick<
   HomeMainProps,
-  "communities" | "nav" | "selectedCommunity" | "session" | "query" | "onQuery" | "companionChannelId"
+  | "communities"
+  | "nav"
+  | "selectedCommunity"
+  | "session"
+  | "query"
+  | "onQuery"
+  | "companionChannelId"
+  | "channels"
+  | "dialogs"
 >) {
   const padded = nav.surface === "explore" || nav.surface === "preview";
   return (
@@ -106,11 +167,29 @@ function HomeCenter({
         />
       ) : null}
       {nav.surface === "preview" ? (
-        <GuestCommunityView name={selectedCommunity?.name ?? "Comunidade"} />
+        <GuestCommunityView
+          name={selectedCommunity?.name ?? "Comunidade"}
+          avatarUrl={selectedCommunity?.avatarUrl}
+        />
       ) : null}
-      {nav.surface === "text" ? <HomeTextChat channelId={nav.activeTextChannelId} /> : null}
+      {nav.surface === "text" ? (
+        <HomeTextChat
+          channelId={nav.activeTextChannelId}
+          channelName={
+            channels.text.find((item) => item.id === nav.activeTextChannelId)?.name ?? "geral"
+          }
+        />
+      ) : null}
       {nav.surface === "voice" ? (
-        <HomeVoicePane session={session} companionChannelId={companionChannelId} />
+        <HomeVoicePane
+          session={session}
+          companionChannelId={companionChannelId}
+          dialogs={dialogs}
+          onLeaveVoice={() => {
+            void session.voice.leave();
+            nav.leaveVoice();
+          }}
+        />
       ) : null}
     </main>
   );
@@ -122,6 +201,7 @@ function HomeShellHeader({
   channels,
   session,
   dialogs,
+  onOpenPeople,
 }: Omit<HomeMainProps, "communities" | "query" | "onQuery" | "companionChannelId" | "user" | "profile" | "onSignOut">) {
   return (
     <ShellHeader
@@ -136,49 +216,17 @@ function HomeShellHeader({
       quality={session.quality}
       rttMs={session.rttMs}
       onOpenSidebar={() => nav.setSidebarOpen(true)}
+      onOpenPeople={onOpenPeople}
       menuRef={dialogs.menuRef}
-    />
-  );
-}
-
-function HomeCallBar({
-  nav,
-  session,
-  dialogs,
-}: Pick<HomeMainProps, "nav" | "session" | "dialogs">) {
-  if (!nav.activeVoiceChannelId) {
-    return null;
-  }
-  return (
-    <ControlBar
-      micOn={session.media.micOn}
-      voiceActivityOn={session.media.voiceActivityOn}
-      cameraOn={session.media.cameraOn}
-      screenOn={session.media.screenOn}
-      canScreenShare={Boolean(navigator.mediaDevices?.getDisplayMedia)}
-      onToggleMic={() => void session.media.toggleMic()}
-      onToggleVoiceActivity={session.media.toggleVoiceActivity}
-      onToggleCamera={() => void session.media.toggleCamera()}
-      onToggleScreen={() => void session.media.toggleScreen()}
-      onSettings={dialogs.openSettings}
-      onLeave={() => {
-        void session.voice.leave();
-        nav.leaveVoice();
-      }}
-      outputVolume={session.outputVolume}
-      outputMuted={session.outputMuted}
-      onOutputVolume={session.setOutputVolume}
-      onToggleOutputMute={() => session.setOutputMuted((current) => !current)}
     />
   );
 }
 
 export function HomeMain(props: HomeMainProps) {
   return (
-    <div className="flex min-w-0 flex-col">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-night">
       <HomeShellHeader {...props} />
       <HomeCenter {...props} />
-      <HomeCallBar {...props} />
     </div>
   );
 }

@@ -1,7 +1,11 @@
 import type { AuthMode } from "../../auth/authMessages.ts";
 import { Button } from "../ui/button.tsx";
 import { Input } from "../ui/input.tsx";
+import { AUTH_COPY, authScreenCopy } from "./authCopy.ts";
 import { GoogleButton } from "./GoogleButton.tsx";
+
+const AUTH_INPUT =
+  "mt-2 border-white/10 bg-[#08090f]/80 focus:border-[#a855f7]/70 focus:shadow-[0_0_24px_rgba(124,58,237,0.22)] focus:ring-[#06b6d4]/30";
 
 type AuthFormFieldsProps = {
   mode: AuthMode;
@@ -32,20 +36,23 @@ export function AuthFormFields({
   onSwitchMode,
   onGoogle,
 }: AuthFormFieldsProps) {
+  const copy = authScreenCopy(mode);
+  const fields = AUTH_COPY.fields;
+
   return (
     <>
       {mode === "signup" ? (
         <>
           <label className="block text-sm font-medium text-haze" htmlFor="display-name">
-            Como devemos chamar você?
+            {fields.nickLabel}
           </label>
           <Input
             id="display-name"
             autoComplete="nickname"
             value={displayName}
             onChange={(event) => onDisplayName(event.target.value)}
-            placeholder="Seu nome"
-            className="mt-2"
+            placeholder={fields.nickPlaceholder}
+            className={AUTH_INPUT}
           />
         </>
       ) : null}
@@ -53,7 +60,7 @@ export function AuthFormFields({
         className={`block text-sm font-medium text-haze ${mode === "signup" ? "mt-4" : ""}`}
         htmlFor="email"
       >
-        E-mail
+        {fields.emailLabel}
       </label>
       <Input
         id="email"
@@ -62,11 +69,11 @@ export function AuthFormFields({
         autoFocus
         value={email}
         onChange={(event) => onEmail(event.target.value)}
-        placeholder="voce@email.com"
-        className="mt-2"
+        placeholder={fields.emailPlaceholder}
+        className={AUTH_INPUT}
       />
       <label className="mt-4 block text-sm font-medium text-haze" htmlFor="password">
-        Senha
+        {fields.passwordLabel}
       </label>
       <Input
         id="password"
@@ -74,8 +81,8 @@ export function AuthFormFields({
         autoComplete={mode === "signup" ? "new-password" : "current-password"}
         value={password}
         onChange={(event) => onPassword(event.target.value)}
-        placeholder="Mínimo de 6 caracteres"
-        className="mt-2"
+        placeholder={fields.passwordPlaceholder}
+        className={AUTH_INPUT}
       />
       {error ? (
         <p id="auth-error" className="mt-2 text-sm text-coral" role="alert">
@@ -87,20 +94,26 @@ export function AuthFormFields({
           {notice}
         </p>
       ) : null}
-      <Button type="submit" variant="solid" size="lg" className="mt-6 w-full" disabled={pending}>
-        {mode === "signup" ? "Criar conta" : "Entrar"}
+      <Button
+        type="submit"
+        variant="primary"
+        size="lg"
+        className="mt-6 w-full shadow-[0_10px_36px_rgba(236,72,153,0.38)]"
+        disabled={pending}
+      >
+        {copy.submit}
       </Button>
       <div className="mt-3">
         <GoogleButton disabled={pending} onClick={onGoogle} />
       </div>
       <p className="mt-5 text-sm text-haze">
-        {mode === "signup" ? "Já tem conta?" : "Ainda não tem conta?"}{" "}
+        {copy.switchPrompt}{" "}
         <button
           type="button"
-          className="font-semibold text-electric hover:underline"
+          className="font-semibold text-electric transition duration-150 ease-out hover:text-[#A78BFA]"
           onClick={onSwitchMode}
         >
-          {mode === "signup" ? "Entrar" : "Criar conta"}
+          {copy.switchAction}
         </button>
       </p>
     </>

@@ -10,6 +10,7 @@ import type {
   LiveKitTokenInput,
   LiveKitTokenResponse,
   UpdateChannelInput,
+  UpdateCommunityInput,
 } from "../../../shared/api.ts";
 import type { ChannelId, CommunityId, CommunityRole } from "../../../shared/community.ts";
 import type { RoomId } from "../../../shared/rooms.ts";
@@ -24,6 +25,7 @@ export type RoomOccupancy = {
 export type CommunityMember = {
   userId: string;
   displayName: string;
+  avatarUrl: string | null;
   role: CommunityRole;
 };
 
@@ -74,6 +76,13 @@ export function createCommunity(input: CreateCommunityInput) {
   });
 }
 
+export function updateCommunity(communityId: CommunityId, input: UpdateCommunityInput) {
+  return apiRequest<Community>(`/api/communities/${communityId}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
 export function createChannel(communityId: CommunityId, input: CreateChannelInput) {
   return apiRequest<Channel>(`/api/communities/${communityId}/channels`, {
     method: "POST",
@@ -106,6 +115,7 @@ export function createInvite(communityId: CommunityId) {
 export type VoiceOccupant = {
   identity: string;
   name: string;
+  avatarUrl?: string | null;
 };
 
 export type VoiceOccupancyResponse = {
@@ -165,17 +175,21 @@ export async function fetchCommunityMembers(
 ): Promise<ApiResult<CommunityMember[]>> {
   const { data, error } = await supabase
     .from("community_members")
-    .select("user_id, role, profiles(display_name)")
+    .select("user_id, role, profiles(display_name, avatar_url)")
     .eq("community_id", communityId);
   if (error) {
     return { ok: false, error: { code: "INTERNAL", message: "Não foi possível carregar os membros." } };
   }
   const members = (data ?? []).map((row) => {
-    const profile = row.profiles as { display_name: string } | { display_name: string }[] | null;
+    const profile = row.profiles as
+      | { display_name: string; avatar_url: string | null }
+      | { display_name: string; avatar_url: string | null }[]
+      | null;
     const named = Array.isArray(profile) ? profile[0] : profile;
     return {
       userId: row.user_id,
       displayName: named?.display_name?.trim() || "Usuário",
+      avatarUrl: named?.avatar_url ?? null,
       role: row.role,
     };
   });

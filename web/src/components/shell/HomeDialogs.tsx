@@ -3,18 +3,24 @@ import type {
   ApiResult,
   Channel,
   Community,
+  CommunitySummary,
   CreateChannelInput,
   CreateCommunityInput,
   UpdateChannelInput,
+  UpdateCommunityInput,
 } from "../../../../shared/api.ts";
 import type { ChannelId, CommunityId } from "../../../../shared/community.ts";
 import type { Profile } from "../../auth/types.ts";
+import type { ScreenShareConfig } from "../../voice/screenShare.ts";
 import { CreateChannelDialog } from "../channels/CreateChannelDialog.tsx";
 import { EditChannelDialog } from "../channels/EditChannelDialog.tsx";
+import { SwitchVoiceDialog } from "../channels/SwitchVoiceDialog.tsx";
 import { CreateCommunityDialog } from "../communities/CreateCommunityDialog.tsx";
+import { EditCommunityDialog } from "../communities/EditCommunityDialog.tsx";
 import { InviteDialog } from "../invites/InviteDialog.tsx";
 import { EditProfileDialog } from "../profile/EditProfileDialog.tsx";
 import { DeviceSettings } from "../controls/DeviceSettings.tsx";
+import { ScreenShareSettings } from "../controls/ScreenShareSettings.tsx";
 
 type HomeDialogsProps = {
   createCommunityOpen: boolean;
@@ -23,6 +29,12 @@ type HomeDialogsProps = {
   profileOpen: boolean;
   settingsOpen: boolean;
   editingChannel: Channel | null;
+  editingCommunity: CommunitySummary | null;
+  pendingVoiceFromName: string;
+  pendingVoiceToName: string;
+  pendingVoiceOpen: boolean;
+  screenShareOpen: boolean;
+  screenShareConfig: ScreenShareConfig;
   inviteCommunityId: CommunityId | null;
   inviteCommunityName: string;
   userId: string;
@@ -34,12 +46,22 @@ type HomeDialogsProps = {
   onCloseProfile: () => void;
   onCloseSettings: () => void;
   onCloseEditChannel: () => void;
+  onCloseEditCommunity: () => void;
+  onCancelSwitchVoice: () => void;
+  onAcceptSwitchVoice: () => void;
+  onCloseScreenShare: () => void;
+  onChangeScreenShare: (config: ScreenShareConfig) => Promise<void> | void;
+  onStopScreenShare: () => Promise<void> | void;
   onCreateCommunity: (input: CreateCommunityInput) => Promise<ApiResult<Community>>;
   onCreateChannel: (input: CreateChannelInput) => Promise<ApiResult<Channel>>;
   onUpdateChannel: (
     channelId: ChannelId,
     input: UpdateChannelInput,
   ) => Promise<ApiResult<Channel>>;
+  onUpdateCommunity: (
+    communityId: CommunityId,
+    input: UpdateCommunityInput,
+  ) => Promise<ApiResult<Community>>;
   onSaveProfile: (input: {
     displayName: string;
     avatarUrl: string | null;
@@ -55,6 +77,12 @@ export function HomeDialogs({
   profileOpen,
   settingsOpen,
   editingChannel,
+  editingCommunity,
+  pendingVoiceFromName,
+  pendingVoiceToName,
+  pendingVoiceOpen,
+  screenShareOpen,
+  screenShareConfig,
   inviteCommunityId,
   inviteCommunityName,
   userId,
@@ -66,9 +94,16 @@ export function HomeDialogs({
   onCloseProfile,
   onCloseSettings,
   onCloseEditChannel,
+  onCloseEditCommunity,
+  onCancelSwitchVoice,
+  onAcceptSwitchVoice,
+  onCloseScreenShare,
+  onChangeScreenShare,
+  onStopScreenShare,
   onCreateCommunity,
   onCreateChannel,
   onUpdateChannel,
+  onUpdateCommunity,
   onSaveProfile,
   onCreatedCommunity,
   onCreatedChannel,
@@ -80,6 +115,11 @@ export function HomeDialogs({
         onClose={onCloseCommunity}
         onCreate={onCreateCommunity}
         onCreated={onCreatedCommunity}
+      />
+      <EditCommunityDialog
+        community={editingCommunity}
+        onClose={onCloseEditCommunity}
+        onUpdate={onUpdateCommunity}
       />
       <CreateChannelDialog
         open={createChannelOpen}
@@ -106,7 +146,21 @@ export function HomeDialogs({
         onUpdate={onUpdateChannel}
         onUpdated={() => undefined}
       />
+      <SwitchVoiceDialog
+        open={pendingVoiceOpen}
+        fromName={pendingVoiceFromName}
+        toName={pendingVoiceToName}
+        onCancel={onCancelSwitchVoice}
+        onAccept={onAcceptSwitchVoice}
+      />
       {settingsOpen && room ? <DeviceSettings room={room} onClose={onCloseSettings} /> : null}
+      <ScreenShareSettings
+        open={screenShareOpen}
+        config={screenShareConfig}
+        onClose={onCloseScreenShare}
+        onChangeWindow={onChangeScreenShare}
+        onStop={onStopScreenShare}
+      />
     </>
   );
 }

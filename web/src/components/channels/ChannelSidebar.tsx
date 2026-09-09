@@ -5,8 +5,12 @@ import type { ChannelId } from "../../../../shared/community.ts";
 import type { ParticipantView } from "../../hooks/useParticipants.ts";
 import type { LoadStatus } from "../../hooks/useCommunities.ts";
 import type { VoiceOccupant } from "../../services/api.ts";
+import communityBanner from "../../assets/community/community-header-banner.png";
 import { cn, initials } from "../../lib/utils.ts";
-import { Button } from "../ui/button.tsx";
+import { Button, IconButton } from "../ui/button.tsx";
+import { Icon } from "../ui/icon.tsx";
+import { Loading } from "../ui/loading.tsx";
+import { Tooltip } from "../ui/tooltip.tsx";
 import { UserFooterBar } from "../shell/ShellHeader.tsx";
 
 type ChannelSidebarProps = {
@@ -26,6 +30,7 @@ type ChannelSidebarProps = {
   onCreate: () => void;
   onInvite: () => void;
   onEdit: (channel: Channel) => void;
+  onEditCommunity?: () => void;
   onRetry: () => void;
   createRef: RefObject<HTMLButtonElement | null>;
   displayName: string;
@@ -33,6 +38,7 @@ type ChannelSidebarProps = {
   accountTitle: string;
   onSignOut: () => void;
   onOpenProfile: () => void;
+  onOpenSettings?: () => void;
 };
 
 type VoicePerson = {
@@ -47,18 +53,26 @@ function VoiceMemberRow({ participant }: { participant: VoicePerson }) {
   return (
     <li
       className={cn(
-        "flex min-h-8 items-center gap-2 rounded-lg px-2 py-1 text-sm",
+        "flex min-h-8 min-w-0 items-center gap-2 rounded-lg px-2 py-1 text-sm",
         participant.isSpeaking ? "text-cloud" : "text-haze",
       )}
     >
       <span
         className={cn(
-          "flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-deck text-[9px] font-semibold text-cloud",
-          participant.isSpeaking && "ring-2 ring-emerald-400",
+          "flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-deck text-[9px] font-semibold text-cloud transition",
+          participant.isSpeaking &&
+            "ring-2 ring-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.65)]",
         )}
       >
         {participant.avatarUrl ? (
-          <img src={participant.avatarUrl} alt="" className="size-full object-cover" />
+          <img
+            src={participant.avatarUrl}
+            alt=""
+            className="size-full object-cover"
+            onError={(event) => {
+              event.currentTarget.style.display = "none";
+            }}
+          />
         ) : (
           initials(participant.name)
         )}
@@ -75,7 +89,7 @@ function ChannelRow({
   channel,
   active,
   connected,
-  icon: Icon,
+  icon: ChannelIcon,
   canManage,
   participants,
   onSelect,
@@ -92,14 +106,18 @@ function ChannelRow({
 }) {
   const count = participants?.length ?? 0;
   return (
-    <div>
+    <div className="min-w-0">
       <div
         className={cn(
-          "group relative flex min-h-11 w-full items-center gap-1 rounded-xl px-1 transition",
-          active ? "bg-electric/14 text-cloud" : "text-haze hover:bg-white/5 hover:text-cloud",
+          "group relative flex min-h-10 w-full min-w-0 items-center gap-1 rounded-xl px-1 transition duration-150 ease-out",
+          active
+            ? "bg-[rgba(124,58,237,0.20)] text-cloud"
+            : "text-haze hover:bg-white/[0.05] hover:text-cloud",
         )}
       >
-        {active ? <span className="absolute left-0 h-5 w-[3px] rounded-r-full bg-electric" /> : null}
+        {active ? (
+          <span className="absolute left-0 h-5 w-0.5 rounded-r-full bg-[#A78BFA]" aria-hidden />
+        ) : null}
         <button
           type="button"
           onClick={onSelect}
@@ -107,27 +125,28 @@ function ChannelRow({
           className="focus-ring flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-xl px-2 text-left text-sm"
         >
           <Icon
-            className={cn(
-              "size-4 shrink-0",
-              connected ? "text-emerald-400" : active ? "text-electric" : "text-haze",
-            )}
+            icon={ChannelIcon}
+            size="action"
+            className={connected ? "text-signal" : active ? "text-[#A78BFA]" : "text-haze"}
           />
           <span className="flex-1 truncate font-medium">{channel.name}</span>
           {count > 0 ? (
-            <span className="rounded-md bg-white/5 px-1.5 py-0.5 text-[10px] font-semibold text-haze tabular-nums">
-              {count}
-            </span>
+            <span className="control-badge bg-white/5 text-haze tabular-nums">{count}</span>
           ) : null}
         </button>
         {canManage ? (
-          <button
-            type="button"
-            className="mr-1 rounded-md p-1.5 opacity-0 transition group-hover:opacity-100 hover:bg-white/10"
-            aria-label={`Editar canal ${channel.name}`}
-            onClick={onEdit}
-          >
-            <Pencil className="size-3.5" />
-          </button>
+          <Tooltip label="Editar canal">
+            <IconButton
+              type="button"
+              size="iconSm"
+              variant="ghost"
+              className="mr-0.5 size-8 min-h-8 min-w-8 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
+              aria-label={`Editar canal ${channel.name}`}
+              onClick={onEdit}
+            >
+              <Icon icon={Pencil} size="sm" />
+            </IconButton>
+          </Tooltip>
         ) : null}
       </div>
       {participants && participants.length > 0 ? (
@@ -156,7 +175,9 @@ function TextChannels({
 }) {
   return (
     <>
-      <p className="px-2 pt-2 text-xs font-semibold tracking-[0.14em] text-haze uppercase">Texto</p>
+      <p className="px-2 pt-2 text-[11px] font-semibold tracking-[0.04em] text-muted uppercase">
+        Texto
+      </p>
       <nav className="mt-2 flex flex-col gap-1" aria-label="Canais de texto">
         {channels.map((channel) => (
           <ChannelRow
@@ -186,6 +207,7 @@ function occupantsForChannel(
   return (occupancy[channelId] ?? []).map((occupant) => ({
     identity: occupant.identity,
     name: occupant.name,
+    avatarUrl: occupant.avatarUrl ?? null,
   }));
 }
 
@@ -208,7 +230,9 @@ function VoiceChannels({
 }) {
   return (
     <>
-      <p className="px-2 pt-3 text-xs font-semibold tracking-[0.14em] text-haze uppercase">Voz</p>
+      <p className="px-2 pt-3 text-[11px] font-semibold tracking-[0.04em] text-muted uppercase">
+        Voz
+      </p>
       <nav className="mt-2 flex flex-col gap-1" aria-label="Canais de voz">
         {channels.map((channel) => (
           <ChannelRow
@@ -250,6 +274,7 @@ export function ChannelSidebar({
   onCreate,
   onInvite,
   onEdit,
+  onEditCommunity,
   onRetry,
   createRef,
   displayName,
@@ -257,6 +282,7 @@ export function ChannelSidebar({
   accountTitle,
   onSignOut,
   onOpenProfile,
+  onOpenSettings,
 }: ChannelSidebarProps) {
   let body: ReactNode;
   if (!community) {
@@ -271,13 +297,13 @@ export function ChannelSidebar({
     body = (
       <div className="px-2">
         <p className="text-sm text-coral">{error}</p>
-        <Button type="button" className="mt-3 w-full" onClick={onRetry}>
+        <Button type="button" variant="secondary" className="mt-3 w-full" onClick={onRetry}>
           Tentar de novo
         </Button>
       </div>
     );
   } else if (status !== "ready") {
-    body = <p className="px-2 text-sm text-haze">Carregando canais…</p>;
+    body = <Loading className="px-2 py-3" label="Carregando canais…" />;
   } else {
     body = (
       <>
@@ -302,27 +328,84 @@ export function ChannelSidebar({
   }
 
   return (
-    <aside className="surface flex h-full w-64 shrink-0 flex-col border-y-0 border-l-0">
-      <div className="px-5 pt-6 pb-4">
-        <p className="text-xs font-semibold tracking-[0.18em] text-haze uppercase">Comunidade</p>
-        <h2 className="mt-2 truncate font-display text-lg text-cloud">
-          {community?.name ?? "Selecione uma comunidade"}
-        </h2>
+    <aside className="flex h-full w-[256px] shrink-0 flex-col border-r border-white/[0.07] bg-panel">
+      <div className="relative min-h-[7.5rem] shrink-0 overflow-hidden border-b border-white/[0.07]">
+        <img
+          src={community?.avatarUrl || communityBanner}
+          alt=""
+          className="absolute inset-0 size-full object-cover object-[center_35%]"
+        />
+        <div
+          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,9,15,0.45)_0%,rgba(16,17,26,0.78)_50%,rgba(16,17,26,0.97)_100%)]"
+          aria-hidden
+        />
+        <div className="relative flex h-full min-h-[7.5rem] flex-col justify-end px-4 pb-3.5 pt-8">
+          <div className="flex items-end gap-3">
+            <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-deck/80 text-xs font-semibold text-cloud ring-1 ring-white/15">
+              {community?.avatarUrl ? (
+                <img src={community.avatarUrl} alt="" className="size-full object-cover" />
+              ) : (
+                initials(community?.name ?? "G")
+              )}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold tracking-[0.04em] text-muted uppercase">
+                Comunidade
+              </p>
+              <div className="mt-1 flex items-start gap-1">
+                <h2 className="min-w-0 flex-1 break-words font-display text-[17px] font-bold text-cloud drop-shadow-sm">
+                  {community?.name ?? "Gamers de cria"}
+                </h2>
+                {onEditCommunity ? (
+                  <Tooltip label="Editar comunidade">
+                    <IconButton
+                      type="button"
+                      size="iconSm"
+                      variant="ghost"
+                      className="mt-0.5 size-6 min-h-6 min-w-6 shrink-0 rounded-md bg-transparent p-0 text-haze ring-0 hover:bg-white/10 hover:text-cloud"
+                      onClick={onEditCommunity}
+                      aria-label="Editar comunidade"
+                    >
+                      <Icon icon={Pencil} size="sm" className="size-3.5" />
+                    </IconButton>
+                  </Tooltip>
+                ) : null}
+              </div>
+            </div>
+          </div>
+          {community ? (
+            <span className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] text-haze">
+              <span
+                className="size-1.5 rounded-full bg-signal shadow-[0_0_8px_rgba(34,197,94,0.65)]"
+                aria-hidden
+              />
+              Online
+            </span>
+          ) : null}
+        </div>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">{body}</div>
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-2 py-2">{body}</div>
       {canManage ? (
-        <div className="space-y-2 border-t border-haze/10 p-3">
+        <div className="shrink-0 space-y-2 border-t border-white/[0.07] p-3">
           <Button
             type="button"
+            variant="primary"
             className="w-full"
             onClick={onInvite}
             aria-label="Convidar amigos"
           >
-            <UserPlus className="size-4" />
+            <Icon icon={UserPlus} size="action" />
             Convidar
           </Button>
-          <Button ref={createRef} type="button" className="w-full" onClick={onCreate} aria-label="Criar canal">
-            <Plus className="size-4" />
+          <Button
+            ref={createRef}
+            type="button"
+            variant="secondary"
+            className="w-full"
+            onClick={onCreate}
+            aria-label="Criar canal"
+          >
+            <Icon icon={Plus} size="action" />
             Criar canal
           </Button>
         </div>
@@ -333,6 +416,7 @@ export function ChannelSidebar({
         accountTitle={accountTitle}
         onSignOut={onSignOut}
         onOpenProfile={onOpenProfile}
+        onOpenSettings={onOpenSettings}
       />
     </aside>
   );

@@ -84,7 +84,7 @@ export async function submitEmailAuth(
     }
     return {
       ok: true,
-      notice: data.session ? null : "Conta criada. Verifique seu e-mail para entrar.",
+      notice: data.session ? null : "Conta criada. Confere o e-mail pra liberar o acesso.",
     };
   }
   const { error } = await supabase.auth.signInWithPassword({

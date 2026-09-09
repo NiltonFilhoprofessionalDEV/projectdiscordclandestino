@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
 import type { ApiResult, Community, CreateCommunityInput } from "../../../../shared/api.ts";
 import { parseCommunityName } from "../../../../shared/community.ts";
+import { uploadCommunityAvatar } from "../../services/avatar.ts";
+import { updateCommunity } from "../../services/api.ts";
 import { Button } from "../ui/button.tsx";
 import { Input } from "../ui/input.tsx";
+import { Radio } from "../ui/radio.tsx";
 import { AppDialog } from "../shell/AppDialog.tsx";
+import { CommunityAvatarField } from "./CommunityAvatarField.tsx";
 
 type CreateCommunityDialogProps = {
   open: boolean;
@@ -15,6 +19,7 @@ type CreateCommunityDialogProps = {
 async function submitCommunity(
   name: string,
   visibility: CreateCommunityInput["visibility"],
+  pendingFile: File | null,
   onCreate: CreateCommunityDialogProps["onCreate"],
   onCreated: CreateCommunityDialogProps["onCreated"],
   onClose: () => void,
@@ -29,12 +34,33 @@ async function submitCommunity(
   setPending(true);
   setError(null);
   const result = await onCreate({ name: parsed.value, visibility });
-  setPending(false);
   if (!result.ok) {
+    setPending(false);
     setError(result.error.message);
     return;
   }
-  onCreated(result.data);
+  let community = result.data;
+  if (pendingFile) {
+    try {
+      const avatarUrl = await uploadCommunityAvatar(community.id, pendingFile);
+      const updated = await updateCommunity(community.id, { avatarUrl });
+      if (updated.ok) {
+        community = updated.data;
+      }
+    } catch (err) {
+      setPending(false);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Comunidade criada, mas a imagem não pôde ser enviada.",
+      );
+      onCreated(community);
+      onClose();
+      return;
+    }
+  }
+  setPending(false);
+  onCreated(community);
   onClose();
 }
 
@@ -49,8 +75,7 @@ function CommunityVisibilityFields({
     <fieldset className="mt-5">
       <legend className="text-sm font-medium text-haze">Visibilidade</legend>
       <label className="mt-3 flex min-h-11 items-center gap-3 text-sm text-cloud">
-        <input
-          type="radio"
+        <Radio
           name="community-visibility"
           checked={visibility === "public"}
           onChange={() => onVisibility("public")}
@@ -58,8 +83,7 @@ function CommunityVisibilityFields({
         Pública
       </label>
       <label className="flex min-h-11 items-center gap-3 text-sm text-cloud">
-        <input
-          type="radio"
+        <Radio
           name="community-visibility"
           checked={visibility === "private"}
           onChange={() => onVisibility("private")}
@@ -71,6 +95,7 @@ function CommunityVisibilityFields({
 }
 
 type CommunityCreateFormProps = {
+  open: boolean;
   name: string;
   visibility: CreateCommunityInput["visibility"];
   error: string | null;
@@ -78,11 +103,13 @@ type CommunityCreateFormProps = {
   nameRef: RefObject<HTMLInputElement | null>;
   onName: (value: string) => void;
   onVisibility: (value: CreateCommunityInput["visibility"]) => void;
+  onFile: (file: File | null) => void;
   onClose: () => void;
   onSubmit: (event: FormEvent) => void;
 };
 
 function CommunityCreateForm({
+  open,
   name,
   visibility,
   error,
@@ -90,12 +117,19 @@ function CommunityCreateForm({
   nameRef,
   onName,
   onVisibility,
+  onFile,
   onClose,
   onSubmit,
 }: CommunityCreateFormProps) {
   return (
     <form className="mt-5" onSubmit={onSubmit}>
-      <label className="text-sm font-medium text-haze" htmlFor="community-name">
+      <CommunityAvatarField
+        key={open ? "avatar-open" : "avatar-closed"}
+        name={name}
+        avatarUrl={null}
+        onFile={onFile}
+      />
+      <label className="mt-5 block text-sm font-medium text-haze" htmlFor="community-name">
         Nome
       </label>
       <Input
@@ -114,11 +148,11 @@ function CommunityCreateForm({
         </p>
       ) : null}
       <div className="mt-6 flex justify-end gap-2">
-        <Button type="button" onClick={onClose}>
+        <Button type="button" variant="ghost" onClick={onClose}>
           Cancelar
         </Button>
-        <Button type="submit" variant="solid" disabled={pending}>
-          Criar
+        <Button type="submit" variant="primary" disabled={pending}>
+          {pending ? "Criando…" : "Criar"}
         </Button>
       </div>
     </form>
@@ -134,6 +168,7 @@ function useCommunityCreateForm(
   const nameRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
   const [visibility, setVisibility] = useState<CreateCommunityInput["visibility"]>("public");
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -143,6 +178,7 @@ function useCommunityCreateForm(
     }
     setName("");
     setVisibility("public");
+    setPendingFile(null);
     setError(null);
     setPending(false);
     requestAnimationFrame(() => nameRef.current?.focus());
@@ -156,9 +192,19 @@ function useCommunityCreateForm(
     nameRef,
     setName,
     setVisibility,
+    setPendingFile,
     onSubmit: (event: FormEvent) => {
       event.preventDefault();
-      void submitCommunity(name, visibility, onCreate, onCreated, onClose, setError, setPending);
+      void submitCommunity(
+        name,
+        visibility,
+        pendingFile,
+        onCreate,
+        onCreated,
+        onClose,
+        setError,
+        setPending,
+      );
     },
   };
 }
@@ -175,10 +221,11 @@ export function CreateCommunityDialog({
       open={open}
       titleId="create-community-title"
       title="Nova comunidade"
-      description="Escolha um nome e quem pode encontrar o espaço."
+      description="Escolha um nome, um ícone e quem pode encontrar o espaço."
       onClose={onClose}
     >
       <CommunityCreateForm
+        open={open}
         name={form.name}
         visibility={form.visibility}
         error={form.error}
@@ -186,6 +233,7 @@ export function CreateCommunityDialog({
         nameRef={form.nameRef}
         onName={form.setName}
         onVisibility={form.setVisibility}
+        onFile={form.setPendingFile}
         onClose={onClose}
         onSubmit={form.onSubmit}
       />

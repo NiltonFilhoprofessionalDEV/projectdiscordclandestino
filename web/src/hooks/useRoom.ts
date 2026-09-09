@@ -70,9 +70,11 @@ async function connectVoice(
   if (profile) {
     try {
       await instance.localParticipant.setName(profile.displayName);
-      await instance.localParticipant.setMetadata(
-        JSON.stringify({ avatarUrl: profile.avatarUrl }),
-      );
+      if (profile.avatarUrl) {
+        await instance.localParticipant.setMetadata(
+          JSON.stringify({ avatarUrl: profile.avatarUrl }),
+        );
+      }
     } catch {
       // Nome já vem no JWT; metadata (avatar) é best-effort e não deve derrubar a sala.
     }

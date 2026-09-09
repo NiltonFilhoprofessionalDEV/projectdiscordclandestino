@@ -75,10 +75,10 @@ export function EditChannelDialog({
         />
         {error ? <p className="mt-2 text-sm text-coral">{error}</p> : null}
         <div className="mt-5 flex gap-2">
-          <Button type="button" className="flex-1" onClick={onClose}>
+          <Button type="button" variant="ghost" className="flex-1" onClick={onClose}>
             Cancelar
           </Button>
-          <Button type="submit" variant="solid" className="flex-1" disabled={pending}>
+          <Button type="submit" variant="primary" className="flex-1" disabled={pending}>
             Salvar
           </Button>
         </div>

@@ -1,35 +1,33 @@
-import { PulseLine } from "../components/shell/PulseLine.tsx";
+import logoIcon from "../assets/branding/logo-icon.svg";
+import authPanel from "../assets/community/auth-gamer-panel.png";
+import { AUTH_COPY } from "../components/auth/authCopy.ts";
 import { AuthForm } from "../components/auth/AuthForm.tsx";
 
 export function AuthPage() {
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-night px-5 py-8 sm:px-8">
-      <div className="surface-raised grid w-full max-w-4xl overflow-hidden rounded-[1.75rem] md:grid-cols-[1.1fr_0.9fr]">
-        <div className="p-7 sm:p-10 md:p-12">
-          <p className="text-sm font-semibold tracking-[0.16em] text-electric uppercase">
-            Salas
-          </p>
-          <h1 className="mt-5 font-display text-4xl leading-tight text-cloud sm:text-5xl">
-            Entre. Fale. Fique à vontade.
-          </h1>
-          <p className="mt-4 max-w-md leading-relaxed text-haze">
-            Crie uma conta ou entre para continuar. Sua sessão fica neste
-            dispositivo.
-          </p>
-          <AuthForm />
-        </div>
-        <div
-          className="relative hidden min-h-[32rem] overflow-hidden border-l border-haze/10 bg-abyss md:block"
-          aria-hidden
-        >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_22%,rgba(138,77,255,0.26),transparent_40%)]" />
-          <span className="absolute top-20 right-12 h-36 w-32 rotate-6 rounded-[2rem] bg-pulse/22 ring-1 ring-pulse/30" />
-          <span className="absolute top-48 left-10 h-28 w-36 -rotate-6 rounded-[1.7rem] bg-electric/18 ring-1 ring-electric/28" />
-          <span className="absolute right-16 bottom-20 size-24 rotate-3 rounded-[1.5rem] bg-coral/18 ring-1 ring-coral/25" />
-          <PulseLine active className="absolute top-1/2 left-8 w-[calc(100%-4rem)]" />
-          <p className="absolute right-10 bottom-8 font-display text-sm text-haze">
-            Sua conversa começa aqui.
-          </p>
+    <main className="relative isolate min-h-dvh overflow-hidden bg-[#090a10]">
+      <div
+        className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(80%_60%_at_12%_8%,rgba(124,58,237,0.22),transparent_55%),radial-gradient(70%_50%_at_88%_92%,rgba(6,182,212,0.14),transparent_58%),radial-gradient(50%_40%_at_70%_18%,rgba(236,72,153,0.10),transparent_50%)]"
+        aria-hidden
+      />
+      <div className="relative z-10 flex min-h-dvh items-center justify-center px-5 py-8 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-8">
+        <div className="grid w-full max-w-lg overflow-hidden rounded-[22px] border border-white/10 shadow-[0_0_0_1px_rgba(168,85,247,0.28),0_0_48px_rgba(124,58,237,0.18),0_0_80px_rgba(6,182,212,0.08),0_24px_80px_rgba(0,0,0,0.45)] md:max-w-5xl md:grid-cols-[1.08fr_0.92fr]">
+          <div className="bg-[rgba(8,9,16,0.72)] p-5 backdrop-blur-2xl sm:p-10 md:p-12">
+            <div className="flex items-center gap-3">
+              <img src={logoIcon} alt="" className="size-10 rounded-xl" />
+              <span className="rounded-full border border-[#67e8f9]/35 bg-[#06b6d4]/12 px-2.5 py-1 text-[11px] font-semibold tracking-[0.16em] text-[#67e8f9]">
+                {AUTH_COPY.tag}
+              </span>
+            </div>
+            <AuthForm />
+          </div>
+          <div className="relative hidden min-h-[28rem] border-l border-white/10 md:block" aria-hidden>
+            <img src={authPanel} alt="" className="absolute inset-0 size-full object-cover" />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,9,15,0.12)_0%,rgba(8,9,15,0.18)_45%,rgba(8,9,15,0.72)_100%)]" />
+            <p className="absolute right-8 bottom-8 font-display text-sm font-semibold tracking-wide text-cloud">
+              {AUTH_COPY.panelCaption}
+            </p>
+          </div>
         </div>
       </div>
     </main>

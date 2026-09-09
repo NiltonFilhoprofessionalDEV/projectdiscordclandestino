@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { submitEmailAuth, type EmailAuthInput } from "../../auth/emailAuth.ts";
 import { startGoogleOAuth } from "../../auth/startGoogleOAuth.ts";
 import type { AuthMode } from "../../auth/authMessages.ts";
+import { authScreenCopy } from "./authCopy.ts";
 import { AuthFormFields } from "./AuthFormFields.tsx";
 
 type AuthFeedback = {
@@ -49,6 +50,7 @@ export function AuthForm() {
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const feedback = { setError, setNotice, setPending };
+  const copy = authScreenCopy(mode);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -56,25 +58,31 @@ export function AuthForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8">
-      <AuthFormFields
-        mode={mode}
-        email={email}
-        password={password}
-        displayName={displayName}
-        error={error}
-        notice={notice}
-        pending={pending}
-        onEmail={setEmail}
-        onPassword={setPassword}
-        onDisplayName={setDisplayName}
-        onSwitchMode={() => {
-          setMode(mode === "signup" ? "signin" : "signup");
-          setError(null);
-          setNotice(null);
-        }}
-        onGoogle={() => void googleWithPending(feedback)}
-      />
-    </form>
+    <>
+      <h1 className="mt-7 font-display text-3xl font-bold leading-tight text-cloud sm:text-4xl md:text-5xl">
+        {copy.title}
+      </h1>
+      <p className="mt-4 max-w-md leading-relaxed text-haze">{copy.subtitle}</p>
+      <form onSubmit={handleSubmit} className="mt-8">
+        <AuthFormFields
+          mode={mode}
+          email={email}
+          password={password}
+          displayName={displayName}
+          error={error}
+          notice={notice}
+          pending={pending}
+          onEmail={setEmail}
+          onPassword={setPassword}
+          onDisplayName={setDisplayName}
+          onSwitchMode={() => {
+            setMode(mode === "signup" ? "signin" : "signup");
+            setError(null);
+            setNotice(null);
+          }}
+          onGoogle={() => void googleWithPending(feedback)}
+        />
+      </form>
+    </>
   );
 }

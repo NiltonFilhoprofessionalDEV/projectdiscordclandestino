@@ -22,7 +22,7 @@ export function ProfilePanel({
   return (
     <aside className="surface hidden w-72 shrink-0 flex-col gap-6 border-y-0 border-r-0 p-5 xl:flex">
       <div className="flex flex-col items-center border-b border-haze/10 px-2 pb-6">
-        <span className="flex size-20 items-center justify-center rounded-[1.4rem] bg-linear-to-br from-electric to-pulse font-display text-xl text-white shadow-[0_14px_28px_rgba(93,124,255,0.24)]">
+        <span className="flex size-20 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#7c3aed_0%,#9333ea_50%,#ec4899_100%)] font-display text-xl text-white shadow-[0_14px_28px_rgba(124,58,237,0.28)]">
           {initials(displayName)}
         </span>
         <p className="mt-4 max-w-full truncate font-display text-lg text-cloud">
@@ -56,10 +56,10 @@ export function ProfilePanel({
                     type="button"
                     onClick={() => onSelect(item.id)}
                     aria-label={`Entrar na sala ${item.label}`}
-                    className="focus-ring flex min-h-11 w-full items-center justify-between rounded-xl bg-abyss/55 px-3 text-left text-sm text-cloud transition hover:bg-abyss"
+                    className="focus-ring flex min-h-11 w-full items-center justify-between rounded-xl bg-abyss/55 px-3 text-left text-sm text-cloud transition duration-150 ease-out hover:bg-abyss"
                   >
                     <span>{item.label}</span>
-                    <span className="flex min-w-6 items-center justify-center rounded-full bg-electric/15 px-2 py-0.5 text-xs text-[#aab9ff]">
+                    <span className="control-badge bg-electric/15 text-electric">
                       {item.occupantCount}
                     </span>
                   </button>

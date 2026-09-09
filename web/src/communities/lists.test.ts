@@ -10,6 +10,7 @@ function community(
     slug: overrides.name.toLowerCase(),
     visibility: "public",
     role: null,
+    avatarUrl: null,
     ...overrides,
   };
 }

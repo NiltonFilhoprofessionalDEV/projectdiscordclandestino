@@ -9,6 +9,7 @@ export type RateLimitWindow = {
 
 export const RATE_LIMITS = {
   "community.create": { windowMs: 60_000, max: 10 },
+  "community.update": { windowMs: 60_000, max: 20 },
   "channel.create": { windowMs: 60_000, max: 20 },
   "invite.create": { windowMs: 60_000, max: 10 },
   "invite.accept": { windowMs: 60_000, max: 20 },

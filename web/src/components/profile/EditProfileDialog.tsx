@@ -3,6 +3,7 @@ import { Camera } from "lucide-react";
 import type { Profile } from "../../auth/types.ts";
 import { uploadUserAvatar } from "../../services/avatar.ts";
 import { Button } from "../ui/button.tsx";
+import { Icon } from "../ui/icon.tsx";
 import { Input } from "../ui/input.tsx";
 import { AppDialog } from "../shell/AppDialog.tsx";
 import { initials } from "../../lib/utils.ts";
@@ -104,7 +105,7 @@ export function EditProfileDialog({
         <div className="flex items-center gap-4">
           <button
             type="button"
-            className="relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-deck text-lg font-semibold text-cloud ring-1 ring-haze/20"
+            className="relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-deck text-lg font-semibold text-cloud ring-1 ring-haze/20 transition duration-150 ease-out hover:ring-electric/40"
             onClick={() => fileRef.current?.click()}
             aria-label="Trocar avatar"
           >
@@ -114,7 +115,7 @@ export function EditProfileDialog({
               initials(displayName)
             )}
             <span className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-abyss/75 py-1 text-[10px] text-cloud">
-              <Camera className="size-3" />
+              <Icon icon={Camera} size="sm" />
               Foto
             </span>
           </button>
@@ -122,6 +123,7 @@ export function EditProfileDialog({
             <p className="text-sm text-haze">JPG, PNG, WEBP ou GIF · até 2 MB</p>
             <Button
               type="button"
+              variant="secondary"
               className="mt-2"
               onClick={() => fileRef.current?.click()}
             >
@@ -160,7 +162,7 @@ export function EditProfileDialog({
           <Button type="button" variant="ghost" onClick={onClose} disabled={pending}>
             Cancelar
           </Button>
-          <Button type="submit" variant="solid" disabled={pending}>
+          <Button type="submit" variant="primary" disabled={pending}>
             {pending ? "Salvando…" : "Salvar"}
           </Button>
         </div>

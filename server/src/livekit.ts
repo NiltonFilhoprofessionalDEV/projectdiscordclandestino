@@ -15,7 +15,20 @@ export function voiceRoomName(communityId: string, channelId: string): string {
 export type VoiceRoomOccupant = {
   identity: string;
   name: string;
+  avatarUrl: string | null;
 };
+
+function avatarFromMetadata(metadata: string | undefined): string | null {
+  if (!metadata) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(metadata) as { avatarUrl?: unknown };
+    return typeof parsed.avatarUrl === "string" && parsed.avatarUrl ? parsed.avatarUrl : null;
+  } catch {
+    return null;
+  }
+}
 
 export function createToken(
   identity: string,
@@ -74,6 +87,7 @@ export async function listVoiceOccupants(
           participants.map((participant) => ({
             identity: participant.identity,
             name: participant.name?.trim() || participant.identity,
+            avatarUrl: avatarFromMetadata(participant.metadata),
           })),
         ] as const;
       } catch {

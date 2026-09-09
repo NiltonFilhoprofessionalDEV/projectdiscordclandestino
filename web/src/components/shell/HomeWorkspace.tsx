@@ -1,4 +1,5 @@
 import type { User } from "@supabase/supabase-js";
+import { useEffect, useRef, useState } from "react";
 import type { CommunitySummary } from "../../../../shared/api.ts";
 import type { ChannelId } from "../../../../shared/community.ts";
 import { useAuth } from "../../auth/useAuth.ts";
@@ -15,9 +16,11 @@ import type { useHomeNavigation } from "../../hooks/useHomeNavigation.ts";
 import type { useHomeVoice } from "../../hooks/useHomeVoice.ts";
 import type { useMembers } from "../../hooks/useMembers.ts";
 import { useVoiceOccupancy } from "../../hooks/useVoiceOccupancy.ts";
+import { occupancyWithoutLocalElsewhere } from "../../voice/switch.ts";
 import { HomeDialogs } from "./HomeDialogs.tsx";
 import { HomeMain } from "./HomeMain.tsx";
 import { HomeNav } from "./HomeNav.tsx";
+import { PeopleSheet } from "./PeopleSheet.tsx";
 
 type HomeWorkspaceProps = {
   user: User;
@@ -38,6 +41,7 @@ type HomeWorkspaceProps = {
 };
 
 function HomeGrid(props: HomeWorkspaceProps) {
+  const [peopleOpen, setPeopleOpen] = useState(false);
   const memberUserIds = new Set(props.members.members.map((item) => item.userId));
   const canInvite = canManageCommunity(props.selectedCommunity?.role ?? null);
   const voiceChannel =
@@ -51,18 +55,43 @@ function HomeGrid(props: HomeWorkspaceProps) {
     props.member ? (props.selectedCommunity?.id ?? null) : null,
     props.member,
   );
+  const previousVoiceChannelId = useRef(props.nav.activeVoiceChannelId);
+  useEffect(() => {
+    if (previousVoiceChannelId.current === props.nav.activeVoiceChannelId) {
+      return;
+    }
+    previousVoiceChannelId.current = props.nav.activeVoiceChannelId;
+    void occupancy.reload();
+  }, [props.nav.activeVoiceChannelId, occupancy.reload]);
+  const avatarByIdentity = Object.fromEntries(
+    props.members.members.map((member) => [member.userId, member.avatarUrl]),
+  );
+  const visibleOccupancy = occupancyWithoutLocalElsewhere(
+    occupancy.byChannel,
+    props.user.id,
+    props.nav.activeVoiceChannelId,
+  );
+  const voiceOccupancy = Object.fromEntries(
+    Object.entries(visibleOccupancy).map(([channelId, occupants]) => [
+      channelId,
+      occupants.map((occupant) => ({
+        ...occupant,
+        avatarUrl: occupant.avatarUrl || avatarByIdentity[occupant.identity] || null,
+      })),
+    ]),
+  );
   const friendsForPanel = {
     ...props.friends,
     friends: enrichFriendsWithCallPresence(
       props.friends.friends,
       liveIds,
       voiceChannel?.name ?? null,
-      occupancyIdentitySet(occupancy.byChannel),
+      occupancyIdentitySet(visibleOccupancy),
     ),
   };
 
   return (
-    <div className="grid h-dvh w-dvw overflow-hidden bg-night text-cloud md:grid-cols-[76px_256px_minmax(0,1fr)] xl:grid-cols-[76px_256px_minmax(0,1fr)_288px]">
+    <div className="grid h-dvh w-dvw overflow-hidden bg-night pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] text-cloud md:grid-cols-[68px_256px_minmax(0,1fr)] xl:grid-cols-[68px_256px_minmax(0,1fr)_288px]">
       <HomeNav
         communities={props.communities}
         nav={props.nav}
@@ -76,28 +105,46 @@ function HomeGrid(props: HomeWorkspaceProps) {
         onSignOut={props.onSignOut}
         onEditChannel={props.dialogs.openEditChannel}
         voiceParticipants={props.session.participants}
-        voiceOccupancy={occupancy.byChannel}
+        voiceOccupancy={voiceOccupancy}
       />
-      <HomeMain {...props} />
-      <aside className="surface hidden h-full w-72 shrink-0 flex-col overflow-y-auto border-y-0 border-r-0 xl:flex">
-        <FriendsPanel
-          friends={friendsForPanel}
-          communityId={props.selectedCommunity?.id ?? null}
-          communityName={props.selectedCommunity?.name ?? null}
-          canInviteToCommunity={canInvite}
-          memberUserIds={memberUserIds}
-          onInvited={() => void props.members.retry()}
-        />
-        <div className="border-t border-haze/10 p-5">
-          <MemberPanel
-            members={props.members.members}
-            status={props.members.status}
-            error={props.members.error}
-            participants={props.session.participants}
-            voiceActive={props.nav.activeVoiceChannelId !== null}
-            onRetry={() => void props.members.retry()}
-            embedded
+      <HomeMain {...props} onOpenPeople={() => setPeopleOpen(true)} />
+      <PeopleSheet
+        open={peopleOpen}
+        onClose={() => setPeopleOpen(false)}
+        friends={friendsForPanel}
+        communityId={props.selectedCommunity?.id ?? null}
+        communityName={props.selectedCommunity?.name ?? null}
+        canInviteToCommunity={canInvite}
+        memberUserIds={memberUserIds}
+        onInvited={() => void props.members.retry()}
+        members={props.members.members}
+        memberStatus={props.members.status}
+        memberError={props.members.error}
+        participants={props.session.participants}
+        voiceActive={props.nav.activeVoiceChannelId !== null}
+        onRetryMembers={() => void props.members.retry()}
+      />
+      <aside className="hidden h-full w-72 shrink-0 flex-col overflow-hidden border-l border-white/[0.07] bg-panel xl:flex">
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <FriendsPanel
+            friends={friendsForPanel}
+            communityId={props.selectedCommunity?.id ?? null}
+            communityName={props.selectedCommunity?.name ?? null}
+            canInviteToCommunity={canInvite}
+            memberUserIds={memberUserIds}
+            onInvited={() => void props.members.retry()}
           />
+          <div className="border-t border-white/[0.07] p-5">
+            <MemberPanel
+              members={props.members.members}
+              status={props.members.status}
+              error={props.members.error}
+              participants={props.session.participants}
+              voiceActive={props.nav.activeVoiceChannelId !== null}
+              onRetry={() => void props.members.retry()}
+              embedded
+            />
+          </div>
         </div>
       </aside>
     </div>
@@ -125,6 +172,19 @@ function HomeDialogHost({
   | "selectedCommunity"
 >) {
   const { updateProfile } = useAuth();
+  const pendingVoiceId = dialogs.pendingVoiceChannelId;
+  const pendingVoiceToName =
+    channels.voice.find((item) => item.id === pendingVoiceId)?.name ?? "esta sala";
+  const pendingVoiceFromName =
+    channels.voice.find((item) => item.id === nav.activeVoiceChannelId)?.name ?? "a sala atual";
+  const screenOn = session.media.screenOn;
+
+  useEffect(() => {
+    if (!screenOn) {
+      dialogs.closeScreenShare();
+    }
+  }, [screenOn]);
+
   return (
     <HomeDialogs
       createCommunityOpen={dialogs.createCommunityOpen}
@@ -133,6 +193,12 @@ function HomeDialogHost({
       profileOpen={dialogs.profileOpen}
       settingsOpen={dialogs.settingsOpen}
       editingChannel={dialogs.editingChannel}
+      editingCommunity={dialogs.editingCommunity}
+      pendingVoiceOpen={pendingVoiceId !== null}
+      pendingVoiceFromName={pendingVoiceFromName}
+      pendingVoiceToName={pendingVoiceToName}
+      screenShareOpen={dialogs.screenShareOpen && screenOn}
+      screenShareConfig={session.media.screenConfig}
       inviteCommunityId={selectedCommunity?.id ?? null}
       inviteCommunityName={selectedCommunity?.name ?? "comunidade"}
       userId={user.id}
@@ -144,11 +210,27 @@ function HomeDialogHost({
       onCloseProfile={dialogs.closeProfile}
       onCloseSettings={dialogs.closeSettings}
       onCloseEditChannel={dialogs.closeEditChannel}
+      onCloseEditCommunity={dialogs.closeEditCommunity}
+      onCancelSwitchVoice={dialogs.closeSwitchVoice}
+      onCloseScreenShare={dialogs.closeScreenShare}
+      onChangeScreenShare={session.media.replaceScreen}
+      onStopScreenShare={session.media.stopScreen}
+      onAcceptSwitchVoice={() => {
+        if (pendingVoiceId) {
+          nav.selectVoice(pendingVoiceId);
+        }
+        dialogs.closeSwitchVoice();
+      }}
       onCreateCommunity={communities.create}
       onCreateChannel={channels.create}
       onUpdateChannel={channels.update}
+      onUpdateCommunity={communities.update}
       onSaveProfile={updateProfile}
-      onCreatedCommunity={(community) => nav.openCommunity(community.id, communities.select)}
+      onCreatedCommunity={(community) => {
+        void communities.retry().then(() => {
+          nav.openCommunity(community.id, communities.select);
+        });
+      }}
       onCreatedChannel={nav.createdChannel}
     />
   );

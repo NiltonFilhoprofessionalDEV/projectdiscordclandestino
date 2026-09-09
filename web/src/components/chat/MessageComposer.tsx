@@ -2,8 +2,11 @@ import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 
 import { SendHorizontal, Smile } from "lucide-react";
 import type { ApiResult } from "../../../../shared/api.ts";
 import { parseMessageText } from "../../../../shared/community.ts";
+import { shouldSubmitOnEnter } from "../../chat/composerKeys.ts";
 import { CHAT_EMOJIS, insertEmojiAt } from "../../chat/emojis.ts";
-import { Button } from "../ui/button.tsx";
+import { Button, IconButton } from "../ui/button.tsx";
+import { Icon } from "../ui/icon.tsx";
+import { Tooltip } from "../ui/tooltip.tsx";
 
 type MessageComposerProps = {
   onSend: (text: string) => Promise<ApiResult<void>>;
@@ -16,7 +19,7 @@ export function MessageComposer({ onSend, onRetry, failedNonce }: MessageCompose
   const [error, setError] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const pickerRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!pickerOpen) {
@@ -24,7 +27,7 @@ export function MessageComposer({ onSend, onRetry, failedNonce }: MessageCompose
     }
     const onPointer = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (pickerRef.current?.contains(target)) {
+      if (composerRef.current?.contains(target)) {
         return;
       }
       setPickerOpen(false);
@@ -64,10 +67,11 @@ export function MessageComposer({ onSend, onRetry, failedNonce }: MessageCompose
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      void submit();
+    if (!shouldSubmitOnEnter(event)) {
+      return;
     }
+    event.preventDefault();
+    void submit();
   }
 
   function insertEmoji(emoji: string) {
@@ -87,21 +91,20 @@ export function MessageComposer({ onSend, onRetry, failedNonce }: MessageCompose
   }
 
   return (
-    <div className="relative border-t border-haze/10 p-3">
+    <div ref={composerRef} className="relative shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-1 lg:px-4">
       {pickerOpen ? (
         <div
-          ref={pickerRef}
-          className="absolute right-3 bottom-[calc(100%-0.25rem)] z-20 w-[min(100%-1.5rem,18rem)] rounded-2xl border border-haze/15 bg-deck p-2 shadow-xl"
+          className="absolute inset-x-3 bottom-full z-20 mb-2 overflow-hidden rounded-2xl border border-white/[0.08] bg-panel p-1.5 shadow-[0_16px_40px_rgba(0,0,0,0.5)]"
           role="listbox"
           aria-label="Emojis"
         >
-          <div className="grid max-h-44 grid-cols-8 gap-1 overflow-y-auto">
+          <div className="grid grid-cols-8">
             {CHAT_EMOJIS.map((emoji) => (
               <button
                 key={emoji}
                 type="button"
                 role="option"
-                className="focus-ring flex size-8 items-center justify-center rounded-lg text-lg hover:bg-white/10"
+                className="focus-ring flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl text-base leading-none transition duration-150 ease-out hover:bg-white/[0.08]"
                 aria-label={`Inserir emoji ${emoji}`}
                 onClick={() => insertEmoji(emoji)}
               >
@@ -111,46 +114,50 @@ export function MessageComposer({ onSend, onRetry, failedNonce }: MessageCompose
           </div>
         </div>
       ) : null}
-      <form onSubmit={(event) => void handleSubmit(event)} className="flex items-end gap-1.5">
-        <div className="relative min-w-0 flex-1">
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Escreva uma mensagem"
-            aria-label="Mensagem"
-            rows={4}
-            maxLength={2000}
-            className="focus-ring min-h-28 max-h-56 w-full resize-y rounded-xl border border-haze/15 bg-abyss/70 px-3 py-2.5 pr-11 text-sm text-cloud placeholder:text-haze"
-          />
-          <Button
+      <form
+        onSubmit={(event) => void handleSubmit(event)}
+        className="flex items-end gap-1 rounded-2xl border border-white/[0.08] bg-ink px-2 py-2 shadow-[0_8px_24px_rgba(0,0,0,0.25)] transition duration-150 focus-within:border-electric/45 focus-within:ring-2 focus-within:ring-electric/15"
+      >
+        <textarea
+          ref={textareaRef}
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Escreva uma mensagem..."
+          aria-label="Mensagem"
+          rows={2}
+          maxLength={2000}
+          className="max-h-40 min-h-11 min-w-0 flex-1 resize-none bg-transparent px-2 py-2.5 text-base text-cloud outline-none placeholder:text-muted"
+        />
+        <Tooltip label={pickerOpen ? "Fechar emojis" : "Emojis"}>
+          <IconButton
             type="button"
-            size="icon"
+            size="iconSm"
             variant="ghost"
-            className="absolute top-1.5 right-1.5 size-8"
+            className="mb-0.5 size-9 min-h-9 min-w-9 shrink-0"
             aria-label={pickerOpen ? "Fechar emojis" : "Abrir emojis"}
             aria-expanded={pickerOpen}
             onClick={() => setPickerOpen((current) => !current)}
           >
-            <Smile className="size-4" />
-          </Button>
-        </div>
-        <Button
-          type="submit"
-          size="icon"
-          variant="solid"
-          className="size-10 shrink-0"
-          aria-label="Enviar mensagem"
-        >
-          <SendHorizontal className="size-4" />
-        </Button>
+            <Icon icon={Smile} size="action" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip label="Enviar">
+          <IconButton
+            type="submit"
+            variant="send"
+            className="size-11 shrink-0 rounded-[14px]"
+            aria-label="Enviar mensagem"
+          >
+            <Icon icon={SendHorizontal} />
+          </IconButton>
+        </Tooltip>
       </form>
-      <p className="mt-1.5 text-[11px] text-haze">
+      <p className="mt-1.5 hidden px-1 text-[11px] text-muted sm:block">
         Enter envia · Shift+Enter nova linha · até 2000 caracteres
       </p>
       {failedNonce ? (
-        <Button type="button" className="mt-2" onClick={() => void onRetry(failedNonce)}>
+        <Button type="button" variant="secondary" className="mt-2" onClick={() => void onRetry(failedNonce)}>
           Tentar de novo
         </Button>
       ) : null}

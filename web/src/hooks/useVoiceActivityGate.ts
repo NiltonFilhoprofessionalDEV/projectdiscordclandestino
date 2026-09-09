@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Track, type LocalAudioTrack, type Room } from "livekit-client";
 
 const OPEN_THRESHOLD = 0.045;
@@ -20,16 +20,19 @@ function rmsFromAnalyser(analyser: AnalyserNode, buffer: Uint8Array): number {
  * Gate de atividade de voz — independente do mute do usuário.
  * Só roda quando mic está ligado E a opção de reconhecimento está ativa.
  * Usa mute da track publicada, sem chamar setMicrophoneEnabled.
+ * Expõe `speaking` para o anel verde local (LiveKit não detecta bem com track mutada).
  */
 export function useVoiceActivityGate(
   room: Room | null,
   micOn: boolean,
   voiceActivityOn: boolean,
-) {
+): boolean {
   const gateMutedRef = useRef(false);
+  const [speakingUi, setSpeakingUi] = useState(false);
 
   useEffect(() => {
     if (!room || !micOn || !voiceActivityOn) {
+      setSpeakingUi(false);
       const publication = room?.localParticipant.getTrackPublication(Track.Source.Microphone);
       const track = publication?.track as LocalAudioTrack | undefined;
       // Se o reconhecimento desliga (ou mic desliga), libera o gate — o mute do usuário
@@ -89,6 +92,7 @@ export function useVoiceActivityGate(
 
       gateMutedRef.current = true;
       speaking = false;
+      setSpeakingUi(false);
       silentSince = performance.now();
       await localTrack.mute();
 
@@ -98,6 +102,10 @@ export function useVoiceActivityGate(
         }
         // Se o usuário mutou o mic no meio do caminho, para o gate.
         if (!room!.localParticipant.isMicrophoneEnabled) {
+          if (speaking) {
+            speaking = false;
+            setSpeakingUi(false);
+          }
           return;
         }
         const level = rmsFromAnalyser(analyser, buffer);
@@ -106,6 +114,7 @@ export function useVoiceActivityGate(
           silentSince = now;
           if (!speaking) {
             speaking = true;
+            setSpeakingUi(true);
             gateMutedRef.current = false;
             void localTrack.unmute();
           }
@@ -113,6 +122,7 @@ export function useVoiceActivityGate(
         }
         if (speaking && level <= CLOSE_THRESHOLD && now - silentSince >= HOLD_MS) {
           speaking = false;
+          setSpeakingUi(false);
           gateMutedRef.current = true;
           void localTrack.mute();
         }
@@ -123,6 +133,7 @@ export function useVoiceActivityGate(
 
     return () => {
       cancelled = true;
+      setSpeakingUi(false);
       if (intervalId) {
         window.clearInterval(intervalId);
       }
@@ -135,4 +146,6 @@ export function useVoiceActivityGate(
       }
     };
   }, [micOn, room, voiceActivityOn]);
+
+  return speakingUi;
 }

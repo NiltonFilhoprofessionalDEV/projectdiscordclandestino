@@ -1,11 +1,23 @@
 import { useCallback, useEffect, useState } from "react";
-import { ScreenSharePresets, VideoPresets, type Room } from "livekit-client";
+import {
+  createLocalScreenTracks,
+  Track,
+  VideoPresets,
+  type LocalTrack,
+  type Room,
+} from "livekit-client";
 import { toast } from "sonner";
 import {
   readVoiceActivityOn,
   writeMicMuted,
   writeVoiceActivityOn,
 } from "../lib/storage.ts";
+import {
+  defaultScreenShareConfig,
+  isScreenShareCancelError,
+  screenShareCaptureOptions,
+  type ScreenShareConfig,
+} from "../voice/screenShare.ts";
 import { useVoiceActivityGate } from "./useVoiceActivityGate.ts";
 
 const CAMERA_OPTIONS = [
@@ -66,10 +78,27 @@ async function enableMicrophone(room: Room) {
   }
 }
 
+async function unpublishScreenTracks(room: Room) {
+  const sources = [Track.Source.ScreenShare, Track.Source.ScreenShareAudio] as const;
+  for (const source of sources) {
+    const publication = room.localParticipant.getTrackPublication(source);
+    if (publication?.track) {
+      await room.localParticipant.unpublishTrack(publication.track, true);
+    }
+  }
+}
+
+async function publishScreenTracks(room: Room, tracks: LocalTrack[]) {
+  for (const track of tracks) {
+    await room.localParticipant.publishTrack(track);
+  }
+}
+
 export function useMedia(room: Room | null, findScreenOwner: () => string | null) {
   const [micOn, setMicOn] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
   const [screenOn, setScreenOn] = useState(false);
+  const [screenConfig, setScreenConfig] = useState(defaultScreenShareConfig);
   const [voiceActivityOn, setVoiceActivityOn] = useState(readVoiceActivityOn);
 
   useEffect(() => {
@@ -91,7 +120,7 @@ export function useMedia(room: Room | null, findScreenOwner: () => string | null
     return () => window.clearInterval(id);
   }, [room]);
 
-  useVoiceActivityGate(room, micOn, voiceActivityOn);
+  const localSpeaking = useVoiceActivityGate(room, micOn, voiceActivityOn);
 
   const toggleMic = useCallback(async () => {
     if (!room) {
@@ -142,44 +171,87 @@ export function useMedia(room: Room | null, findScreenOwner: () => string | null
     }
   }, [room]);
 
-  const toggleScreen = useCallback(async () => {
+  const startScreen = useCallback(
+    async (config: ScreenShareConfig = screenConfig) => {
+      if (!room) {
+        return;
+      }
+      if (room.localParticipant.isScreenShareEnabled) {
+        return;
+      }
+      const owner = findScreenOwner();
+      if (owner) {
+        toast.message(`${owner} já está compartilhando a tela.`);
+        return;
+      }
+      try {
+        await room.localParticipant.setScreenShareEnabled(true, screenShareCaptureOptions(config));
+        setScreenConfig(config);
+        setScreenOn(true);
+      } catch (err) {
+        if (isScreenShareCancelError(err)) {
+          return;
+        }
+        toast.error("Não foi possível compartilhar a tela.");
+      }
+    },
+    [findScreenOwner, room, screenConfig],
+  );
+
+  const stopScreen = useCallback(async () => {
     if (!room) {
       return;
     }
-    if (room.localParticipant.isScreenShareEnabled) {
-      await room.localParticipant.setScreenShareEnabled(false);
-      setScreenOn(false);
-      return;
-    }
-    const owner = findScreenOwner();
-    if (owner) {
-      toast.message(`${owner} já está compartilhando a tela.`);
-      return;
-    }
-    try {
-      await room.localParticipant.setScreenShareEnabled(true, {
-        audio: true,
-        resolution: ScreenSharePresets.h1080fps15.resolution,
-        contentHint: "detail",
-      });
-      setScreenOn(true);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "";
-      if (message.toLowerCase().includes("cancel") || message.toLowerCase().includes("denied")) {
+    await unpublishScreenTracks(room);
+    await room.localParticipant.setScreenShareEnabled(false);
+    setScreenOn(false);
+  }, [room]);
+
+  const replaceScreen = useCallback(
+    async (config: ScreenShareConfig) => {
+      if (!room) {
         return;
       }
-      toast.error("Não foi possível compartilhar a tela.");
-    }
-  }, [findScreenOwner, room]);
+      let nextTracks: LocalTrack[] | undefined;
+      try {
+        nextTracks = await createLocalScreenTracks(screenShareCaptureOptions(config));
+      } catch (err) {
+        if (isScreenShareCancelError(err)) {
+          return;
+        }
+        toast.error("Não foi possível trocar a janela.");
+        return;
+      }
+      try {
+        await unpublishScreenTracks(room);
+        await publishScreenTracks(room, nextTracks);
+        setScreenConfig(config);
+        setScreenOn(true);
+      } catch (err) {
+        nextTracks.forEach((track) => track.stop());
+        if (isScreenShareCancelError(err)) {
+          setScreenOn(false);
+          return;
+        }
+        toast.error("Não foi possível trocar a janela.");
+        setScreenOn(false);
+      }
+    },
+    [room],
+  );
 
   return {
     micOn,
     cameraOn,
     screenOn,
+    screenConfig,
     voiceActivityOn,
+    localSpeaking,
     toggleMic,
     toggleVoiceActivity,
     toggleCamera,
-    toggleScreen,
+    startScreen,
+    stopScreen,
+    replaceScreen,
   };
 }

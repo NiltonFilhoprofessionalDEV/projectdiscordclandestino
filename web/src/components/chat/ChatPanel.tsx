@@ -11,6 +11,7 @@ type ChatPanelProps = {
   headingRef?: Ref<HTMLHeadingElement>;
   title?: string;
   embedded?: boolean;
+  showWelcome?: boolean;
 };
 
 export function ChatPanel({
@@ -19,27 +20,31 @@ export function ChatPanel({
   headingRef,
   title = "Conversa",
   embedded = false,
+  showWelcome = true,
 }: ChatPanelProps) {
   const failedNonce = lastFailedNonce(chat.messages);
+  const channelLabel = title.replace(/^#\s*/, "").trim() || "geral";
 
   return (
     <section
       className={cn(
-        "flex h-full min-h-0 flex-col",
-        embedded ? "bg-transparent" : "surface border-y-0 border-r-0",
+        "flex h-full min-h-0 flex-col bg-night",
+        embedded ? "bg-transparent" : "border-r-0",
       )}
     >
       {embedded ? null : (
-        <header className="border-b border-haze/10 px-5 py-5">
+        <header className="border-b border-white/[0.07] px-5 py-4">
           <h2
             id={headingId}
             ref={headingRef}
             tabIndex={headingRef ? -1 : undefined}
-            className="font-display text-lg text-cloud outline-none"
+            className="font-display text-lg font-bold text-cloud outline-none"
           >
-            {title}
+            #{channelLabel}
           </h2>
-          <p className="mt-1 text-xs text-haze">Mensagens desta sala</p>
+          <p className="mt-1 text-xs text-haze">
+            Conversas aleatórias, zoeira, novidades e muito mais!
+          </p>
         </header>
       )}
       <MessageList
@@ -47,6 +52,8 @@ export function ChatPanel({
         status={chat.status}
         hasMore={chat.hasMore}
         olderError={chat.olderError}
+        channelName={channelLabel}
+        showWelcome={showWelcome}
         onLoadOlder={chat.loadOlder}
         onRetry={(clientNonce) => void chat.retry(clientNonce)}
       />

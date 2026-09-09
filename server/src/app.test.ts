@@ -42,6 +42,7 @@ function stubRepo(
     listCommunities: missing,
     createCommunity: missing,
     getCommunity: missing,
+    updateCommunity: missing,
     createChannel: missing,
     updateChannel: missing,
     deleteChannel: missing,
@@ -241,6 +242,39 @@ describe("authorized community routes", () => {
       error: { code: "NOT_FOUND", message: "Comunidade não encontrada." },
     });
     expect(getCommunity).toHaveBeenCalledWith(MEMBER_ID, COMMUNITY_ID);
+  });
+
+  it("updates community avatar for the owner", async () => {
+    const updateCommunity = vi.fn().mockResolvedValue({
+      ok: true,
+      data: {
+        id: COMMUNITY_ID,
+        ownerId: OWNER_ID,
+        name: "Salas",
+        slug: "salas",
+        visibility: "public",
+        avatarUrl: "https://cdn.example/icon.png",
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+    });
+    const api = testApp({ repository: { updateCommunity } });
+
+    const res = await api.request(`/api/communities/${COMMUNITY_ID}`, {
+      method: "PATCH",
+      headers: jsonHeaders(),
+      body: JSON.stringify({ avatarUrl: "https://cdn.example/icon.png" }),
+    });
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        avatarUrl: "https://cdn.example/icon.png",
+      }),
+    });
+    expect(updateCommunity).toHaveBeenCalledWith(OWNER_ID, COMMUNITY_ID, {
+      avatarUrl: "https://cdn.example/icon.png",
+    });
   });
 
   it("token endpoint rejects a text channel", async () => {

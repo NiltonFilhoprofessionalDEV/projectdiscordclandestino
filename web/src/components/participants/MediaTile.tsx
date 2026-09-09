@@ -1,15 +1,19 @@
 import { useEffect, useRef } from "react";
 import type { TrackPublication } from "livekit-client";
 import { Maximize2 } from "lucide-react";
+import { IconButton } from "../ui/button.tsx";
+import { Icon } from "../ui/icon.tsx";
+import { Tooltip } from "../ui/tooltip.tsx";
 
 type MediaTileProps = {
   publication: TrackPublication;
   label: string;
   large?: boolean;
   muteElement?: boolean;
+  compact?: boolean;
 };
 
-export function MediaTile({ publication, label, large, muteElement }: MediaTileProps) {
+export function MediaTile({ publication, label, large, muteElement, compact }: MediaTileProps) {
   const ref = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -33,29 +37,39 @@ export function MediaTile({ publication, label, large, muteElement }: MediaTileP
   return (
     <figure
       className={
-        large
-          ? "surface-raised relative overflow-hidden rounded-[1.5rem]"
-          : "surface relative aspect-video overflow-hidden rounded-[1.25rem]"
+        compact
+          ? "relative aspect-video overflow-hidden rounded-xl bg-black"
+          : large
+            ? "surface-raised relative overflow-hidden rounded-[1.5rem]"
+            : "surface relative aspect-video overflow-hidden rounded-[1.25rem]"
       }
     >
       <video
         ref={ref}
-        className="h-full w-full object-contain bg-black"
+        className="h-full w-full bg-black object-contain"
         autoPlay
         playsInline
         muted={muteElement}
       />
-      <button
-        type="button"
-        className="glass-bar absolute top-3 right-3 rounded-md p-2 text-cloud hover:bg-white/15"
-        aria-label="Abrir em tela cheia"
-        onClick={() => void ref.current?.requestFullscreen()}
-      >
-        <Maximize2 className="size-4" />
-      </button>
-      <figcaption className="glass-bar absolute bottom-3 left-3 rounded-lg px-3 py-1.5 text-xs text-cloud">
-        {label}
-      </figcaption>
+      {compact ? null : (
+        <>
+          <Tooltip label="Tela cheia">
+            <IconButton
+              type="button"
+              size="iconSm"
+              variant="secondary"
+              className="glass-bar absolute top-3 right-3"
+              aria-label="Abrir em tela cheia"
+              onClick={() => void ref.current?.requestFullscreen()}
+            >
+              <Icon icon={Maximize2} size="action" />
+            </IconButton>
+          </Tooltip>
+          <figcaption className="glass-bar absolute bottom-3 left-3 rounded-lg px-3 py-1.5 text-xs text-cloud">
+            {label}
+          </figcaption>
+        </>
+      )}
     </figure>
   );
 }

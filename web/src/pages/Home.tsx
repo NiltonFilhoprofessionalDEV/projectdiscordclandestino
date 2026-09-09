@@ -16,7 +16,8 @@ import { useHomeNavigation } from "../hooks/useHomeNavigation.ts";
 import { useHomeVoice } from "../hooks/useHomeVoice.ts";
 import { useMembers } from "../hooks/useMembers.ts";
 import { useSyncActiveTextChannel } from "../hooks/useSyncActiveTextChannel.ts";
-import { Button } from "../components/ui/button.tsx";
+import { IconButton } from "../components/ui/button.tsx";
+import { Icon } from "../components/ui/icon.tsx";
 
 type HomeProps = {
   user: User;
@@ -42,7 +43,7 @@ function InviteToast({
 
   return (
     <div
-      className="fixed top-3 right-3 left-3 z-40 mx-auto flex max-w-md items-start gap-3 rounded-xl border border-haze/15 bg-deck px-4 py-3 text-sm shadow-lg sm:left-auto"
+      className="fixed top-[max(0.75rem,env(safe-area-inset-top))] right-3 left-3 z-40 mx-auto flex max-w-md items-start gap-3 rounded-xl border border-haze/15 bg-deck px-4 py-3 text-sm shadow-lg sm:left-auto"
       role={status === "error" ? "alert" : "status"}
     >
       <div className="min-w-0 flex-1">
@@ -53,16 +54,16 @@ function InviteToast({
         {status === "error" ? <p className="text-coral">{message}</p> : null}
       </div>
       {status !== "accepting" ? (
-        <Button
+        <IconButton
           type="button"
-          size="icon"
+          size="iconSm"
           variant="ghost"
-          className="size-8 shrink-0"
+          className="shrink-0"
           aria-label="Fechar aviso"
           onClick={onDismiss}
         >
-          <X className="size-4" />
-        </Button>
+          <Icon icon={X} size="action" />
+        </IconButton>
       ) : null}
     </div>
   );
@@ -97,10 +98,14 @@ export function Home({ user, profile }: HomeProps) {
   const channels = useChannels(memberCommunityId);
   const members = useMembers(memberCommunityId);
   const voiceChannel = channels.voice.find((item) => item.id === nav.activeVoiceChannelId) ?? null;
+  const avatarByIdentity = Object.fromEntries(
+    members.members.map((member) => [member.userId, member.avatarUrl]),
+  );
   const session = useHomeVoice(
     nav.activeVoiceChannelId,
     profile.display_name,
     profile.avatar_url,
+    avatarByIdentity,
   );
   const friends = useFriends(
     user.id,

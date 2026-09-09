@@ -1,6 +1,7 @@
 import { Mic, MicOff } from "lucide-react";
 import type { ParticipantView } from "../../hooks/useParticipants.ts";
-import { cn } from "../../lib/utils.ts";
+import { cn, initials } from "../../lib/utils.ts";
+import { Icon } from "../ui/icon.tsx";
 
 type ParticipantListProps = {
   participants: ParticipantView[];
@@ -8,32 +9,43 @@ type ParticipantListProps = {
 
 export function ParticipantList({ participants }: ParticipantListProps) {
   return (
-    <ul className="space-y-1">
+    <ul className="space-y-0.5">
       {participants.map((participant) => (
         <li
           key={participant.identity}
           className={cn(
-            "flex min-h-11 items-center gap-3 rounded-xl bg-abyss/55 px-3 text-cloud ring-1 ring-haze/8",
-            participant.isSpeaking && "ring-emerald-400/70",
+            "flex min-h-10 items-center gap-3 rounded-xl px-2 py-1.5 text-cloud transition duration-150 ease-out hover:bg-white/[0.04]",
+            participant.isSpeaking && "bg-signal/5",
           )}
         >
           <span
             className={cn(
-              "size-2.5 rounded-full",
-              participant.isSpeaking
-                ? "bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]"
-                : "bg-electric",
+              "flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-deck text-[10px] font-semibold text-cloud transition",
+              participant.isSpeaking &&
+                "ring-2 ring-signal shadow-[0_0_10px_rgba(34,197,94,0.45)]",
             )}
-            aria-hidden
-          />
-          <span className="flex-1 truncate">
+          >
+            {participant.avatarUrl ? (
+              <img
+                src={participant.avatarUrl}
+                alt=""
+                className="size-full object-cover"
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+              />
+            ) : (
+              initials(participant.name)
+            )}
+          </span>
+          <span className="min-w-0 flex-1 truncate text-sm">
             {participant.name}
             {participant.isLocal ? " (você)" : ""}
           </span>
           {participant.micOn ? (
-            <Mic className="size-4 text-haze" />
+            <Icon icon={Mic} size="sm" className="text-haze" />
           ) : (
-            <MicOff className="size-4 text-coral" />
+            <Icon icon={MicOff} size="sm" className="text-coral" />
           )}
         </li>
       ))}

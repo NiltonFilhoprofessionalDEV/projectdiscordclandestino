@@ -25,6 +25,12 @@ export type CreateCommunityInput = {
   visibility: CommunityVisibility;
 };
 
+export type UpdateCommunityInput = {
+  name?: string;
+  visibility?: CommunityVisibility;
+  avatarUrl?: string | null;
+};
+
 export type CreateChannelInput = {
   name: string;
   type: ChannelType;
@@ -60,6 +66,7 @@ export type CommunitySummary = {
   slug: string;
   visibility: CommunityVisibility;
   role: CommunityRole | null;
+  avatarUrl: string | null;
 };
 
 export type Community = {
@@ -68,6 +75,7 @@ export type Community = {
   name: string;
   slug: string;
   visibility: CommunityVisibility;
+  avatarUrl: string | null;
   createdAt: string;
 };
 

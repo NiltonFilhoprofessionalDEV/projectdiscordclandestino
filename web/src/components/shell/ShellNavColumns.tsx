@@ -10,7 +10,7 @@ type ShellNavColumnsProps = {
 
 export function ShellNavColumns({ open, onClose, rail, sidebar }: ShellNavColumnsProps) {
   return (
-    <div className={cn(open ? "fixed inset-0 z-40 flex md:contents" : "hidden md:contents")}>
+    <div className={cn(open ? "fixed inset-0 z-40 flex pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:contents md:p-0" : "hidden md:contents")}>
       {rail}
       {sidebar}
       {open ? (
