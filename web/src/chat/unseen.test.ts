@@ -26,6 +26,12 @@ describe("countUnseen", () => {
     expect(countUnseen([msg("a"), msg("b"), msg("c")], seen, true)).toBe(2);
   });
 
+  it("ignores the viewer own messages while closed", () => {
+    const own = { ...msg("mine"), authorId: "me" };
+    const other = { ...msg("theirs"), authorId: "you" };
+    expect(countUnseen([own, other], new Set(), true, "me")).toBe(1);
+  });
+
   it("ignores optimistic sending rows while closed", () => {
     expect(countUnseen([msg("temp", "sending")], new Set(), true)).toBe(0);
   });

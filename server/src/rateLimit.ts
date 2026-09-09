@@ -14,6 +14,7 @@ export const RATE_LIMITS = {
   "invite.accept": { windowMs: 60_000, max: 20 },
   "message.create": { windowMs: 60_000, max: 60 },
   "livekit.token": { windowMs: 60_000, max: 20 },
+  "livekit.occupancy": { windowMs: 60_000, max: 60 },
 } as const satisfies Record<string, RateLimitWindow>;
 
 const DEFAULT_WINDOW: RateLimitWindow = { windowMs: 60_000, max: 20 };

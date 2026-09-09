@@ -16182,7 +16182,8 @@ var RATE_LIMITS = {
   "invite.create": { windowMs: 6e4, max: 10 },
   "invite.accept": { windowMs: 6e4, max: 20 },
   "message.create": { windowMs: 6e4, max: 60 },
-  "livekit.token": { windowMs: 6e4, max: 20 }
+  "livekit.token": { windowMs: 6e4, max: 20 },
+  "livekit.occupancy": { windowMs: 6e4, max: 60 }
 };
 var DEFAULT_WINDOW = { windowMs: 6e4, max: 20 };
 function rateLimitKey(ip, userId) {
@@ -22335,16 +22336,50 @@ function createToken(identity, displayName, roomName) {
   });
   return token.toJwt();
 }
-async function occupancyByRoom() {
-  const counts = Object.fromEntries(ROOMS.map((room) => [room.id, 0]));
+function roomService() {
   if (!hasLiveKitCredentials()) {
-    return counts;
+    return null;
   }
-  const client = new RoomServiceClient(
+  return new RoomServiceClient(
     livekitHttpHost(LIVEKIT_URL),
     LIVEKIT_API_KEY,
     LIVEKIT_API_SECRET
   );
+}
+async function listVoiceOccupants(communityId, channelIds) {
+  const empty = Object.fromEntries(
+    channelIds.map((channelId) => [channelId, []])
+  );
+  const client = roomService();
+  if (!client || channelIds.length === 0) {
+    return empty;
+  }
+  const entries = await Promise.all(
+    channelIds.map(async (channelId) => {
+      try {
+        const participants = await client.listParticipants(
+          voiceRoomName(communityId, channelId)
+        );
+        return [
+          channelId,
+          participants.map((participant) => ({
+            identity: participant.identity,
+            name: participant.name?.trim() || participant.identity
+          }))
+        ];
+      } catch {
+        return [channelId, []];
+      }
+    })
+  );
+  return Object.fromEntries(entries);
+}
+async function occupancyByRoom() {
+  const counts = Object.fromEntries(ROOMS.map((room) => [room.id, 0]));
+  const client = roomService();
+  if (!client) {
+    return counts;
+  }
   try {
     const rooms = await client.listRooms(ROOMS.map((room) => room.id));
     for (const room of rooms) {
@@ -22416,6 +22451,39 @@ function registerLiveKitTokenRoute(app2, deps) {
     return apiJson(c, {
       ok: true,
       data: { token, url: deps.livekitUrl, roomName }
+    });
+  });
+}
+
+// server/src/http/voice-occupancy.ts
+function registerVoiceOccupancyRoute(app2, deps) {
+  app2.get("/api/communities/:id/voice-occupancy", async (c) => {
+    const user = c.get("user");
+    const limit = deps.allowRequest(
+      "livekit.occupancy",
+      rateLimitKey(clientIp(c), user.id)
+    );
+    if (!limit.allowed) {
+      return rateLimited(c, limit.retryAfterSeconds);
+    }
+    const communityId = c.req.param("id");
+    const repo = deps.getRepository(c.get("accessToken"));
+    const access = await repo.listMemberVoiceChannels(user.id, communityId);
+    if (!access.ok) {
+      return apiJson(c, access);
+    }
+    const byChannel = await deps.listVoiceOccupants(
+      access.data.communityId,
+      access.data.channelIds
+    );
+    return apiJson(c, {
+      ok: true,
+      data: {
+        channels: access.data.channelIds.map((channelId) => ({
+          channelId,
+          occupants: byChannel[channelId] ?? []
+        }))
+      }
     });
   });
 }
@@ -22532,6 +22600,26 @@ async function canJoinVoice(client, userId, channelId) {
       communityId: channel.community_id,
       channelId: channel.id,
       displayName: profile?.display_name?.trim() || "Usu\xE1rio"
+    }
+  };
+}
+async function listMemberVoiceChannels(client, userId, communityId) {
+  const { data: member, error: memberError } = await client.from("community_members").select("user_id").eq("community_id", communityId).eq("user_id", userId).maybeSingle();
+  if (memberError) {
+    return mapRepositoryError(memberError);
+  }
+  if (!member) {
+    return fail("FORBIDDEN", "Voc\xEA n\xE3o \xE9 membro desta comunidade.");
+  }
+  const { data: channels, error } = await client.from("channels").select("id").eq("community_id", communityId).eq("type", "voice").order("position", { ascending: true });
+  if (error) {
+    return mapRepositoryError(error);
+  }
+  return {
+    ok: true,
+    data: {
+      communityId,
+      channelIds: (channels ?? []).map((row) => row.id)
     }
   };
 }
@@ -22696,7 +22784,11 @@ function createCommunityRepository(client) {
     createInvite: (userId, communityId, input) => wrap("createInvite", () => createInvite(client, userId, communityId, input)),
     revokeInvite: (_userId, inviteId) => wrap("revokeInvite", () => revokeInvite(client, inviteId)),
     acceptInvite: (userId, rawToken) => wrap("acceptInvite", () => acceptInvite(client, userId, rawToken)),
-    canJoinVoice: (userId, channelId) => wrap("canJoinVoice", () => canJoinVoice(client, userId, channelId))
+    canJoinVoice: (userId, channelId) => wrap("canJoinVoice", () => canJoinVoice(client, userId, channelId)),
+    listMemberVoiceChannels: (userId, communityId) => wrap(
+      "listMemberVoiceChannels",
+      () => listMemberVoiceChannels(client, userId, communityId)
+    )
   };
 }
 
@@ -30952,6 +31044,7 @@ function productionDeps() {
     requireUser,
     getRepository: (accessToken) => createCommunityRepository(createUserClient(accessToken)),
     issueLiveKitToken: createToken,
+    listVoiceOccupants,
     hasLiveKitCredentials,
     livekitUrl: LIVEKIT_URL,
     allowRequest
@@ -30987,6 +31080,7 @@ function createApp(deps = productionDeps()) {
   registerChannelRoutes(app2, deps);
   registerInviteRoutes(app2, deps);
   registerLiveKitTokenRoute(app2, deps);
+  registerVoiceOccupancyRoute(app2, deps);
   app2.onError((error, c) => {
     const detail = error instanceof Error ? error.message : "";
     console.error("unhandled", { name: error.name, message: detail });

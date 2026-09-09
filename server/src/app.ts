@@ -12,8 +12,9 @@ import { registerCommunityRoutes } from "./http/communities.ts";
 import type { AppDeps } from "./http/deps.ts";
 import { registerInviteRoutes } from "./http/invites.ts";
 import { registerLiveKitTokenRoute } from "./http/livekit-token.ts";
+import { registerVoiceOccupancyRoute } from "./http/voice-occupancy.ts";
 import { roomsPayload } from "./http-handlers.ts";
-import { createToken } from "./livekit.ts";
+import { createToken, listVoiceOccupants } from "./livekit.ts";
 import { allowRequest } from "./rateLimit.ts";
 import { createCommunityRepository } from "./repositories/communityRepository.ts";
 import { createUserClient, requireUser } from "./supabase.ts";
@@ -24,6 +25,7 @@ function productionDeps(): AppDeps {
     getRepository: (accessToken) =>
       createCommunityRepository(createUserClient(accessToken)),
     issueLiveKitToken: createToken,
+    listVoiceOccupants,
     hasLiveKitCredentials,
     livekitUrl: LIVEKIT_URL,
     allowRequest,
@@ -63,6 +65,7 @@ export function createApp(deps: AppDeps = productionDeps()): Hono<AuthEnv> {
   registerChannelRoutes(app, deps);
   registerInviteRoutes(app, deps);
   registerLiveKitTokenRoute(app, deps);
+  registerVoiceOccupancyRoute(app, deps);
 
   app.onError((error, c) => {
     const detail = error instanceof Error ? error.message : "";

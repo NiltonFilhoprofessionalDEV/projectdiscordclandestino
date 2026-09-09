@@ -49,6 +49,7 @@ function stubRepo(
     revokeInvite: missing,
     acceptInvite: missing,
     canJoinVoice: missing,
+    listMemberVoiceChannels: missing,
     ...overrides,
   };
 }
@@ -62,6 +63,10 @@ function testApp(options: {
     displayName: string,
     roomName: string,
   ) => Promise<string>;
+  listVoiceOccupants?: (
+    communityId: string,
+    channelIds: readonly string[],
+  ) => Promise<Record<string, { identity: string; name: string }[]>>;
   allowRequest?: () => { allowed: true } | { allowed: false; retryAfterSeconds: number };
   getRepository?: () => CommunityRepository;
 }) {
@@ -71,6 +76,10 @@ function testApp(options: {
       options.getRepository ?? (() => stubRepo(options.repository)),
     issueLiveKitToken:
       options.issueLiveKitToken ?? (async () => "livekit-jwt"),
+    listVoiceOccupants:
+      options.listVoiceOccupants ??
+      (async (_communityId, channelIds) =>
+        Object.fromEntries(channelIds.map((id) => [id, []]))),
     hasLiveKitCredentials: () => true,
     livekitUrl: "wss://livekit.example.test",
     allowRequest: options.allowRequest ?? alwaysAllow,
@@ -285,6 +294,43 @@ describe("authorized community routes", () => {
       error: { code: "NOT_FOUND", message: "Canal não encontrado." },
     });
     expect(canJoinVoice).toHaveBeenCalledWith(MEMBER_ID, VOICE_CHANNEL_ID);
+  });
+
+  it("lists voice occupants for community members without joining", async () => {
+    const listMemberVoiceChannels = vi.fn().mockResolvedValue({
+      ok: true,
+      data: {
+        communityId: COMMUNITY_ID,
+        channelIds: [VOICE_CHANNEL_ID],
+      },
+    });
+    const listVoiceOccupants = vi.fn().mockResolvedValue({
+      [VOICE_CHANNEL_ID]: [{ identity: MEMBER_ID, name: "Cesar" }],
+    });
+    const api = testApp({
+      repository: { listMemberVoiceChannels },
+      listVoiceOccupants,
+    });
+
+    const res = await api.request(
+      `/api/communities/${COMMUNITY_ID}/voice-occupancy`,
+      { headers: jsonHeaders() },
+    );
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      ok: true,
+      data: {
+        channels: [
+          {
+            channelId: VOICE_CHANNEL_ID,
+            occupants: [{ identity: MEMBER_ID, name: "Cesar" }],
+          },
+        ],
+      },
+    });
+    expect(listMemberVoiceChannels).toHaveBeenCalledWith(OWNER_ID, COMMUNITY_ID);
+    expect(listVoiceOccupants).toHaveBeenCalledWith(COMMUNITY_ID, [VOICE_CHANNEL_ID]);
   });
 
   it("issues a LiveKit token from the profile name and voice room key", async () => {

@@ -4,6 +4,7 @@ import type { ChannelId } from "../../../../shared/community.ts";
 import { useAuth } from "../../auth/useAuth.ts";
 import type { Profile } from "../../auth/AuthProvider.tsx";
 import { canManageCommunity } from "../../communities/roles.ts";
+import { enrichFriendsWithCallPresence } from "../../friends/presence.ts";
 import { FriendsPanel } from "../friends/FriendsPanel.tsx";
 import { MemberPanel } from "../members/MemberPanel.tsx";
 import type { useChannels } from "../../hooks/useChannels.ts";
@@ -13,6 +14,7 @@ import type { useHomeDialogState } from "../../hooks/useHomeDialogState.ts";
 import type { useHomeNavigation } from "../../hooks/useHomeNavigation.ts";
 import type { useHomeVoice } from "../../hooks/useHomeVoice.ts";
 import type { useMembers } from "../../hooks/useMembers.ts";
+import { useVoiceOccupancy } from "../../hooks/useVoiceOccupancy.ts";
 import { HomeDialogs } from "./HomeDialogs.tsx";
 import { HomeMain } from "./HomeMain.tsx";
 import { HomeNav } from "./HomeNav.tsx";
@@ -38,6 +40,25 @@ type HomeWorkspaceProps = {
 function HomeGrid(props: HomeWorkspaceProps) {
   const memberUserIds = new Set(props.members.members.map((item) => item.userId));
   const canInvite = canManageCommunity(props.selectedCommunity?.role ?? null);
+  const voiceChannel =
+    props.channels.voice.find((item) => item.id === props.nav.activeVoiceChannelId) ?? null;
+  const liveIds = new Set(
+    props.session.participants
+      .filter((participant) => !participant.isLocal)
+      .map((participant) => participant.identity),
+  );
+  const friendsForPanel = {
+    ...props.friends,
+    friends: enrichFriendsWithCallPresence(
+      props.friends.friends,
+      liveIds,
+      voiceChannel?.name ?? null,
+    ),
+  };
+  const occupancy = useVoiceOccupancy(
+    props.member ? (props.selectedCommunity?.id ?? null) : null,
+    props.member,
+  );
 
   return (
     <div className="grid h-dvh w-dvw overflow-hidden bg-night text-cloud md:grid-cols-[76px_256px_minmax(0,1fr)] xl:grid-cols-[76px_256px_minmax(0,1fr)_288px]">
@@ -54,11 +75,12 @@ function HomeGrid(props: HomeWorkspaceProps) {
         onSignOut={props.onSignOut}
         onEditChannel={props.dialogs.openEditChannel}
         voiceParticipants={props.session.participants}
+        voiceOccupancy={occupancy.byChannel}
       />
       <HomeMain {...props} />
       <aside className="surface hidden h-full w-72 shrink-0 flex-col overflow-y-auto border-y-0 border-r-0 xl:flex">
         <FriendsPanel
-          friends={props.friends}
+          friends={friendsForPanel}
           communityId={props.selectedCommunity?.id ?? null}
           communityName={props.selectedCommunity?.name ?? null}
           canInviteToCommunity={canInvite}

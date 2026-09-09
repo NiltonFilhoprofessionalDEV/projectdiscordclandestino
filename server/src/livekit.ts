@@ -12,6 +12,11 @@ export function voiceRoomName(communityId: string, channelId: string): string {
   return `community:${communityId}:voice:${channelId}`;
 }
 
+export type VoiceRoomOccupant = {
+  identity: string;
+  name: string;
+};
+
 export function createToken(
   identity: string,
   displayName: string,
@@ -35,21 +40,61 @@ export function createToken(
   return token.toJwt();
 }
 
+function roomService(): RoomServiceClient | null {
+  if (!hasLiveKitCredentials()) {
+    return null;
+  }
+  return new RoomServiceClient(
+    livekitHttpHost(LIVEKIT_URL),
+    LIVEKIT_API_KEY,
+    LIVEKIT_API_SECRET,
+  );
+}
+
+export async function listVoiceOccupants(
+  communityId: string,
+  channelIds: readonly string[],
+): Promise<Record<string, VoiceRoomOccupant[]>> {
+  const empty = Object.fromEntries(
+    channelIds.map((channelId) => [channelId, [] as VoiceRoomOccupant[]]),
+  );
+  const client = roomService();
+  if (!client || channelIds.length === 0) {
+    return empty;
+  }
+
+  const entries = await Promise.all(
+    channelIds.map(async (channelId) => {
+      try {
+        const participants = await client.listParticipants(
+          voiceRoomName(communityId, channelId),
+        );
+        return [
+          channelId,
+          participants.map((participant) => ({
+            identity: participant.identity,
+            name: participant.name?.trim() || participant.identity,
+          })),
+        ] as const;
+      } catch {
+        return [channelId, [] as VoiceRoomOccupant[]] as const;
+      }
+    }),
+  );
+
+  return Object.fromEntries(entries);
+}
+
 export async function occupancyByRoom(): Promise<Record<RoomId, number>> {
   const counts = Object.fromEntries(ROOMS.map((room) => [room.id, 0])) as Record<
     RoomId,
     number
   >;
 
-  if (!hasLiveKitCredentials()) {
+  const client = roomService();
+  if (!client) {
     return counts;
   }
-
-  const client = new RoomServiceClient(
-    livekitHttpHost(LIVEKIT_URL),
-    LIVEKIT_API_KEY,
-    LIVEKIT_API_SECRET,
-  );
 
   try {
     const rooms = await client.listRooms(ROOMS.map((room) => room.id));

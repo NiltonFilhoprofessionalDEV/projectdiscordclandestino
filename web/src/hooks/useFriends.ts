@@ -50,29 +50,32 @@ async function pushMyPresence(
   presence: FriendEntry["presence"],
   activity: string | null,
 ): Promise<boolean> {
-  const { error: rpcError } = await supabase.rpc("set_my_presence", {
-    next_presence: presence,
-    next_activity: activity,
-  });
-  if (!rpcError) {
-    return true;
-  }
-
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.user) {
     return false;
   }
+
   const { error: updateError } = await supabase
     .from("profiles")
     .update({
       presence,
       activity,
       last_seen_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
-    .eq("id", user.id);
-  return !updateError;
+    .eq("id", session.user.id);
+
+  if (!updateError) {
+    return true;
+  }
+
+  const { error: rpcError } = await supabase.rpc("set_my_presence", {
+    next_presence: presence,
+    next_activity: activity,
+  });
+  return !rpcError;
 }
 
 export function useFriends(userId: string | null, voiceActivity: string | null) {
@@ -207,7 +210,7 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
       }
     };
     beat();
-    const heartbeat = window.setInterval(beat, 15000);
+    const heartbeat = window.setInterval(beat, 10000);
 
     const onVisible = () => {
       if (document.visibilityState === "visible") {
@@ -215,11 +218,13 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
       }
     };
     document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", beat);
 
     return () => {
       cancelled = true;
       window.clearInterval(heartbeat);
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", beat);
     };
   }, [userId, voiceActivity]);
 
@@ -231,9 +236,11 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
       void pushMyPresence("offline", null);
     };
     window.addEventListener("pagehide", goOffline);
+    window.addEventListener("beforeunload", goOffline);
     return () => {
       window.removeEventListener("pagehide", goOffline);
-      goOffline();
+      window.removeEventListener("beforeunload", goOffline);
+      // Não marcar offline no cleanup do React — remounts derrubavam a presença.
     };
   }, [userId]);
 

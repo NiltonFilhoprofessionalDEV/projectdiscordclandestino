@@ -2,7 +2,9 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import type { ChannelId } from "../../../../shared/community.ts";
 import { focusVoiceChatDrawer } from "../../chat/drawerFocus.ts";
 import { countUnseen, seenIdsFrom } from "../../chat/unseen.ts";
+import { useAuth } from "../../auth/useAuth.ts";
 import { useChat } from "../../hooks/useChat.ts";
+import { playMessageSound } from "../../lib/sounds.ts";
 import { readVoiceChatOpen, writeVoiceChatOpen } from "../../lib/storage.ts";
 import { cn } from "../../lib/utils.ts";
 import { Button } from "../ui/button.tsx";
@@ -16,12 +18,15 @@ function useVoiceChatUnseen(
   open: boolean,
   messages: ReturnType<typeof useChat>["messages"],
   status: ReturnType<typeof useChat>["status"],
+  viewerId: string | null,
 ) {
   const [seen, setSeen] = useState<Set<string>>(new Set());
   const bootstrapped = useRef(false);
+  const previousUnseen = useRef(0);
 
   useEffect(() => {
     bootstrapped.current = false;
+    previousUnseen.current = 0;
     setSeen(new Set());
   }, [channelId]);
 
@@ -39,7 +44,20 @@ function useVoiceChatUnseen(
     }
   }, [messages, open, status]);
 
-  return countUnseen(messages, seen, !open);
+  const unseen = countUnseen(messages, seen, !open, viewerId);
+
+  useEffect(() => {
+    if (!bootstrapped.current || open) {
+      previousUnseen.current = unseen;
+      return;
+    }
+    if (unseen > previousUnseen.current) {
+      playMessageSound();
+    }
+    previousUnseen.current = unseen;
+  }, [open, unseen]);
+
+  return unseen;
 }
 
 function useVoiceChatFocus(open: boolean) {
@@ -89,14 +107,20 @@ function VoiceChatFrame({
             ref={triggerRef}
             type="button"
             variant="live"
-            className="w-full"
+            className="relative w-full"
             aria-expanded={open}
             aria-controls={PANEL_ID}
+            aria-label={unseen > 0 ? `Chat, ${unseen} mensagens novas` : "Chat"}
             onClick={onToggle}
           >
             Chat
             {unseen > 0 ? (
-              <span className="rounded-full bg-coral px-2 py-0.5 text-[11px] text-white">{unseen}</span>
+              <span
+                className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-coral text-[10px] font-bold text-white ring-2 ring-night"
+                aria-hidden
+              >
+                {unseen > 9 ? "9+" : unseen}
+              </span>
             ) : null}
           </Button>
         </div>
@@ -111,10 +135,17 @@ function VoiceChatFrame({
 }
 
 export function VoiceChatDrawer({ channelId }: { channelId: ChannelId | null }) {
+  const { user } = useAuth();
   const chat = useChat(channelId);
   const [open, setOpen] = useState(readVoiceChatOpen);
   const { headingRef, triggerRef, pendingFocus } = useVoiceChatFocus(open);
-  const unseen = useVoiceChatUnseen(channelId, open, chat.messages, chat.status);
+  const unseen = useVoiceChatUnseen(
+    channelId,
+    open,
+    chat.messages,
+    chat.status,
+    user?.id ?? null,
+  );
 
   return (
     <VoiceChatFrame

@@ -46,3 +46,8 @@ export function playLeaveSound() {
 export function playBroadcastOnSound() {
   beep(880, 90);
 }
+
+export function playMessageSound() {
+  beep(660, 70, 0.04);
+  window.setTimeout(() => beep(880, 110, 0.045), 70);
+}

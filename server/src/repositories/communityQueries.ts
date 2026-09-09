@@ -123,3 +123,38 @@ export async function canJoinVoice(
     },
   };
 }
+
+export async function listMemberVoiceChannels(
+  client: DbClient,
+  userId: string,
+  communityId: string,
+): Promise<ApiResult<{ communityId: CommunityId; channelIds: ChannelId[] }>> {
+  const { data: member, error: memberError } = await client
+    .from("community_members")
+    .select("user_id")
+    .eq("community_id", communityId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (memberError) {
+    return mapRepositoryError(memberError);
+  }
+  if (!member) {
+    return fail("FORBIDDEN", "Você não é membro desta comunidade.");
+  }
+  const { data: channels, error } = await client
+    .from("channels")
+    .select("id")
+    .eq("community_id", communityId)
+    .eq("type", "voice")
+    .order("position", { ascending: true });
+  if (error) {
+    return mapRepositoryError(error);
+  }
+  return {
+    ok: true,
+    data: {
+      communityId: communityId as CommunityId,
+      channelIds: (channels ?? []).map((row) => row.id as ChannelId),
+    },
+  };
+}

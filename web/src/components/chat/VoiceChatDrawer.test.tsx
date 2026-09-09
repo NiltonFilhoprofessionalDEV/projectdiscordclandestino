@@ -17,6 +17,10 @@ vi.mock("../../hooks/useChat.ts", () => ({
   useChat: () => chat,
 }));
 
+vi.mock("../../auth/useAuth.ts", () => ({
+  useAuth: () => ({ user: { id: "viewer-1" } }),
+}));
+
 import { VoiceChatDrawer } from "./VoiceChatDrawer.tsx";
 
 describe("VoiceChatDrawer", () => {

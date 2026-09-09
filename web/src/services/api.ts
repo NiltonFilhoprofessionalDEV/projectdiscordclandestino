@@ -103,6 +103,24 @@ export function createInvite(communityId: CommunityId) {
   });
 }
 
+export type VoiceOccupant = {
+  identity: string;
+  name: string;
+};
+
+export type VoiceOccupancyResponse = {
+  channels: Array<{
+    channelId: ChannelId;
+    occupants: VoiceOccupant[];
+  }>;
+};
+
+export function fetchVoiceOccupancy(communityId: CommunityId) {
+  return apiRequest<VoiceOccupancyResponse>(
+    `/api/communities/${communityId}/voice-occupancy`,
+  );
+}
+
 export function acceptInvite(token: string) {
   return apiRequest<CommunityMembership>(
     `/api/invites/${encodeURIComponent(token)}/accept`,

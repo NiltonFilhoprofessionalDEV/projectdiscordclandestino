@@ -83,6 +83,8 @@ function FriendRow({
   );
 }
 
+type PanelFeedback = { kind: "success" | "error"; text: string };
+
 export function FriendsPanel({
   friends,
   communityId,
@@ -92,8 +94,7 @@ export function FriendsPanel({
   onInvited,
 }: FriendsPanelProps) {
   const [email, setEmail] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
-  const [inviteFeedback, setInviteFeedback] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<PanelFeedback | null>(null);
   const [pendingInviteId, setPendingInviteId] = useState<string | null>(null);
   const online = friends.friends.filter((item) => item.presence !== "offline");
   const offline = friends.friends.filter((item) => item.presence === "offline");
@@ -102,33 +103,40 @@ export function FriendsPanel({
     event.preventDefault();
     const error = await friends.requestByEmail(email);
     if (error) {
-      setFormError(error);
+      setFeedback({ kind: "error", text: error });
       return;
     }
-    setFormError(null);
+    setFeedback({ kind: "success", text: `Pedido de amizade enviado para ${email.trim()}.` });
     setEmail("");
   }
 
   async function handleInvite(entry: FriendEntry) {
     if (!communityId || !canInviteToCommunity) {
-      setInviteFeedback("Selecione uma comunidade que você administra.");
+      setFeedback({
+        kind: "error",
+        text: "Selecione uma comunidade que você administra.",
+      });
       return;
     }
     if (memberUserIds.has(entry.userId)) {
-      setInviteFeedback(`${entry.displayName} já está na comunidade.`);
+      setFeedback({
+        kind: "error",
+        text: `${entry.displayName} já está na comunidade.`,
+      });
       return;
     }
     setPendingInviteId(entry.userId);
-    setInviteFeedback(null);
+    setFeedback(null);
     const error = await friends.inviteToCommunity(entry.userId, communityId);
     setPendingInviteId(null);
     if (error) {
-      setInviteFeedback(error);
+      setFeedback({ kind: "error", text: error });
       return;
     }
-    setInviteFeedback(
-      `${entry.displayName} entrou em ${communityName ?? "a comunidade"}.`,
-    );
+    setFeedback({
+      kind: "success",
+      text: `${entry.displayName} entrou em ${communityName ?? "a comunidade"}.`,
+    });
     onInvited?.();
   }
 
@@ -174,10 +182,17 @@ export function FriendsPanel({
           <UserPlus className="size-4" />
         </Button>
       </form>
-      {formError ? <p className="mt-2 text-xs text-coral">{formError}</p> : null}
-      {inviteFeedback ? (
-        <p className="mt-2 text-xs text-electric" role="status">
-          {inviteFeedback}
+      {feedback ? (
+        <p
+          className={cn(
+            "mt-2 rounded-lg px-2 py-1.5 text-xs",
+            feedback.kind === "success"
+              ? "bg-emerald-400/10 text-emerald-300"
+              : "bg-coral/10 text-coral",
+          )}
+          role={feedback.kind === "error" ? "alert" : "status"}
+        >
+          {feedback.text}
         </p>
       ) : null}
       {friends.error ? (

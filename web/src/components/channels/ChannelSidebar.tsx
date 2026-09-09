@@ -4,6 +4,7 @@ import type { Channel, CommunitySummary } from "../../../../shared/api.ts";
 import type { ChannelId } from "../../../../shared/community.ts";
 import type { ParticipantView } from "../../hooks/useParticipants.ts";
 import type { LoadStatus } from "../../hooks/useCommunities.ts";
+import type { VoiceOccupant } from "../../services/api.ts";
 import { cn, initials } from "../../lib/utils.ts";
 import { Button } from "../ui/button.tsx";
 import { UserFooterBar } from "../shell/ShellHeader.tsx";
@@ -16,6 +17,7 @@ type ChannelSidebarProps = {
   activeTextChannelId: ChannelId | null;
   activeVoiceChannelId: ChannelId | null;
   voiceParticipants: ParticipantView[];
+  voiceOccupancy: Record<string, VoiceOccupant[]>;
   canManage: boolean;
   status: LoadStatus;
   error: string | null;
@@ -33,7 +35,15 @@ type ChannelSidebarProps = {
   onOpenProfile: () => void;
 };
 
-function VoiceMemberRow({ participant }: { participant: ParticipantView }) {
+type VoicePerson = {
+  identity: string;
+  name: string;
+  avatarUrl?: string | null;
+  isSpeaking?: boolean;
+  isLocal?: boolean;
+};
+
+function VoiceMemberRow({ participant }: { participant: VoicePerson }) {
   return (
     <li
       className={cn(
@@ -76,10 +86,11 @@ function ChannelRow({
   connected?: boolean;
   icon: typeof Hash;
   canManage: boolean;
-  participants?: ParticipantView[];
+  participants?: VoicePerson[];
   onSelect: () => void;
   onEdit: () => void;
 }) {
+  const count = participants?.length ?? 0;
   return (
     <div>
       <div
@@ -102,6 +113,11 @@ function ChannelRow({
             )}
           />
           <span className="flex-1 truncate font-medium">{channel.name}</span>
+          {count > 0 ? (
+            <span className="rounded-md bg-white/5 px-1.5 py-0.5 text-[10px] font-semibold text-haze tabular-nums">
+              {count}
+            </span>
+          ) : null}
         </button>
         {canManage ? (
           <button
@@ -114,7 +130,7 @@ function ChannelRow({
           </button>
         ) : null}
       </div>
-      {connected && participants && participants.length > 0 ? (
+      {participants && participants.length > 0 ? (
         <ul className="mt-1 mb-1 ml-7 space-y-0.5" aria-label={`Na chamada ${channel.name}`}>
           {participants.map((participant) => (
             <VoiceMemberRow key={participant.identity} participant={participant} />
@@ -158,10 +174,26 @@ function TextChannels({
   );
 }
 
+function occupantsForChannel(
+  channelId: ChannelId,
+  activeId: ChannelId | null,
+  liveParticipants: ParticipantView[],
+  occupancy: Record<string, VoiceOccupant[]>,
+): VoicePerson[] {
+  if (channelId === activeId) {
+    return liveParticipants;
+  }
+  return (occupancy[channelId] ?? []).map((occupant) => ({
+    identity: occupant.identity,
+    name: occupant.name,
+  }));
+}
+
 function VoiceChannels({
   channels,
   activeId,
   voiceParticipants,
+  voiceOccupancy,
   canManage,
   onSelect,
   onEdit,
@@ -169,6 +201,7 @@ function VoiceChannels({
   channels: Channel[];
   activeId: ChannelId | null;
   voiceParticipants: ParticipantView[];
+  voiceOccupancy: Record<string, VoiceOccupant[]>;
   canManage: boolean;
   onSelect: (id: ChannelId) => void;
   onEdit: (channel: Channel) => void;
@@ -185,7 +218,12 @@ function VoiceChannels({
             connected={channel.id === activeId}
             icon={Volume2}
             canManage={canManage}
-            participants={channel.id === activeId ? voiceParticipants : undefined}
+            participants={occupantsForChannel(
+              channel.id,
+              activeId,
+              voiceParticipants,
+              voiceOccupancy,
+            )}
             onSelect={() => onSelect(channel.id)}
             onEdit={() => onEdit(channel)}
           />
@@ -203,6 +241,7 @@ export function ChannelSidebar({
   activeTextChannelId,
   activeVoiceChannelId,
   voiceParticipants,
+  voiceOccupancy,
   canManage,
   status,
   error,
@@ -253,6 +292,7 @@ export function ChannelSidebar({
           channels={voice}
           activeId={activeVoiceChannelId}
           voiceParticipants={voiceParticipants}
+          voiceOccupancy={voiceOccupancy}
           canManage={canManage}
           onSelect={onSelectVoice}
           onEdit={onEdit}

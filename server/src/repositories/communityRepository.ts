@@ -11,7 +11,7 @@ import type {
   VoiceAccess,
   ApiResult,
 } from "../../../shared/api.ts";
-import type { ChannelId } from "../../../shared/community.ts";
+import type { ChannelId, CommunityId } from "../../../shared/community.ts";
 import { fail } from "./errors.ts";
 import type { DbClient } from "./client.ts";
 import {
@@ -19,6 +19,7 @@ import {
   createCommunity as insertCommunity,
   getCommunity as loadCommunity,
   listCommunities as queryCommunities,
+  listMemberVoiceChannels as queryMemberVoiceChannels,
 } from "./communityQueries.ts";
 import {
   createChannel as insertCommunityChannel,
@@ -72,6 +73,10 @@ export type CommunityRepository = {
     userId: string,
     channelId: string,
   ): Promise<ApiResult<VoiceAccess>>;
+  listMemberVoiceChannels(
+    userId: string,
+    communityId: string,
+  ): Promise<ApiResult<{ communityId: CommunityId; channelIds: ChannelId[] }>>;
 };
 
 export { deriveCommunitySlug } from "./mappers.ts";
@@ -107,5 +112,9 @@ export function createCommunityRepository(client: DbClient): CommunityRepository
       wrap("acceptInvite", () => acceptCommunityInvite(client, userId, rawToken)),
     canJoinVoice: (userId, channelId) =>
       wrap("canJoinVoice", () => queryVoiceAccess(client, userId, channelId)),
+    listMemberVoiceChannels: (userId, communityId) =>
+      wrap("listMemberVoiceChannels", () =>
+        queryMemberVoiceChannels(client, userId, communityId),
+      ),
   };
 }

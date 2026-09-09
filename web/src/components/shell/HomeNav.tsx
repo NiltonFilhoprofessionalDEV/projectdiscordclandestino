@@ -8,6 +8,7 @@ import type { useChannels } from "../../hooks/useChannels.ts";
 import type { useCommunities } from "../../hooks/useCommunities.ts";
 import type { useHomeDialogState } from "../../hooks/useHomeDialogState.ts";
 import type { useHomeNavigation } from "../../hooks/useHomeNavigation.ts";
+import type { VoiceOccupant } from "../../services/api.ts";
 import { ShellNavColumns } from "./ShellNavColumns.tsx";
 
 type HomeNavProps = {
@@ -23,6 +24,7 @@ type HomeNavProps = {
   onSignOut: () => void;
   onEditChannel: (channel: Channel) => void;
   voiceParticipants: ParticipantView[];
+  voiceOccupancy: Record<string, VoiceOccupant[]>;
 };
 
 function HomeRail({
@@ -60,6 +62,7 @@ function HomeSidebar({
   onSignOut,
   onEditChannel,
   voiceParticipants,
+  voiceOccupancy,
 }: Omit<HomeNavProps, "communities">) {
   return (
     <ChannelSidebar
@@ -70,6 +73,7 @@ function HomeSidebar({
       activeTextChannelId={nav.activeTextChannelId}
       activeVoiceChannelId={nav.activeVoiceChannelId}
       voiceParticipants={voiceParticipants}
+      voiceOccupancy={voiceOccupancy}
       canManage={canManageCommunity(selectedCommunity?.role ?? null)}
       status={channels.status}
       error={channels.error}
