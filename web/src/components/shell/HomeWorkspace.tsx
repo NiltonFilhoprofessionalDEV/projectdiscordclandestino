@@ -2,6 +2,7 @@ import type { User } from "@supabase/supabase-js";
 import type { CommunitySummary } from "../../../../shared/api.ts";
 import type { ChannelId } from "../../../../shared/community.ts";
 import type { Profile } from "../../auth/AuthProvider.tsx";
+import { canManageCommunity } from "../../communities/roles.ts";
 import { FriendsPanel } from "../friends/FriendsPanel.tsx";
 import { MemberPanel } from "../members/MemberPanel.tsx";
 import type { useChannels } from "../../hooks/useChannels.ts";
@@ -34,6 +35,9 @@ type HomeWorkspaceProps = {
 };
 
 function HomeGrid(props: HomeWorkspaceProps) {
+  const memberUserIds = new Set(props.members.members.map((item) => item.userId));
+  const canInvite = canManageCommunity(props.selectedCommunity?.role ?? null);
+
   return (
     <div className="grid h-dvh w-dvw overflow-hidden bg-night text-cloud md:grid-cols-[76px_256px_minmax(0,1fr)] xl:grid-cols-[76px_256px_minmax(0,1fr)_288px]">
       <HomeNav
@@ -52,7 +56,14 @@ function HomeGrid(props: HomeWorkspaceProps) {
       />
       <HomeMain {...props} />
       <aside className="surface hidden h-full w-72 shrink-0 flex-col overflow-y-auto border-y-0 border-r-0 xl:flex">
-        <FriendsPanel friends={props.friends} />
+        <FriendsPanel
+          friends={props.friends}
+          communityId={props.selectedCommunity?.id ?? null}
+          communityName={props.selectedCommunity?.name ?? null}
+          canInviteToCommunity={canInvite}
+          memberUserIds={memberUserIds}
+          onInvited={() => void props.members.retry()}
+        />
         <div className="border-t border-haze/10 p-5">
           <MemberPanel
             members={props.members.members}

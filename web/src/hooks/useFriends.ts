@@ -266,5 +266,32 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
     [reload],
   );
 
-  return { friends, incoming, status, error, requestByEmail, accept, retry: reload };
+  const inviteToCommunity = useCallback(async (friendUserId: string, communityId: string) => {
+    const { error: rpcError } = await supabase.rpc("invite_friend_to_community", {
+      target_community: communityId,
+      friend_user: friendUserId,
+    });
+    if (rpcError) {
+      const message = rpcError.message.toLowerCase();
+      if (message.includes("permissão") || message.includes("permission")) {
+        return "Sem permissão para convidar nesta comunidade.";
+      }
+      if (message.includes("amigos") || message.includes("friend")) {
+        return "Só é possível convidar amigos aceitos.";
+      }
+      return "Não foi possível convidar o amigo.";
+    }
+    return null;
+  }, []);
+
+  return {
+    friends,
+    incoming,
+    status,
+    error,
+    requestByEmail,
+    accept,
+    inviteToCommunity,
+    retry: reload,
+  };
 }

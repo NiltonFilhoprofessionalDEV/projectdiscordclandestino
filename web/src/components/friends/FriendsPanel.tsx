@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { UserPlus } from "lucide-react";
+import { LogIn, UserPlus } from "lucide-react";
+import type { CommunityId } from "../../../../shared/community.ts";
 import { cn, initials } from "../../lib/utils.ts";
 import type { FriendEntry } from "../../hooks/useFriends.ts";
 import { Button } from "../ui/button.tsx";
@@ -13,8 +14,14 @@ type FriendsPanelProps = {
     error: string | null;
     requestByEmail: (email: string) => Promise<string | null>;
     accept: (id: string) => Promise<void>;
+    inviteToCommunity: (friendUserId: string, communityId: string) => Promise<string | null>;
     retry: () => Promise<void>;
   };
+  communityId: CommunityId | null;
+  communityName: string | null;
+  canInviteToCommunity: boolean;
+  memberUserIds: Set<string>;
+  onInvited?: () => void;
 };
 
 function presenceLabel(entry: FriendEntry): string {
@@ -30,15 +37,17 @@ function presenceLabel(entry: FriendEntry): string {
 function FriendRow({
   entry,
   action,
+  inviteAction,
 }: {
   entry: FriendEntry;
   action?: { label: string; onClick: () => void };
+  inviteAction?: { label: string; disabled?: boolean; title?: string; onClick: () => void };
 }) {
   return (
-    <li className="flex min-h-11 items-center gap-3 rounded-xl bg-abyss/55 px-3">
+    <li className="flex min-h-11 items-center gap-2 rounded-xl bg-abyss/55 px-3 py-1.5">
       <span
         className={cn(
-          "relative flex size-8 items-center justify-center overflow-hidden rounded-lg bg-deck text-[11px] font-semibold text-cloud",
+          "relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-deck text-[11px] font-semibold text-cloud",
           entry.presence !== "offline" && "ring-2 ring-emerald-400/70",
         )}
       >
@@ -52,6 +61,19 @@ function FriendRow({
         <span className="block truncate text-sm text-cloud">{entry.displayName}</span>
         <span className="text-xs text-haze">{presenceLabel(entry)}</span>
       </span>
+      {inviteAction ? (
+        <Button
+          type="button"
+          size="icon"
+          variant="live"
+          disabled={inviteAction.disabled}
+          title={inviteAction.title ?? inviteAction.label}
+          aria-label={inviteAction.label}
+          onClick={inviteAction.onClick}
+        >
+          <LogIn className="size-4" />
+        </Button>
+      ) : null}
       {action ? (
         <Button type="button" variant="ghost" onClick={action.onClick}>
           {action.label}
@@ -61,9 +83,18 @@ function FriendRow({
   );
 }
 
-export function FriendsPanel({ friends }: FriendsPanelProps) {
+export function FriendsPanel({
+  friends,
+  communityId,
+  communityName,
+  canInviteToCommunity,
+  memberUserIds,
+  onInvited,
+}: FriendsPanelProps) {
   const [email, setEmail] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [inviteFeedback, setInviteFeedback] = useState<string | null>(null);
+  const [pendingInviteId, setPendingInviteId] = useState<string | null>(null);
   const online = friends.friends.filter((item) => item.presence !== "offline");
   const offline = friends.friends.filter((item) => item.presence === "offline");
 
@@ -78,9 +109,59 @@ export function FriendsPanel({ friends }: FriendsPanelProps) {
     setEmail("");
   }
 
+  async function handleInvite(entry: FriendEntry) {
+    if (!communityId || !canInviteToCommunity) {
+      setInviteFeedback("Selecione uma comunidade que você administra.");
+      return;
+    }
+    if (memberUserIds.has(entry.userId)) {
+      setInviteFeedback(`${entry.displayName} já está na comunidade.`);
+      return;
+    }
+    setPendingInviteId(entry.userId);
+    setInviteFeedback(null);
+    const error = await friends.inviteToCommunity(entry.userId, communityId);
+    setPendingInviteId(null);
+    if (error) {
+      setInviteFeedback(error);
+      return;
+    }
+    setInviteFeedback(
+      `${entry.displayName} entrou em ${communityName ?? "a comunidade"}.`,
+    );
+    onInvited?.();
+  }
+
+  function inviteActionFor(entry: FriendEntry) {
+    if (!canInviteToCommunity || !communityId) {
+      return undefined;
+    }
+    const already = memberUserIds.has(entry.userId);
+    return {
+      label: already
+        ? `${entry.displayName} já é membro`
+        : `Convidar ${entry.displayName} para ${communityName ?? "a comunidade"}`,
+      disabled: already || pendingInviteId === entry.userId,
+      title: already
+        ? "Já é membro"
+        : `Convidar para ${communityName ?? "comunidade"}`,
+      onClick: () => void handleInvite(entry),
+    };
+  }
+
   return (
     <div className="p-5">
       <h2 className="px-1 text-xs font-semibold tracking-[0.14em] text-haze uppercase">Amigos</h2>
+      {canInviteToCommunity && communityName ? (
+        <p className="mt-2 px-1 text-xs text-haze">
+          Use o botão ao lado do amigo para convidar a{" "}
+          <span className="text-cloud">{communityName}</span>.
+        </p>
+      ) : (
+        <p className="mt-2 px-1 text-xs text-haze">
+          Abra uma comunidade (owner/admin) para convidar amigos aos canais.
+        </p>
+      )}
       <form onSubmit={(event) => void handleAdd(event)} className="mt-3 flex gap-2">
         <Input
           value={email}
@@ -94,6 +175,11 @@ export function FriendsPanel({ friends }: FriendsPanelProps) {
         </Button>
       </form>
       {formError ? <p className="mt-2 text-xs text-coral">{formError}</p> : null}
+      {inviteFeedback ? (
+        <p className="mt-2 text-xs text-electric" role="status">
+          {inviteFeedback}
+        </p>
+      ) : null}
       {friends.error ? (
         <div className="mt-3">
           <p className="text-sm text-coral">{friends.error}</p>
@@ -128,7 +214,13 @@ export function FriendsPanel({ friends }: FriendsPanelProps) {
           {online.length === 0 ? (
             <li className="rounded-xl bg-abyss/55 px-3 py-3 text-sm text-haze">Nenhum amigo online.</li>
           ) : (
-            online.map((entry) => <FriendRow key={entry.friendshipId} entry={entry} />)
+            online.map((entry) => (
+              <FriendRow
+                key={entry.friendshipId}
+                entry={entry}
+                inviteAction={inviteActionFor(entry)}
+              />
+            ))
           )}
         </ul>
       </div>
@@ -140,7 +232,11 @@ export function FriendsPanel({ friends }: FriendsPanelProps) {
           </p>
           <ul className="mt-2 space-y-2">
             {offline.map((entry) => (
-              <FriendRow key={entry.friendshipId} entry={entry} />
+              <FriendRow
+                key={entry.friendshipId}
+                entry={entry}
+                inviteAction={inviteActionFor(entry)}
+              />
             ))}
           </ul>
         </div>
