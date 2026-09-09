@@ -2,6 +2,14 @@
   "buildCommand": "npm run build -w @voice/web && node scripts/copy-dist.mjs",
   "outputDirectory": "dist",
   "installCommand": "npm install --include=optional && npm install @tailwindcss/oxide-linux-x64-gnu@4.3.3 lightningcss-linux-x64-gnu@1.32.0 --no-save",
+  "rewrites": [
+    { "source": "/api/communities", "destination": "/api/gateway" },
+    { "source": "/api/communities/(.*)", "destination": "/api/gateway" },
+    { "source": "/api/channels/(.*)", "destination": "/api/gateway" },
+    { "source": "/api/invites/(.*)", "destination": "/api/gateway" },
+    { "source": "/api/livekit/(.*)", "destination": "/api/gateway" },
+    { "source": "/api/rooms", "destination": "/api/gateway" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
