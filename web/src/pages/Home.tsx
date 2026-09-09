@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react";
+import type { User } from "@supabase/supabase-js";
 import { ConnectionState } from "livekit-client";
 import { Headphones, Menu } from "lucide-react";
 import { parseDisplayName } from "../../../shared/displayName.ts";
 import { getRoomLabel, type RoomId } from "../../../shared/rooms.ts";
+import type { Profile } from "../auth/AuthProvider.tsx";
+import { useAuth } from "../auth/useAuth.ts";
 import { ChatPanel } from "../components/chat/ChatPanel.tsx";
 import { ControlBar } from "../components/controls/ControlBar.tsx";
 import { ConnectionBadge } from "../components/controls/ConnectionBadge.tsx";
@@ -23,14 +26,16 @@ import { useOccupancy } from "../hooks/useOccupancy.ts";
 import { useRoom } from "../hooks/useRoom.ts";
 
 type HomeProps = {
-  displayName: string;
-  onRename: (name: string) => void;
+  user: User;
+  profile: Profile;
 };
 
-export function Home({ displayName, onRename }: HomeProps) {
+export function Home({ user, profile }: HomeProps) {
+  const { signOut } = useAuth();
   const { rooms, error: occupancyError } = useOccupancy();
+  const [displayName, setDisplayName] = useState(profile.display_name);
   const [activeRoomId, setActiveRoomId] = useState<RoomId | null>(null);
-  const [draftName, setDraftName] = useState(displayName);
+  const [draftName, setDraftName] = useState(profile.display_name);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -68,7 +73,7 @@ export function Home({ displayName, onRename }: HomeProps) {
   function commitRename() {
     const parsed = parseDisplayName(draftName);
     if (parsed.ok) {
-      onRename(parsed.value);
+      setDisplayName(parsed.value);
     }
   }
 
@@ -132,6 +137,9 @@ export function Home({ displayName, onRename }: HomeProps) {
               <p className="text-xs text-haze">Encontre sua próxima conversa</p>
             )}
           </div>
+          <Button type="button" onClick={() => void signOut()} title={user.email ?? profile.display_name}>
+            Sair
+          </Button>
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">

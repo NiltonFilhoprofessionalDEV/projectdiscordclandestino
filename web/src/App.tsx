@@ -1,37 +1,44 @@
-import { useState } from "react";
-import { parseDisplayName } from "../../shared/displayName.ts";
-import { readDisplayName, writeDisplayName } from "./lib/storage.ts";
+import { AuthProvider } from "./auth/AuthProvider.tsx";
+import { useAuth } from "./auth/useAuth.ts";
+import { Button } from "./components/ui/button.tsx";
 import { Home } from "./pages/Home.tsx";
-import { NameGate } from "./pages/NameGate.tsx";
+import { AuthPage } from "./pages/AuthPage.tsx";
 
 export function App() {
-  const [displayName, setDisplayName] = useState(() => {
-    const stored = readDisplayName();
-    if (!stored) {
-      return null;
-    }
-    const parsed = parseDisplayName(stored);
-    return parsed.ok ? parsed.value : null;
-  });
+  return (
+    <AuthProvider>
+      <AppGate />
+    </AuthProvider>
+  );
+}
 
-  if (!displayName) {
+function AppGate() {
+  const { session, user, profile, loading, error, signOut } = useAuth();
+
+  if (loading) {
     return (
-      <NameGate
-        onSubmit={(name) => {
-          writeDisplayName(name);
-          setDisplayName(name);
-        }}
-      />
+      <main className="flex min-h-dvh items-center justify-center bg-night px-5">
+        <p className="text-haze">Carregando sessão…</p>
+      </main>
     );
   }
 
-  return (
-    <Home
-      displayName={displayName}
-      onRename={(name) => {
-        writeDisplayName(name);
-        setDisplayName(name);
-      }}
-    />
-  );
+  if (session && error) {
+    return (
+      <main className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-night px-5">
+        <p className="text-coral" role="alert">
+          {error}
+        </p>
+        <Button type="button" variant="solid" onClick={() => void signOut()}>
+          Sair
+        </Button>
+      </main>
+    );
+  }
+
+  if (!session || !user || !profile) {
+    return <AuthPage />;
+  }
+
+  return <Home user={user} profile={profile} />;
 }

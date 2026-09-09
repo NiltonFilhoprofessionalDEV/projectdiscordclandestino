@@ -7,6 +7,8 @@ export const APP_ORIGIN = env("APP_ORIGIN") || "http://localhost:5173";
 export const LIVEKIT_URL = env("LIVEKIT_URL");
 export const LIVEKIT_API_KEY = env("LIVEKIT_API_KEY");
 export const LIVEKIT_API_SECRET = env("LIVEKIT_API_SECRET");
+export const SUPABASE_URL = env("SUPABASE_URL");
+export const SUPABASE_SECRET_KEY = env("SUPABASE_SECRET_KEY");
 
 export function corsOrigins(): string[] {
   const configured = APP_ORIGIN.split(",").map((item) => item.trim()).filter(Boolean);
