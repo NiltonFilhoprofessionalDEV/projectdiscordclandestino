@@ -11,8 +11,11 @@
     { "source": "/api/rooms", "destination": "/api/gateway" }
   ],
   "functions": {
-    "api/gateway.mjs": {
+    "api/gateway.js": {
       "maxDuration": 15
+    },
+    "api/mini.js": {
+      "maxDuration": 10
     }
   },
   "headers": [
