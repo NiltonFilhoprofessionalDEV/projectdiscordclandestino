@@ -1,0 +1,2 @@
+-- Intentionally empty: local accounts and communities are created through Auth
+-- and the transactional create_community RPC, never as production mock data.

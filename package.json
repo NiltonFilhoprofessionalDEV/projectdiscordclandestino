@@ -4,15 +4,27 @@
   "engines": {
     "node": "22.x"
   },
-  "workspaces": ["shared", "server", "web"],
+  "workspaces": [
+    "shared",
+    "server",
+    "web"
+  ],
   "scripts": {
     "dev:server": "npm run dev -w server",
     "dev:web": "npm run dev -w web",
     "test": "npm run test -w shared && npm run test -w server",
-    "build": "npm run build -w web && node scripts/copy-dist.mjs"
+    "build": "npm run build -w web && node scripts/copy-dist.mjs",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:reset": "supabase db reset",
+    "supabase:test": "supabase test db",
+    "supabase:types": "supabase gen types typescript --local > shared/database.types.ts"
   },
   "dependencies": {
     "hono": "^4.9.8",
     "livekit-server-sdk": "^2.13.3"
+  },
+  "devDependencies": {
+    "supabase": "2.117.0"
   }
 }
