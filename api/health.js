@@ -5,7 +5,6 @@ export default function handler(_req, res) {
   res.end(
     JSON.stringify({
       ok: true,
-      ping: true,
       supabaseUrl: Boolean(process.env.SUPABASE_URL),
       supabasePublishableKey: Boolean(
         process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY,
