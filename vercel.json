@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build -w @voice/web && node scripts/copy-dist.mjs",
+  "buildCommand": "npm run build -w @voice/web && node scripts/copy-dist.mjs && node scripts/bundle-api.mjs",
   "outputDirectory": "dist",
   "installCommand": "npm install --include=optional && npm install @tailwindcss/oxide-linux-x64-gnu@4.3.3 lightningcss-linux-x64-gnu@1.32.0 --no-save",
   "rewrites": [
@@ -10,6 +10,11 @@
     { "source": "/api/livekit/(.*)", "destination": "/api/gateway" },
     { "source": "/api/rooms", "destination": "/api/gateway" }
   ],
+  "functions": {
+    "api/gateway.mjs": {
+      "maxDuration": 15
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",

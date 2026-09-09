@@ -13,7 +13,8 @@
     "dev:server": "npm run dev -w server",
     "dev:web": "npm run dev -w web",
     "test": "npm run test -w shared && npm run test -w server",
-    "build": "npm run build -w web && node scripts/copy-dist.mjs",
+    "build": "npm run build -w web && node scripts/copy-dist.mjs && node scripts/bundle-api.mjs",
+    "build:api": "node scripts/bundle-api.mjs",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:reset": "supabase db reset",
@@ -26,6 +27,7 @@
     "livekit-server-sdk": "^2.13.3"
   },
   "devDependencies": {
+    "esbuild": "^0.25.9",
     "supabase": "2.117.0"
   }
 }
