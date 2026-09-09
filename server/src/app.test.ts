@@ -81,7 +81,14 @@ describe("API", () => {
   it("health is ok", async () => {
     const res = await app.request("/api/health");
     expect(res.status).toBe(200);
-    await expect(res.json()).resolves.toEqual({ ok: true });
+    const body = await res.json();
+    expect(body).toMatchObject({
+      ok: true,
+      livekit: expect.any(Boolean),
+      supabaseUrl: expect.any(Boolean),
+      supabasePublishableKey: expect.any(Boolean),
+      supabaseSecretKey: expect.any(Boolean),
+    });
   });
 
   it("lists configured rooms", async () => {
@@ -406,7 +413,8 @@ describe("authorized community routes", () => {
       ok: false,
       error: {
         code: "INTERNAL",
-        message: "Não foi possível concluir a operação.",
+        message:
+          "Configure SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY e SUPABASE_SECRET_KEY na Vercel e faça Redeploy.",
       },
     });
   });

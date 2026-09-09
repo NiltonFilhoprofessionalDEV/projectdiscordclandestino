@@ -4,6 +4,7 @@ import {
   hasLiveKitCredentials,
   LIVEKIT_URL,
   resolveCorsOrigin,
+  supabaseServerConfigStatus,
 } from "./config.ts";
 import { createAuthMiddleware, type AuthEnv } from "./http/auth.ts";
 import { registerChannelRoutes } from "./http/channels.ts";
@@ -42,7 +43,13 @@ export function createApp(deps: AppDeps = productionDeps()): Hono<AuthEnv> {
     }),
   );
 
-  app.get("/api/health", (c) => c.json({ ok: true }));
+  app.get("/api/health", (c) =>
+    c.json({
+      ok: true,
+      livekit: hasLiveKitCredentials(),
+      ...supabaseServerConfigStatus(),
+    }),
+  );
   app.get("/api/rooms", async (c) => c.json(await roomsPayload()));
 
   const auth = createAuthMiddleware(deps.requireUser);
@@ -58,13 +65,18 @@ export function createApp(deps: AppDeps = productionDeps()): Hono<AuthEnv> {
   registerLiveKitTokenRoute(app, deps);
 
   app.onError((error, c) => {
-    console.error("unhandled", { name: error.name });
+    const detail = error instanceof Error ? error.message : "";
+    console.error("unhandled", { name: error.name, message: detail });
+    const configHint =
+      /Supabase/.test(detail)
+        ? "Configure SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY e SUPABASE_SECRET_KEY na Vercel e faça Redeploy."
+        : "Não foi possível concluir a operação.";
     return c.json(
       {
         ok: false,
         error: {
           code: "INTERNAL",
-          message: "Não foi possível concluir a operação.",
+          message: configHint,
         },
       },
       500,

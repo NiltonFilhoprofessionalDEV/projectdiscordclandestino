@@ -44,6 +44,15 @@ export function hasLiveKitCredentials(): boolean {
   return true;
 }
 
+/** Flags only — never expose secret values. */
+export function supabaseServerConfigStatus() {
+  return {
+    supabaseUrl: Boolean(SUPABASE_URL),
+    supabasePublishableKey: Boolean(SUPABASE_PUBLISHABLE_KEY),
+    supabaseSecretKey: Boolean(SUPABASE_SECRET_KEY),
+  };
+}
+
 export function livekitHttpHost(wsUrl: string): string {
   return wsUrl.replace(/^wss:/, "https:").replace(/^ws:/, "http:");
 }
