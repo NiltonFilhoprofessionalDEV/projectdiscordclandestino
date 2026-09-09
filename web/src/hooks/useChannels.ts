@@ -4,6 +4,7 @@ import type { CommunityId } from "../../../shared/community.ts";
 import { groupChannels } from "../channels/groups.ts";
 import { createRequestGuard } from "../lib/requestGuard.ts";
 import { createChannel, fetchCommunityChannels } from "../services/api.ts";
+import { beginCommunityResourceLoad } from "./communityResource.ts";
 import type { LoadStatus } from "./useCommunities.ts";
 
 export function useChannels(communityId: CommunityId | null) {
@@ -13,15 +14,14 @@ export function useChannels(communityId: CommunityId | null) {
   const guard = useRef(createRequestGuard());
 
   const reload = useCallback(async () => {
+    const reset = beginCommunityResourceLoad(communityId);
+    const ticket = guard.current.next();
+    setChannels([]);
+    setStatus(reset.status);
+    setError(reset.error);
     if (!communityId) {
-      guard.current.next();
-      setChannels([]);
-      setStatus("idle");
-      setError(null);
       return;
     }
-    const ticket = guard.current.next();
-    setStatus((current) => (current === "ready" ? "ready" : "loading"));
     const result = await fetchCommunityChannels(communityId);
     if (!ticket.isCurrent()) {
       return;

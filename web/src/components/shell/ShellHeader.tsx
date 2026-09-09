@@ -1,3 +1,4 @@
+import type { RefObject } from "react";
 import { Menu } from "lucide-react";
 import { ConnectionQuality, ConnectionState } from "livekit-client";
 import { Button } from "../ui/button.tsx";
@@ -11,6 +12,7 @@ type ShellHeaderProps = {
   quality: ConnectionQuality;
   rttMs: number | null;
   accountTitle: string;
+  menuRef: RefObject<HTMLButtonElement | null>;
   onOpenSidebar: () => void;
   onSignOut: () => void;
 };
@@ -23,12 +25,14 @@ export function ShellHeader({
   quality,
   rttMs,
   accountTitle,
+  menuRef,
   onOpenSidebar,
   onSignOut,
 }: ShellHeaderProps) {
   return (
     <header className="glass-bar flex min-h-16 items-center gap-3 border-x-0 border-t-0 px-4 lg:px-6">
       <Button
+        ref={menuRef}
         type="button"
         size="icon"
         className="md:hidden"

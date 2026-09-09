@@ -15,8 +15,48 @@ type CommunityRailProps = {
   onSelect: (id: CommunityId) => void;
   onCreate: () => void;
   createRef: RefObject<HTMLButtonElement | null>;
-  className?: string;
 };
+
+function JoinedRailList({
+  communities,
+  selectedId,
+  exploring,
+  onSelect,
+}: {
+  communities: CommunitySummary[];
+  selectedId: CommunityId | null;
+  exploring: boolean;
+  onSelect: (id: CommunityId) => void;
+}) {
+  const joined = communities.filter((item) => item.role !== null);
+  return (
+    <ul className="flex min-h-0 flex-1 flex-col items-center gap-3 overflow-y-auto px-2">
+      {joined.map((community) => {
+        const active = !exploring && community.id === selectedId;
+        return (
+          <li key={community.id}>
+            <button
+              type="button"
+              onClick={() => onSelect(community.id)}
+              className={cn(
+                "focus-ring relative flex size-11 items-center justify-center rounded-xl bg-deck/65 text-xs font-semibold text-haze transition hover:bg-deck hover:text-cloud",
+                active && "bg-deck text-cloud ring-1 ring-electric/35",
+              )}
+              aria-label={community.name}
+              aria-current={active ? "page" : undefined}
+              title={community.name}
+            >
+              {active ? (
+                <span className="absolute -left-3 h-6 w-[3px] rounded-r-full bg-electric" />
+              ) : null}
+              {initials(community.name)}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 export function CommunityRail({
   communities,
@@ -28,16 +68,10 @@ export function CommunityRail({
   onSelect,
   onCreate,
   createRef,
-  className,
 }: CommunityRailProps) {
-  const joined = communities.filter((item) => item.role !== null);
-
   return (
     <nav
-      className={cn(
-        "flex h-full w-[76px] shrink-0 flex-col items-center gap-3 bg-abyss py-5",
-        className,
-      )}
+      className="flex h-full w-[76px] shrink-0 flex-col items-center gap-3 bg-abyss py-5"
       aria-label="Comunidades"
     >
       <button
@@ -54,31 +88,12 @@ export function CommunityRail({
         <Compass className="size-5" />
       </button>
       <div className="my-1 h-px w-8 bg-haze/12" />
-      <ul className="flex min-h-0 flex-1 flex-col items-center gap-3 overflow-y-auto px-2">
-        {joined.map((community) => {
-          const active = !exploring && community.id === selectedId;
-          return (
-            <li key={community.id}>
-              <button
-                type="button"
-                onClick={() => onSelect(community.id)}
-                className={cn(
-                  "focus-ring relative flex size-11 items-center justify-center rounded-xl bg-deck/65 text-xs font-semibold text-haze transition hover:bg-deck hover:text-cloud",
-                  active && "bg-deck text-cloud ring-1 ring-electric/35",
-                )}
-                aria-label={community.name}
-                aria-current={active ? "page" : undefined}
-                title={community.name}
-              >
-                {active ? (
-                  <span className="absolute -left-3 h-6 w-[3px] rounded-r-full bg-electric" />
-                ) : null}
-                {initials(community.name)}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      <JoinedRailList
+        communities={communities}
+        selectedId={selectedId}
+        exploring={exploring}
+        onSelect={onSelect}
+      />
       <button
         ref={createRef}
         type="button"
@@ -89,12 +104,18 @@ export function CommunityRail({
       >
         <Plus className="size-5" />
       </button>
-      <div className="mt-auto flex w-full flex-col items-center gap-3 px-3">
-        <PulseLine active={voiceActive} className="w-full" />
-        <span className="flex size-10 items-center justify-center rounded-xl bg-deck text-[11px] font-semibold text-cloud ring-1 ring-haze/15">
-          {initials(displayName)}
-        </span>
-      </div>
+      <RailFooter voiceActive={voiceActive} displayName={displayName} />
     </nav>
+  );
+}
+
+function RailFooter({ voiceActive, displayName }: { voiceActive: boolean; displayName: string }) {
+  return (
+    <div className="mt-auto flex w-full flex-col items-center gap-3 px-3">
+      <PulseLine active={voiceActive} className="w-full" />
+      <span className="flex size-10 items-center justify-center rounded-xl bg-deck text-[11px] font-semibold text-cloud ring-1 ring-haze/15">
+        {initials(displayName)}
+      </span>
+    </div>
   );
 }

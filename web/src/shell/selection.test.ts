@@ -51,4 +51,14 @@ describe("centerSurfaceLabel", () => {
       }),
     ).toBe("voz-geral");
   });
+
+  it("names a public preview without pretending the user joined", () => {
+    expect(
+      centerSurfaceLabel({
+        surface: "preview",
+        textChannel: text,
+        voiceChannel: voice,
+      }),
+    ).toBe("Não membro");
+  });
 });

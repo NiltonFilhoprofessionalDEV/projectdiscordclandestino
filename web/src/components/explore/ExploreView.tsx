@@ -1,7 +1,6 @@
-import { useRef } from "react";
+import { useRef, type RefObject } from "react";
 import { ArrowUpRight, Radio, Search } from "lucide-react";
 import type { CommunitySummary } from "../../../../shared/api.ts";
-import type { CommunityId } from "../../../../shared/community.ts";
 import { filterExploreCommunities } from "../../communities/lists.ts";
 import type { LoadStatus } from "../../hooks/useCommunities.ts";
 import { cn } from "../../lib/utils.ts";
@@ -20,7 +19,7 @@ type ExploreViewProps = {
   communities: CommunitySummary[];
   query: string;
   onQuery: (value: string) => void;
-  onSelect: (id: CommunityId) => void;
+  onChoose: (community: CommunitySummary) => void;
   status: LoadStatus;
   error: string | null;
   onRetry: () => void;
@@ -34,25 +33,20 @@ function accentFor(id: string): string {
   return ACCENTS[hash] ?? ACCENTS[0];
 }
 
-function visibilityLabel(community: CommunitySummary): string {
-  if (community.role) {
-    return community.visibility === "private" ? "Sua comunidade privada" : "Você participa";
-  }
-  return "Comunidade pública";
-}
-
 function CommunityCard({
   community,
-  onSelect,
+  onChoose,
 }: {
   community: CommunitySummary;
-  onSelect: (id: CommunityId) => void;
+  onChoose: (community: CommunitySummary) => void;
 }) {
+  const member = community.role !== null;
+  const action = member ? "Abrir" : "Ver";
   return (
     <button
       type="button"
-      onClick={() => onSelect(community.id)}
-      aria-label={`Abrir ${community.name}`}
+      onClick={() => onChoose(community)}
+      aria-label={member ? `Abrir ${community.name}` : `Ver ${community.name}, você não é membro`}
       className="focus-ring surface-raised group flex min-h-40 overflow-hidden rounded-[1.35rem] text-left transition hover:-translate-y-0.5 hover:border-electric/30"
     >
       <span
@@ -61,13 +55,13 @@ function CommunityCard({
       />
       <span className="flex flex-1 flex-col p-5">
         <span className="text-[11px] font-semibold tracking-[0.14em] text-haze uppercase">
-          {visibilityLabel(community)}
+          {member ? (community.visibility === "private" ? "Sua comunidade privada" : "Você participa") : "Comunidade pública"}
         </span>
         <span className="mt-2 font-display text-xl text-cloud">{community.name}</span>
         <span className="mt-1 text-sm leading-relaxed text-haze">/{community.slug}</span>
         <span className="mt-auto flex items-end justify-end pt-5">
           <span className="flex items-center gap-1 text-sm font-semibold text-[#aab9ff]">
-            Entrar <ArrowUpRight className="size-4" />
+            {action} <ArrowUpRight className="size-4" />
           </span>
         </span>
       </span>
@@ -97,11 +91,149 @@ function EmptyState({
   );
 }
 
+function ExploreHero() {
+  return (
+    <section className="surface-raised relative grid overflow-hidden rounded-[1.6rem] p-6 sm:p-8 lg:min-h-56 lg:grid-cols-[1fr_0.7fr] lg:items-center">
+      <div className="relative z-10">
+        <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.16em] text-[#aab9ff] uppercase">
+          <Radio className="size-4 text-coral" /> Comunidades
+        </p>
+        <h2 className="mt-4 max-w-xl font-display text-2xl leading-tight text-cloud sm:text-3xl lg:text-4xl">
+          Encontre sua próxima conversa.
+        </h2>
+        <p className="mt-3 max-w-lg text-sm leading-relaxed text-haze">
+          Entre nas comunidades de que você já faz parte ou descubra espaços públicos.
+        </p>
+      </div>
+      <div className="relative hidden h-24 lg:block" aria-hidden>
+        <span className="absolute top-2 right-4 size-20 rounded-[1.4rem] bg-pulse/20 ring-1 ring-pulse/30" />
+        <span className="absolute right-24 bottom-0 size-16 rounded-[1.2rem] bg-electric/20 ring-1 ring-electric/30" />
+        <PulseLine active className="absolute top-1/2 right-0 w-full" />
+      </div>
+    </section>
+  );
+}
+
+function ExploreLists({
+  joined,
+  discoverable,
+  onChoose,
+}: {
+  joined: CommunitySummary[];
+  discoverable: CommunitySummary[];
+  onChoose: (community: CommunitySummary) => void;
+}) {
+  return (
+    <>
+      {joined.length > 0 ? (
+        <section>
+          <h3 className="mb-4 text-sm font-semibold text-cloud">Suas comunidades</h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            {joined.map((community) => (
+              <CommunityCard key={community.id} community={community} onChoose={onChoose} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+      {discoverable.length > 0 ? (
+        <section>
+          <h3 className="mb-4 text-sm font-semibold text-cloud">Comunidades públicas</h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            {discoverable.map((community) => (
+              <CommunityCard key={community.id} community={community} onChoose={onChoose} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+    </>
+  );
+}
+
+function ExploreSearch({
+  query,
+  onQuery,
+  searchRef,
+}: {
+  query: string;
+  onQuery: (value: string) => void;
+  searchRef: RefObject<HTMLInputElement | null>;
+}) {
+  return (
+    <div className="flex justify-center lg:justify-end">
+      <label className="relative w-full max-w-md" htmlFor="community-search">
+        <span className="sr-only">Buscar comunidades</span>
+        <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-haze" />
+        <Input
+          ref={searchRef}
+          id="community-search"
+          value={query}
+          onChange={(event) => onQuery(event.target.value)}
+          placeholder="Buscar uma comunidade"
+          className="h-11 pl-11"
+        />
+      </label>
+    </div>
+  );
+}
+
+function ExploreStatus({
+  status,
+  error,
+  isEmpty,
+  hasQuery,
+  onRetry,
+  onQuery,
+  searchRef,
+}: {
+  status: LoadStatus;
+  error: string | null;
+  isEmpty: boolean;
+  hasQuery: boolean;
+  onRetry: () => void;
+  onQuery: (value: string) => void;
+  searchRef: RefObject<HTMLInputElement | null>;
+}) {
+  if (status === "error") {
+    return (
+      <EmptyState
+        title="Não foi possível carregar as comunidades."
+        detail={error ?? "Tente novamente em instantes."}
+        actionLabel="Tentar de novo"
+        onAction={onRetry}
+      />
+    );
+  }
+  if (status === "ready" && isEmpty && !hasQuery) {
+    return (
+      <EmptyState
+        title="Nenhuma comunidade por aqui."
+        detail="Crie a primeira ou peça um convite."
+        actionLabel="Atualizar"
+        onAction={onRetry}
+      />
+    );
+  }
+  if (status === "ready" && isEmpty && hasQuery) {
+    return (
+      <EmptyState
+        title="Nenhuma comunidade encontrada."
+        detail="Limpe a busca ou tente outro nome."
+        actionLabel="Limpar busca"
+        onAction={() => {
+          onQuery("");
+          requestAnimationFrame(() => searchRef.current?.focus());
+        }}
+      />
+    );
+  }
+  return null;
+}
+
 export function ExploreView({
   communities,
   query,
   onQuery,
-  onSelect,
+  onChoose,
   status,
   error,
   onRetry,
@@ -113,91 +245,18 @@ export function ExploreView({
 
   return (
     <div className="flex w-full flex-col gap-7">
-      <div className="flex justify-center lg:justify-end">
-        <label className="relative w-full max-w-md" htmlFor="community-search">
-          <span className="sr-only">Buscar comunidades</span>
-          <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-haze" />
-          <Input
-            ref={searchRef}
-            id="community-search"
-            value={query}
-            onChange={(event) => onQuery(event.target.value)}
-            placeholder="Buscar uma comunidade"
-            className="h-11 pl-11"
-          />
-        </label>
-      </div>
-
-      <section className="surface-raised relative grid overflow-hidden rounded-[1.6rem] p-6 sm:p-8 lg:min-h-56 lg:grid-cols-[1fr_0.7fr] lg:items-center">
-        <div className="relative z-10">
-          <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.16em] text-[#aab9ff] uppercase">
-            <Radio className="size-4 text-coral" /> Comunidades
-          </p>
-          <h2 className="mt-4 max-w-xl font-display text-2xl leading-tight text-cloud sm:text-3xl lg:text-4xl">
-            Encontre sua próxima conversa.
-          </h2>
-          <p className="mt-3 max-w-lg text-sm leading-relaxed text-haze">
-            Entre nas comunidades de que você já faz parte ou descubra espaços públicos.
-          </p>
-        </div>
-        <div className="relative hidden h-24 lg:block" aria-hidden>
-          <span className="absolute top-2 right-4 size-20 rounded-[1.4rem] bg-pulse/20 ring-1 ring-pulse/30" />
-          <span className="absolute right-24 bottom-0 size-16 rounded-[1.2rem] bg-electric/20 ring-1 ring-electric/30" />
-          <PulseLine active className="absolute top-1/2 right-0 w-full" />
-        </div>
-      </section>
-
-      {status === "error" ? (
-        <EmptyState
-          title="Não foi possível carregar as comunidades."
-          detail={error ?? "Tente novamente em instantes."}
-          actionLabel="Tentar de novo"
-          onAction={onRetry}
-        />
-      ) : null}
-
-      {status === "ready" && isEmpty && !hasQuery ? (
-        <EmptyState
-          title="Nenhuma comunidade por aqui."
-          detail="Crie a primeira ou peça um convite."
-          actionLabel="Atualizar"
-          onAction={onRetry}
-        />
-      ) : null}
-
-      {status === "ready" && isEmpty && hasQuery ? (
-        <EmptyState
-          title="Nenhuma comunidade encontrada."
-          detail="Limpe a busca ou tente outro nome."
-          actionLabel="Limpar busca"
-          onAction={() => {
-            onQuery("");
-            requestAnimationFrame(() => searchRef.current?.focus());
-          }}
-        />
-      ) : null}
-
-      {joined.length > 0 ? (
-        <section>
-          <h3 className="mb-4 text-sm font-semibold text-cloud">Suas comunidades</h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            {joined.map((community) => (
-              <CommunityCard key={community.id} community={community} onSelect={onSelect} />
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {discoverable.length > 0 ? (
-        <section>
-          <h3 className="mb-4 text-sm font-semibold text-cloud">Comunidades públicas</h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            {discoverable.map((community) => (
-              <CommunityCard key={community.id} community={community} onSelect={onSelect} />
-            ))}
-          </div>
-        </section>
-      ) : null}
+      <ExploreSearch query={query} onQuery={onQuery} searchRef={searchRef} />
+      <ExploreHero />
+      <ExploreStatus
+        status={status}
+        error={error}
+        isEmpty={isEmpty}
+        hasQuery={hasQuery}
+        onRetry={onRetry}
+        onQuery={onQuery}
+        searchRef={searchRef}
+      />
+      <ExploreLists joined={joined} discoverable={discoverable} onChoose={onChoose} />
     </div>
   );
 }

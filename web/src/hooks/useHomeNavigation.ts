@@ -1,62 +1,70 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, type Dispatch, type SetStateAction } from "react";
 import type { Channel } from "../../../shared/api.ts";
 import type { ChannelId, CommunityId } from "../../../shared/community.ts";
-import type { CenterSurface } from "../shell/selection.ts";
+import {
+  applyExplore,
+  applyLeaveVoice,
+  applyOpenMember,
+  applyPreviewCommunity,
+  applySelectText,
+  applySelectVoice,
+  initialShellNav,
+  type ShellNav,
+} from "../shell/navigation.ts";
 
-export function useHomeNavigation() {
-  const [surface, setSurface] = useState<CenterSurface>("explore");
-  const [activeVoiceChannelId, setActiveVoiceChannelId] = useState<ChannelId | null>(null);
-  const [activeTextChannelId, setActiveTextChannelId] = useState<ChannelId | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
+function useNavCommunityActions(setNav: Dispatch<SetStateAction<ShellNav>>) {
   const explore = useCallback(() => {
-    setSurface("explore");
-    setSidebarOpen(false);
-  }, []);
+    setNav(applyExplore);
+  }, [setNav]);
 
   const openCommunity = useCallback((id: CommunityId, select: (id: CommunityId) => void) => {
     select(id);
-    setSurface("text");
-    setSidebarOpen(false);
-  }, []);
+    setNav(applyOpenMember);
+  }, [setNav]);
 
+  const previewCommunity = useCallback((id: CommunityId, select: (id: CommunityId) => void) => {
+    select(id);
+    setNav(applyPreviewCommunity);
+  }, [setNav]);
+
+  const setSidebarOpen = useCallback((open: boolean) => {
+    setNav((current) => ({ ...current, sidebarOpen: open }));
+  }, [setNav]);
+
+  return { explore, openCommunity, previewCommunity, setSidebarOpen };
+}
+
+function useNavChannelActions(setNav: Dispatch<SetStateAction<ShellNav>>) {
   const selectText = useCallback((id: ChannelId) => {
-    setActiveTextChannelId(id);
-    setSurface("text");
-    setSidebarOpen(false);
-  }, []);
+    setNav((current) => applySelectText(current, id));
+  }, [setNav]);
 
   const selectVoice = useCallback((id: ChannelId) => {
-    setActiveVoiceChannelId(id);
-    setSurface("voice");
-    setSidebarOpen(false);
-  }, []);
+    setNav((current) => applySelectVoice(current, id));
+  }, [setNav]);
 
   const leaveVoice = useCallback(() => {
-    setActiveVoiceChannelId(null);
-    setSurface((current) => (current === "voice" ? "text" : current));
-  }, []);
+    setNav(applyLeaveVoice);
+  }, [setNav]);
 
   const createdChannel = useCallback((channel: Channel) => {
     if (channel.type === "text") {
-      selectText(channel.id);
+      setNav((current) => applySelectText(current, channel.id));
       return;
     }
-    selectVoice(channel.id);
-  }, [selectText, selectVoice]);
+    setNav((current) => applySelectVoice(current, channel.id));
+  }, [setNav]);
 
-  return {
-    surface,
-    activeVoiceChannelId,
-    activeTextChannelId,
-    setActiveTextChannelId,
-    sidebarOpen,
-    setSidebarOpen,
-    explore,
-    openCommunity,
-    selectText,
-    selectVoice,
-    leaveVoice,
-    createdChannel,
-  };
+  const setActiveTextChannelId = useCallback((id: ChannelId | null) => {
+    setNav((current) => ({ ...current, activeTextChannelId: id }));
+  }, [setNav]);
+
+  return { selectText, selectVoice, leaveVoice, createdChannel, setActiveTextChannelId };
+}
+
+export function useHomeNavigation() {
+  const [nav, setNav] = useState(initialShellNav);
+  const community = useNavCommunityActions(setNav);
+  const channel = useNavChannelActions(setNav);
+  return { ...nav, ...community, ...channel };
 }

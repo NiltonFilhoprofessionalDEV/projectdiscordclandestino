@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { CommunityId } from "../../../shared/community.ts";
 import { createRequestGuard } from "../lib/requestGuard.ts";
 import { fetchCommunityMembers, type CommunityMember } from "../services/api.ts";
+import { beginCommunityResourceLoad } from "./communityResource.ts";
 import type { LoadStatus } from "./useCommunities.ts";
 
 export function useMembers(communityId: CommunityId | null) {
@@ -11,14 +12,14 @@ export function useMembers(communityId: CommunityId | null) {
   const guard = useRef(createRequestGuard());
 
   const reload = useCallback(async () => {
+    const reset = beginCommunityResourceLoad(communityId);
+    const ticket = guard.current.next();
+    setMembers([]);
+    setStatus(reset.status);
+    setError(reset.error);
     if (!communityId) {
-      guard.current.next();
-      setMembers([]);
-      setStatus("idle");
-      setError(null);
       return;
     }
-    const ticket = guard.current.next();
     const result = await fetchCommunityMembers(communityId);
     if (!ticket.isCurrent()) {
       return;

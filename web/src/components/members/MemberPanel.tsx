@@ -12,7 +12,6 @@ type MemberPanelProps = {
   participants: ParticipantView[];
   voiceActive: boolean;
   onRetry: () => void;
-  className?: string;
 };
 
 function roleLabel(role: CommunityMember["role"]): string {
@@ -25,6 +24,57 @@ function roleLabel(role: CommunityMember["role"]): string {
   return "Membro";
 }
 
+function MemberRoster({
+  status,
+  error,
+  members,
+  onRetry,
+}: {
+  status: LoadStatus;
+  error: string | null;
+  members: CommunityMember[];
+  onRetry: () => void;
+}) {
+  if (status === "error") {
+    return (
+      <div className="mt-3">
+        <p className="text-sm text-coral">{error}</p>
+        <Button type="button" className="mt-3 w-full" onClick={onRetry}>
+          Tentar de novo
+        </Button>
+      </div>
+    );
+  }
+  if (status === "idle") {
+    return <p className="mt-3 text-sm text-haze">Selecione uma comunidade.</p>;
+  }
+  if (status === "loading") {
+    return <p className="mt-3 text-sm text-haze">Carregando membros…</p>;
+  }
+  if (members.length === 0) {
+    return (
+      <p className="mt-3 rounded-xl bg-abyss/55 px-3 py-4 text-sm leading-relaxed text-haze">
+        Nenhum membro para exibir.
+      </p>
+    );
+  }
+  return (
+    <ul className="mt-3 space-y-2">
+      {members.map((member) => (
+        <li key={member.userId} className="flex min-h-11 items-center gap-3 rounded-xl bg-abyss/55 px-3">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-deck text-[11px] font-semibold text-cloud">
+            {initials(member.displayName)}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm text-cloud">{member.displayName}</span>
+            <span className="text-xs text-haze">{roleLabel(member.role)}</span>
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function MemberPanel({
   members,
   status,
@@ -32,51 +82,12 @@ export function MemberPanel({
   participants,
   voiceActive,
   onRetry,
-  className,
 }: MemberPanelProps) {
   return (
-    <aside className={`surface hidden h-full w-72 shrink-0 flex-col gap-6 border-y-0 border-r-0 p-5 xl:flex ${className ?? ""}`}>
+    <aside className="surface hidden h-full w-72 shrink-0 flex-col gap-6 border-y-0 border-r-0 p-5 xl:flex">
       <div>
-        <h2 className="px-1 text-xs font-semibold tracking-[0.14em] text-haze uppercase">
-          Membros
-        </h2>
-        {status === "error" ? (
-          <div className="mt-3">
-            <p className="text-sm text-coral">{error}</p>
-            <Button type="button" className="mt-3 w-full" onClick={onRetry}>
-              Tentar de novo
-            </Button>
-          </div>
-        ) : null}
-        {status === "idle" ? (
-          <p className="mt-3 text-sm text-haze">Selecione uma comunidade.</p>
-        ) : null}
-        {status === "loading" ? (
-          <p className="mt-3 text-sm text-haze">Carregando membros…</p>
-        ) : null}
-        {status === "ready" && members.length === 0 ? (
-          <p className="mt-3 rounded-xl bg-abyss/55 px-3 py-4 text-sm leading-relaxed text-haze">
-            Nenhum membro para exibir.
-          </p>
-        ) : null}
-        {status === "ready" && members.length > 0 ? (
-          <ul className="mt-3 space-y-2">
-            {members.map((member) => (
-              <li
-                key={member.userId}
-                className="flex min-h-11 items-center gap-3 rounded-xl bg-abyss/55 px-3"
-              >
-                <span className="flex size-8 items-center justify-center rounded-lg bg-deck text-[11px] font-semibold text-cloud">
-                  {initials(member.displayName)}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm text-cloud">{member.displayName}</span>
-                  <span className="text-xs text-haze">{roleLabel(member.role)}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        <h2 className="px-1 text-xs font-semibold tracking-[0.14em] text-haze uppercase">Membros</h2>
+        <MemberRoster status={status} error={error} members={members} onRetry={onRetry} />
       </div>
       {voiceActive ? (
         <div>
