@@ -57,6 +57,20 @@ export function createApp(deps: AppDeps = productionDeps()): Hono<AuthEnv> {
   registerInviteRoutes(app, deps);
   registerLiveKitTokenRoute(app, deps);
 
+  app.onError((error, c) => {
+    console.error("unhandled", { name: error.name });
+    return c.json(
+      {
+        ok: false,
+        error: {
+          code: "INTERNAL",
+          message: "Não foi possível concluir a operação.",
+        },
+      },
+      500,
+    );
+  });
+
   return app;
 }
 

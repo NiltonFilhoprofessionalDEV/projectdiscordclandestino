@@ -39,9 +39,26 @@ export function rateLimited(c: Context, retryAfterSeconds: number) {
 
 export async function readJson(
   c: Context,
+  options?: { emptyAsObject?: boolean },
 ): Promise<{ ok: true; body: unknown } | { ok: false; response: Response }> {
+  const text = await c.req.text();
+  if (!text.trim()) {
+    if (options?.emptyAsObject) {
+      return { ok: true, body: {} };
+    }
+    return {
+      ok: false,
+      response: c.json(
+        {
+          ok: false,
+          error: { code: "VALIDATION", message: "JSON inválido." },
+        },
+        400,
+      ),
+    };
+  }
   try {
-    return { ok: true, body: await c.req.json() };
+    return { ok: true, body: JSON.parse(text) as unknown };
   } catch {
     return {
       ok: false,

@@ -14,17 +14,21 @@ export async function listCommunities(
   client: DbClient,
   userId: string,
 ): Promise<ApiResult<CommunitySummary[]>> {
-  const [{ data: communities, error }, { data: memberships }] = await Promise.all(
-    [
-      client.from("communities").select("id, name, slug, visibility").order("name"),
-      client
-        .from("community_members")
-        .select("community_id, role")
-        .eq("user_id", userId),
-    ],
-  );
+  const [{ data: communities, error }, { data: memberships, error: membershipError }] =
+    await Promise.all(
+      [
+        client.from("communities").select("id, name, slug, visibility").order("name"),
+        client
+          .from("community_members")
+          .select("community_id, role")
+          .eq("user_id", userId),
+      ],
+    );
   if (error) {
     return mapRepositoryError(error);
+  }
+  if (membershipError) {
+    return mapRepositoryError(membershipError);
   }
   const roleByCommunity = new Map(
     (memberships ?? []).map((row) => [row.community_id, row.role]),

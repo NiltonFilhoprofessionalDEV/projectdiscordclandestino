@@ -57,7 +57,11 @@ export function registerLiveKitTokenRoute(app: Hono<AuthEnv>, deps: AppDeps) {
       access.data.communityId,
       access.data.channelId,
     );
-    const token = await deps.issueLiveKitToken(access.data.displayName, roomName);
+    const token = await deps.issueLiveKitToken(
+      user.id,
+      access.data.displayName,
+      roomName,
+    );
     return apiJson(c, {
       ok: true,
       data: { token, url: deps.livekitUrl, roomName },

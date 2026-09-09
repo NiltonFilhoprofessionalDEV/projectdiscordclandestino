@@ -57,12 +57,18 @@ function testApp(options: {
   user?: User;
   repository?: Partial<CommunityRepository>;
   requireUser?: typeof requireUser;
-  issueLiveKitToken?: (displayName: string, roomName: string) => Promise<string>;
+  issueLiveKitToken?: (
+    identity: string,
+    displayName: string,
+    roomName: string,
+  ) => Promise<string>;
   allowRequest?: () => { allowed: true } | { allowed: false; retryAfterSeconds: number };
+  getRepository?: () => CommunityRepository;
 }) {
   return createApp({
     requireUser: options.requireUser ?? stubAuth(options.user ?? owner),
-    getRepository: () => stubRepo(options.repository),
+    getRepository:
+      options.getRepository ?? (() => stubRepo(options.repository)),
     issueLiveKitToken:
       options.issueLiveKitToken ?? (async () => "livekit-jwt"),
     hasLiveKitCredentials: () => true,
@@ -308,6 +314,7 @@ describe("authorized community routes", () => {
       },
     });
     expect(issueLiveKitToken).toHaveBeenCalledWith(
+      OWNER_ID,
       "Nilton",
       `community:${COMMUNITY_ID}:voice:${VOICE_CHANNEL_ID}`,
     );
@@ -378,6 +385,85 @@ describe("authorized community routes", () => {
         message: "Não foi possível concluir a operação.",
       },
     });
+  });
+
+  it("maps unhandled throws to 500 INTERNAL", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const api = testApp({
+      getRepository: () => {
+        throw new Error("Supabase público do servidor não configurado.");
+      },
+    });
+
+    const res = await api.request("/api/communities", {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify({ name: "Turma", visibility: "public" }),
+    });
+
+    expect(res.status).toBe(500);
+    await expect(res.json()).resolves.toEqual({
+      ok: false,
+      error: {
+        code: "INTERNAL",
+        message: "Não foi possível concluir a operação.",
+      },
+    });
+  });
+
+  it("maps LiveKit issuer throws to 500 INTERNAL", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const api = testApp({
+      repository: {
+        canJoinVoice: async () => ({
+          ok: true,
+          data: {
+            communityId: COMMUNITY_ID,
+            channelId: VOICE_CHANNEL_ID,
+            displayName: "Nilton",
+          },
+        }),
+      },
+      issueLiveKitToken: async () => {
+        throw new Error("livekit down");
+      },
+    });
+
+    const res = await api.request("/api/livekit/token", {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify({ channelId: VOICE_CHANNEL_ID }),
+    });
+
+    expect(res.status).toBe(500);
+    await expect(res.json()).resolves.toEqual({
+      ok: false,
+      error: {
+        code: "INTERNAL",
+        message: "Não foi possível concluir a operação.",
+      },
+    });
+  });
+
+  it("creates an invite without a JSON body", async () => {
+    const createInvite = vi.fn().mockResolvedValue({
+      ok: true,
+      data: {
+        id: "invite-1",
+        token: "raw-token",
+        expiresAt: null,
+        maxUses: null,
+      },
+    });
+    const api = testApp({ repository: { createInvite } });
+
+    const res = await api.request(`/api/communities/${COMMUNITY_ID}/invites`, {
+      method: "POST",
+      headers: { authorization: "Bearer access-token" },
+    });
+
+    expect(res.status).toBe(201);
+    expect(createInvite).toHaveBeenCalledWith(OWNER_ID, COMMUNITY_ID, {});
   });
 
   it("returns 429 RATE_LIMITED with Retry-After", async () => {

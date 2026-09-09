@@ -6,37 +6,6 @@ import type { DbClient } from "./client.ts";
 import { fail, mapRepositoryError } from "./errors.ts";
 import { mapChannel } from "./mappers.ts";
 
-async function nextPosition(
-  client: DbClient,
-  communityId: string,
-  type: "text" | "voice",
-): Promise<number> {
-  const { data } = await client
-    .from("channels")
-    .select("position")
-    .eq("community_id", communityId)
-    .eq("type", type)
-    .order("position", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return (data?.position ?? -1) + 1;
-}
-
-async function insertChannel(
-  client: DbClient,
-  values: Database["public"]["Tables"]["channels"]["Insert"],
-): Promise<ApiResult<Channel>> {
-  const { data, error } = await client
-    .from("channels")
-    .insert(values)
-    .select("*")
-    .single();
-  if (error || !data) {
-    return mapRepositoryError(error);
-  }
-  return { ok: true, data: mapChannel(data) };
-}
-
 export async function loadChannel(
   client: DbClient,
   channelId: string,
@@ -55,60 +24,24 @@ export async function loadChannel(
   return { ok: true, data: mapChannel(data) };
 }
 
-async function insertTextChannel(
-  client: DbClient,
-  userId: string,
-  communityId: string,
-  name: string,
-): Promise<ApiResult<Channel>> {
-  return insertChannel(client, {
-    community_id: communityId,
-    name,
-    type: "text",
-    position: await nextPosition(client, communityId, "text"),
-    created_by: userId,
-  });
-}
-
-async function insertVoiceChannel(
-  client: DbClient,
-  userId: string,
-  communityId: string,
-  name: string,
-): Promise<ApiResult<Channel>> {
-  const companion = await insertChannel(client, {
-    community_id: communityId,
-    name: `chat-${name}`.slice(0, 48),
-    type: "text",
-    position: await nextPosition(client, communityId, "text"),
-    created_by: userId,
-  });
-  if (!companion.ok) {
-    return companion;
-  }
-  return insertChannel(client, {
-    community_id: communityId,
-    name,
-    type: "voice",
-    position: await nextPosition(client, communityId, "voice"),
-    created_by: userId,
-    companion_text_channel_id: companion.data.id,
-  });
-}
-
 export async function createChannel(
   client: DbClient,
-  userId: string,
+  _userId: string,
   communityId: string,
   input: CreateChannelInput,
 ): Promise<ApiResult<Channel>> {
-  if (!(await canManage(client, communityId))) {
-    return fail("FORBIDDEN", "Sem permissão para criar canais.");
+  const { data, error } = await client.rpc("create_channel", {
+    community_id: communityId,
+    name: input.name,
+    type: input.type,
+  });
+  if (error || !data) {
+    if (error?.code === "42501") {
+      return fail("FORBIDDEN", "Sem permissão para criar canais.");
+    }
+    return mapRepositoryError(error);
   }
-  if (input.type === "voice") {
-    return insertVoiceChannel(client, userId, communityId, input.name);
-  }
-  return insertTextChannel(client, userId, communityId, input.name);
+  return { ok: true, data: mapChannel(data) };
 }
 
 export async function updateChannel(

@@ -1,5 +1,4 @@
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk";
-import { makeParticipantIdentity } from "../../shared/displayName.ts";
 import {
   hasLiveKitCredentials,
   LIVEKIT_API_KEY,
@@ -13,9 +12,13 @@ export function voiceRoomName(communityId: string, channelId: string): string {
   return `community:${communityId}:voice:${channelId}`;
 }
 
-export function createToken(displayName: string, roomName: string): Promise<string> {
+export function createToken(
+  identity: string,
+  displayName: string,
+  roomName: string,
+): Promise<string> {
   const token = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
-    identity: makeParticipantIdentity(displayName),
+    identity,
     name: displayName,
     ttl: "2h",
   });

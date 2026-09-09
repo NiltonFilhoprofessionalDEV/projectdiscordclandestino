@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(46);
+select plan(51);
 
 select has_type('public', 'community_visibility', 'community_visibility enum exists');
 select has_type('public', 'community_role', 'community_role enum exists');
@@ -17,6 +17,7 @@ select has_table('public', 'invites', 'invites table exists');
 
 select has_function('public', 'handle_new_user', 'handle_new_user function exists');
 select has_function('public', 'create_community', 'create_community function exists');
+select has_function('public', 'create_channel', 'create_channel function exists');
 select has_function('public', 'accept_invite', 'accept_invite function exists');
 select has_function('public', 'is_community_member', 'is_community_member function exists');
 select has_function('public', 'can_manage_community', 'can_manage_community function exists');
@@ -436,6 +437,84 @@ select is(
   1::bigint,
   'default voice channel references its companion text channel'
 );
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '00000000-0000-0000-0000-000000000001',
+  true
+);
+
+select public.create_channel(
+  (select value from test_context where key = 'public'),
+  'dev',
+  'voice'
+);
+
+select is(
+  (
+    select count(*)
+    from public.channels
+    where community_id = (select value from test_context where key = 'public')
+      and name = 'dev'
+      and type = 'voice'
+  ),
+  1::bigint,
+  'create_channel creates a voice channel'
+);
+
+select is(
+  (
+    select count(*)
+    from public.channels voice
+    join public.channels companion
+      on companion.id = voice.companion_text_channel_id
+    where voice.community_id = (select value from test_context where key = 'public')
+      and voice.name = 'dev'
+      and voice.type = 'voice'
+      and companion.name = 'chat-dev'
+      and companion.type = 'text'
+  ),
+  1::bigint,
+  'create_channel voice insert is transactional with companion'
+);
+
+insert into public.channels (community_id, name, type, position, created_by)
+select
+  value,
+  'chat-taken',
+  'text',
+  20,
+  '00000000-0000-0000-0000-000000000001'
+from test_context
+where key = 'public';
+
+select throws_ok(
+  $$
+    select public.create_channel(
+      (select value from test_context where key = 'public'),
+      'taken',
+      'voice'
+    )
+  $$,
+  '23505',
+  NULL,
+  'create_channel rolls back when companion name conflicts'
+);
+
+select is(
+  (
+    select count(*)
+    from public.channels
+    where community_id = (select value from test_context where key = 'public')
+      and name = 'taken'
+      and type = 'voice'
+  ),
+  0::bigint,
+  'failed create_channel voice does not leave an orphan voice channel'
+);
+
+reset role;
 
 update public.community_members
 set role = 'admin'
