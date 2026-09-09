@@ -11,6 +11,8 @@ function community(
     visibility: "public",
     role: null,
     avatarUrl: null,
+    onlineCount: 0,
+    activeRooms: [],
     ...overrides,
   };
 }

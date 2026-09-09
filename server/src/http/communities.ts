@@ -5,6 +5,7 @@ import { fail } from "../repositories/errors.ts";
 import { rateLimitKey } from "../rateLimit.ts";
 import type { AuthEnv } from "./auth.ts";
 import type { AppDeps } from "./deps.ts";
+import { enrichListedCommunities } from "../explore/enrich.ts";
 import { apiJson, clientIp, rateLimited, readJson } from "./result.ts";
 
 function parseCommunityBody(body: unknown) {
@@ -68,7 +69,14 @@ function parseUpdateCommunityBody(body: unknown) {
 function registerListCommunities(app: Hono<AuthEnv>, deps: AppDeps) {
   app.get("/api/communities", async (c) => {
     const repo = deps.getRepository(c.get("accessToken"));
-    return apiJson(c, await repo.listCommunities(c.get("user").id));
+    const listed = await repo.listCommunities(c.get("user").id);
+    if (!listed.ok) {
+      return apiJson(c, listed);
+    }
+    return apiJson(c, {
+      ok: true,
+      data: await enrichListedCommunities(listed.data, deps),
+    });
   });
 }
 

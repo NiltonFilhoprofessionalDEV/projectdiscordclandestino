@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { applySession, restoreSession, type SessionSink } from "./sessionSync.ts";
+import { applyAuthSnapshot, loadUserProfile, type SessionSink } from "./sessionSync.ts";
 import { supabase } from "../services/supabase.ts";
 import type { Profile } from "./types.ts";
 
@@ -60,9 +60,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setError,
       setLoading,
     );
-    void restoreSession(sink);
     const { data } = supabase.auth.onAuthStateChange((_event, next) => {
-      void applySession(next, sink);
+      applyAuthSnapshot(next, sink);
     });
     return () => {
       cancelled = true;
@@ -70,12 +69,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    const currentUser = user;
+    let cancelled = false;
+    const sink = createSink(
+      () => cancelled,
+      setSession,
+      setUser,
+      setProfile,
+      setError,
+      setLoading,
+    );
+    void loadUserProfile(currentUser, sink);
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
   }, []);
 
   const updateProfile = useCallback(
-    async (input: { displayName: string; avatarUrl: string | null }) => {
+    async (input: {
+      displayName: string;
+      avatarUrl: string | null;
+    }) => {
       if (!user) {
         return "Sessão inválida.";
       }
@@ -100,7 +122,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const value = useMemo(
     () => ({ session, user, profile, loading, error, signOut, updateProfile }),
-    [session, user, profile, loading, error, signOut, updateProfile],
+    [error, loading, profile, session, signOut, updateProfile, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

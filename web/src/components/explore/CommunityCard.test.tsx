@@ -30,12 +30,36 @@ describe("CommunityCard", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Abrir Gamers de cria" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Abrir Gamers de cria, 0 online" })).toBeTruthy();
     expect(screen.getByText("Você participa")).toBeTruthy();
     expect(screen.getByText("/gamers-de-cria")).toBeTruthy();
     expect(document.querySelector('img[src="avatar.png"]')).toBeTruthy();
     screen.getByRole("button").click();
     expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows how many members are online and which voice rooms are occupied", () => {
+    render(
+      <CommunityCard
+        title="Arena"
+        slug="arena"
+        kind="joined"
+        image="cover.png"
+        actionLabel="Abrir"
+        onlineCount={3}
+        activeRooms={[
+          { name: "WARZONE", occupantCount: 2 },
+          { name: "Lobby", occupantCount: 1 },
+          { name: "AFK", occupantCount: 1 },
+        ]}
+        onOpen={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText("3 online")).toBeTruthy();
+    expect(screen.getByText("WARZONE · 2")).toBeTruthy();
+    expect(screen.getByText("Lobby · 1")).toBeTruthy();
+    expect(screen.getByText("e mais 1")).toBeTruthy();
   });
 
   it("marks public discovery cards as preview", () => {

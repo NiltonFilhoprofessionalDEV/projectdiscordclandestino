@@ -5,7 +5,7 @@ import type { ChannelId } from "../../../../shared/community.ts";
 import type { ParticipantView } from "../../hooks/useParticipants.ts";
 import type { LoadStatus } from "../../hooks/useCommunities.ts";
 import type { VoiceOccupant } from "../../services/api.ts";
-import communityBanner from "../../assets/community/community-header-banner.png";
+import communityBanner from "../../assets/community/welcome-banner.png";
 import { cn, initials } from "../../lib/utils.ts";
 import { Button, IconButton } from "../ui/button.tsx";
 import { Icon } from "../ui/icon.tsx";
@@ -333,7 +333,7 @@ export function ChannelSidebar({
         <img
           src={community?.avatarUrl || communityBanner}
           alt=""
-          className="absolute inset-0 size-full object-cover object-[center_35%]"
+          className="absolute inset-0 size-full object-cover object-[center_right]"
         />
         <div
           className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,9,15,0.45)_0%,rgba(16,17,26,0.78)_50%,rgba(16,17,26,0.97)_100%)]"
@@ -354,7 +354,7 @@ export function ChannelSidebar({
               </p>
               <div className="mt-1 flex items-start gap-1">
                 <h2 className="min-w-0 flex-1 break-words font-display text-[17px] font-bold text-cloud drop-shadow-sm">
-                  {community?.name ?? "Gamers de cria"}
+                  {community?.name ?? "DiscordClandestino"}
                 </h2>
                 {onEditCommunity ? (
                   <Tooltip label="Editar comunidade">

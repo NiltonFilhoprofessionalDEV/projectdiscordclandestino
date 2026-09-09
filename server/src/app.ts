@@ -16,8 +16,9 @@ import { registerVoiceOccupancyRoute } from "./http/voice-occupancy.ts";
 import { roomsPayload } from "./http-handlers.ts";
 import { createToken, listVoiceOccupants } from "./livekit.ts";
 import { allowRequest } from "./rateLimit.ts";
+import { listExploreActivity as loadExploreActivity } from "./repositories/exploreActivity.ts";
 import { createCommunityRepository } from "./repositories/communityRepository.ts";
-import { createUserClient, requireUser } from "./supabase.ts";
+import { createUserClient, getSupabase, requireUser } from "./supabase.ts";
 
 function productionDeps(): AppDeps {
   return {
@@ -26,6 +27,7 @@ function productionDeps(): AppDeps {
       createCommunityRepository(createUserClient(accessToken)),
     issueLiveKitToken: createToken,
     listVoiceOccupants,
+    listExploreActivity: (communityIds) => loadExploreActivity(getSupabase(), [...communityIds]),
     hasLiveKitCredentials,
     livekitUrl: LIVEKIT_URL,
     allowRequest,

@@ -1,4 +1,6 @@
 import { Check, ExternalLink, Globe, Lock } from "lucide-react";
+import type { ActiveVoiceRoom } from "../../../../shared/api.ts";
+import { visibleExploreRooms } from "../../../../shared/exploreActivity.ts";
 import { cn, initials } from "../../lib/utils.ts";
 import { Icon } from "../ui/icon.tsx";
 
@@ -16,6 +18,8 @@ export type CommunityCardProps = {
   kind: CommunityCardKind;
   image: string;
   avatarUrl?: string | null;
+  onlineCount?: number;
+  activeRooms?: ActiveVoiceRoom[];
   actionLabel: "Abrir" | "Ver";
   onOpen: () => void;
 };
@@ -35,17 +39,22 @@ export function CommunityCard({
   kind,
   image,
   avatarUrl = null,
+  onlineCount = 0,
+  activeRooms = [],
   actionLabel,
   onOpen,
 }: CommunityCardProps) {
   const status = STATUS[kind];
+  const rooms = visibleExploreRooms(activeRooms);
 
   return (
     <button
       type="button"
       onClick={onOpen}
       aria-label={
-        actionLabel === "Abrir" ? `Abrir ${title}` : `Ver ${title}, você não é membro`
+        actionLabel === "Abrir"
+          ? `Abrir ${title}, ${onlineCount} online`
+          : `Ver ${title}, você não é membro`
       }
       className={cn(
         "focus-ring group relative flex w-full min-w-0 min-h-[184px] rounded-2xl p-px text-left",
@@ -76,6 +85,18 @@ export function CommunityCard({
                 {title}
               </span>
               <span className="mt-1 block text-xs text-zinc-500">/{slug}</span>
+              <span className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                <span className="inline-flex items-center gap-1.5 text-signal">
+                  <span className="size-1.5 shrink-0 rounded-full bg-signal" aria-hidden />
+                  {onlineCount} online
+                </span>
+                {rooms.shown.map((room) => (
+                  <span key={`${room.name}-${room.occupantCount}`} className="text-haze">
+                    {room.name} · {room.occupantCount}
+                  </span>
+                ))}
+                {rooms.extra > 0 ? <span className="text-haze">e mais {rooms.extra}</span> : null}
+              </span>
             </span>
           </span>
         </span>

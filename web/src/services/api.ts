@@ -37,6 +37,12 @@ const INTERNAL_ERROR: ApiResult<never> = {
 export async function apiRequest<T>(path: string, init?: RequestInit): Promise<ApiResult<T>> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
+  if (!token) {
+    return {
+      ok: false,
+      error: { code: "UNAUTHENTICATED", message: "Sessão inválida ou expirada." },
+    };
+  }
   try {
     const response = await fetch(path, {
       ...init,

@@ -46,5 +46,9 @@ export const supabase = {
   },
   auth: {
     getSession: async () => ({ data: { session: null } }),
+    onAuthStateChange() {
+      return { data: { subscription: { unsubscribe() {} } } };
+    },
+    signOut: async () => ({ error: null }),
   },
 };
