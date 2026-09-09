@@ -1,4 +1,4 @@
-import { handle } from "hono/vercel";
 import { app } from "./app.ts";
 
-export default handle(app);
+// Vercel expects the Hono app (Web Fetch) as the default export.
+export default app;

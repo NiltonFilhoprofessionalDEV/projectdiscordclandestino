@@ -13891,11 +13891,6 @@ __export(vercel_entry_exports, {
 });
 module.exports = __toCommonJS(vercel_entry_exports);
 
-// node_modules/hono/dist/adapter/vercel/handler.js
-var handle = (app2) => (req) => {
-  return app2.fetch(req);
-};
-
 // node_modules/hono/dist/compose.js
 var compose = (middleware, onError, onNotFound) => {
   return (context, next) => {
@@ -31011,5 +31006,5 @@ function createApp(deps = productionDeps()) {
 var app = createApp();
 
 // server/src/vercel-entry.ts
-var vercel_entry_default = handle(app);
+var vercel_entry_default = app;
 module.exports = module.exports.default;

@@ -2083,14 +2083,9 @@ var Hono2 = class extends Hono {
   }
 };
 
-// node_modules/hono/dist/adapter/vercel/handler.js
-var handle = (app2) => (req) => {
-  return app2.fetch(req);
-};
-
 // scripts/mini-entry.ts
 var app = new Hono2();
 app.get("/api/mini", (c) => c.json({ ok: true, mini: true }));
 app.all("*", (c) => c.json({ ok: true, path: c.req.path, method: c.req.method }));
-var mini_entry_default = handle(app);
+var mini_entry_default = app;
 module.exports = module.exports.default;
