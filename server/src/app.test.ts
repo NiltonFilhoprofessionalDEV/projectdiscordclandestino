@@ -161,6 +161,7 @@ describe("authorized community routes", () => {
           members: [
             {
               communityId: COMMUNITY_ID,
+              userId: "a",
               presence: "online",
               lastSeenAt: new Date().toISOString(),
             },

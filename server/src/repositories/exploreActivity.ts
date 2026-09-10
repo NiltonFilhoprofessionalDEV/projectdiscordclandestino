@@ -8,19 +8,32 @@ export type ExploreActivity = {
   voiceChannels: VoiceChannelRow[];
 };
 
-function profileFromMember(row: {
-  community_id: string;
-  profiles:
-    | { presence: string | null; last_seen_at: string | null }
-    | { presence: string | null; last_seen_at: string | null }[]
-    | null;
-}): MemberPresenceRow {
-  const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
-  return {
-    communityId: row.community_id,
-    presence: profile?.presence ?? null,
-    lastSeenAt: profile?.last_seen_at ?? null,
-  };
+type ProfilePresence = {
+  id: string;
+  presence: string | null;
+  last_seen_at: string | null;
+};
+
+async function listMemberProfiles(
+  client: DbClient,
+  userIds: string[],
+): Promise<ApiResult<Map<string, ProfilePresence>>> {
+  const byId = new Map<string, ProfilePresence>();
+  if (userIds.length === 0) {
+    return { ok: true, data: byId };
+  }
+
+  const { data, error } = await client
+    .from("profiles")
+    .select("id, presence, last_seen_at")
+    .in("id", userIds);
+  if (error) {
+    return mapRepositoryError(error);
+  }
+  for (const row of data ?? []) {
+    byId.set(row.id, row);
+  }
+  return { ok: true, data: byId };
 }
 
 export async function listExploreActivity(
@@ -35,7 +48,7 @@ export async function listExploreActivity(
     await Promise.all([
       client
         .from("community_members")
-        .select("community_id, profiles(presence, last_seen_at)")
+        .select("community_id, user_id")
         .in("community_id", communityIds),
       client
         .from("channels")
@@ -52,10 +65,27 @@ export async function listExploreActivity(
     return mapRepositoryError(channelError);
   }
 
+  const memberRows = members ?? [];
+  const profiles = await listMemberProfiles(
+    client,
+    [...new Set(memberRows.map((row) => row.user_id))],
+  );
+  if (!profiles.ok) {
+    return profiles;
+  }
+
   return {
     ok: true,
     data: {
-      members: (members ?? []).map(profileFromMember),
+      members: memberRows.map((row) => {
+        const profile = profiles.data.get(row.user_id);
+        return {
+          communityId: row.community_id,
+          userId: row.user_id,
+          presence: profile?.presence ?? null,
+          lastSeenAt: profile?.last_seen_at ?? null,
+        };
+      }),
       voiceChannels: (channels ?? []).map((row) => ({
         communityId: row.community_id,
         channelId: row.id,

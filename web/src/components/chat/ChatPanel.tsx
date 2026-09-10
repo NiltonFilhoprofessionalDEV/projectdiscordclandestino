@@ -4,7 +4,6 @@ import type { useChat } from "../../hooks/useChat.ts";
 import { cn } from "../../lib/utils.ts";
 import { MessageComposer } from "./MessageComposer.tsx";
 import { MessageList } from "./MessageList.tsx";
-import { WelcomeBanner } from "./WelcomeBanner.tsx";
 
 type ChatPanelProps = {
   chat: ReturnType<typeof useChat>;
@@ -12,7 +11,6 @@ type ChatPanelProps = {
   headingRef?: Ref<HTMLHeadingElement>;
   title?: string;
   embedded?: boolean;
-  showWelcome?: boolean;
 };
 
 export function ChatPanel({
@@ -21,7 +19,6 @@ export function ChatPanel({
   headingRef,
   title = "Conversa",
   embedded = false,
-  showWelcome = true,
 }: ChatPanelProps) {
   const failedNonce = lastFailedNonce(chat.messages);
   const channelLabel = title.replace(/^#\s*/, "").trim() || "geral";
@@ -48,18 +45,12 @@ export function ChatPanel({
           </p>
         </header>
       )}
-      {showWelcome ? (
-        <div className="shrink-0 px-4 pt-4 lg:px-5">
-          <WelcomeBanner channelName={channelLabel} />
-        </div>
-      ) : null}
       <MessageList
         messages={chat.messages}
         status={chat.status}
         hasMore={chat.hasMore}
         olderError={chat.olderError}
         channelName={channelLabel}
-        showWelcome={false}
         onLoadOlder={chat.loadOlder}
         onRetry={(clientNonce) => void chat.retry(clientNonce)}
       />

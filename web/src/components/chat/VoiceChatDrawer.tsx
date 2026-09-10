@@ -161,7 +161,7 @@ function VoiceChatFrame({
             </IconButton>
           </header>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <ChatPanel chat={chat} embedded showWelcome={false} />
+            <ChatPanel chat={chat} embedded />
           </div>
         </div>
       ) : (

@@ -4,6 +4,7 @@ export const PRESENCE_STALE_MS = 120_000;
 
 export type MemberPresenceRow = {
   communityId: string;
+  userId: string;
   presence: string | null;
   lastSeenAt: string | null;
 };
@@ -37,6 +38,20 @@ export function visibleExploreRooms(rooms: ActiveVoiceRoom[], limit = 2) {
   };
 }
 
+function occupantIdentity(value: unknown): string | null {
+  if (!value || typeof value !== "object" || !("identity" in value)) {
+    return null;
+  }
+  const identity = (value as { identity: unknown }).identity;
+  return typeof identity === "string" && identity.length > 0 ? identity : null;
+}
+
+function addOnlineUser(online: Map<string, Set<string>>, communityId: string, userId: string) {
+  const users = online.get(communityId) ?? new Set<string>();
+  users.add(userId);
+  online.set(communityId, users);
+}
+
 export function attachExplorePresence(
   summaries: CommunitySummary[],
   members: MemberPresenceRow[],
@@ -44,28 +59,34 @@ export function attachExplorePresence(
   occupantsByChannel: Record<string, readonly unknown[]>,
   nowMs = Date.now(),
 ): CommunitySummary[] {
-  const online = new Map<string, number>();
+  const online = new Map<string, Set<string>>();
   for (const row of members) {
-    if (!isLivePresence(row.presence, row.lastSeenAt, nowMs)) {
+    if (!row.userId || !isLivePresence(row.presence, row.lastSeenAt, nowMs)) {
       continue;
     }
-    online.set(row.communityId, (online.get(row.communityId) ?? 0) + 1);
+    addOnlineUser(online, row.communityId, row.userId);
   }
 
   const rooms = new Map<string, ActiveVoiceRoom[]>();
   for (const channel of voiceChannels) {
-    const occupantCount = occupantsByChannel[channel.channelId]?.length ?? 0;
-    if (occupantCount === 0) {
+    const occupants = occupantsByChannel[channel.channelId] ?? [];
+    for (const occupant of occupants) {
+      const identity = occupantIdentity(occupant);
+      if (identity) {
+        addOnlineUser(online, channel.communityId, identity);
+      }
+    }
+    if (occupants.length === 0) {
       continue;
     }
     const list = rooms.get(channel.communityId) ?? [];
-    list.push({ name: channel.name, occupantCount });
+    list.push({ name: channel.name, occupantCount: occupants.length });
     rooms.set(channel.communityId, list);
   }
 
   return summaries.map((item) => ({
     ...item,
-    onlineCount: online.get(item.id) ?? 0,
+    onlineCount: online.get(item.id)?.size ?? 0,
     activeRooms: rooms.get(item.id) ?? [],
   }));
 }

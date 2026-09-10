@@ -49,6 +49,8 @@ export function useCommunities(accessToken: string | null) {
       return;
     }
     void reload();
+    const timer = window.setInterval(() => void reload(), 12_000);
+    return () => window.clearInterval(timer);
   }, [accessToken, reload]);
 
   const select = useCallback((id: CommunityId | null) => {

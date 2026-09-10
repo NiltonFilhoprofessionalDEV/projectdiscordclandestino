@@ -36,10 +36,10 @@ describe("attachExplorePresence", () => {
     const next = attachExplorePresence(
       [summary("c1", "Arena"), summary("c2", "Quiet")],
       [
-        { communityId: "c1", presence: "online", lastSeenAt: "2026-09-09T21:59:00.000Z" },
-        { communityId: "c1", presence: "in_voice", lastSeenAt: "2026-09-09T21:59:10.000Z" },
-        { communityId: "c1", presence: "offline", lastSeenAt: "2026-09-09T21:59:00.000Z" },
-        { communityId: "c2", presence: "online", lastSeenAt: "2026-09-09T21:50:00.000Z" },
+        { communityId: "c1", userId: "u1", presence: "online", lastSeenAt: "2026-09-09T21:59:00.000Z" },
+        { communityId: "c1", userId: "u2", presence: "in_voice", lastSeenAt: "2026-09-09T21:59:10.000Z" },
+        { communityId: "c1", userId: "u3", presence: "offline", lastSeenAt: "2026-09-09T21:59:00.000Z" },
+        { communityId: "c2", userId: "u4", presence: "online", lastSeenAt: "2026-09-09T21:50:00.000Z" },
       ],
       [
         { communityId: "c1", channelId: "v1", name: "WARZONE" },
@@ -47,7 +47,7 @@ describe("attachExplorePresence", () => {
         { communityId: "c2", channelId: "v3", name: "Geral" },
       ],
       {
-        v1: [{ identity: "a" }, { identity: "b" }],
+        v1: [{ identity: "u1" }, { identity: "u2" }],
         v2: [],
         v3: [],
       },
@@ -60,6 +60,21 @@ describe("attachExplorePresence", () => {
       activeRooms: [{ name: "WARZONE", occupantCount: 2 }],
     });
     expect(next[1]).toMatchObject({ id: "c2", onlineCount: 0, activeRooms: [] });
+  });
+
+  it("counts people in voice even when profile presence is stale", () => {
+    const next = attachExplorePresence(
+      [summary("c1", "Arena")],
+      [{ communityId: "c1", userId: "u1", presence: "offline", lastSeenAt: "2026-09-09T21:50:00.000Z" }],
+      [{ communityId: "c1", channelId: "v1", name: "Estudos" }],
+      { v1: [{ identity: "u1" }, { identity: "u2" }] },
+      NOW,
+    );
+
+    expect(next[0]).toMatchObject({
+      onlineCount: 2,
+      activeRooms: [{ name: "Estudos", occupantCount: 2 }],
+    });
   });
 });
 

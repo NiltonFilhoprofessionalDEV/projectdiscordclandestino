@@ -56,7 +56,7 @@ function HomeTextChat({
   channelName: string;
 }) {
   const chat = useChat(channelId);
-  return <ChatPanel chat={chat} title={channelName} embedded showWelcome />;
+  return <ChatPanel chat={chat} title={channelName} embedded />;
 }
 
 function HomeVoicePane({

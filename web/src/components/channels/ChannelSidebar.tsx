@@ -331,7 +331,7 @@ export function ChannelSidebar({
     <aside className="flex h-full w-[256px] shrink-0 flex-col border-r border-white/[0.07] bg-panel">
       <div className="relative min-h-[7.5rem] shrink-0 overflow-hidden border-b border-white/[0.07]">
         <img
-          src={community?.avatarUrl || communityBanner}
+          src={communityBanner}
           alt=""
           className="absolute inset-0 size-full object-cover object-[center_right]"
         />
@@ -379,7 +379,7 @@ export function ChannelSidebar({
                 className="size-1.5 rounded-full bg-signal shadow-[0_0_8px_rgba(34,197,94,0.65)]"
                 aria-hidden
               />
-              Online
+              {community.onlineCount} online
             </span>
           ) : null}
         </div>
