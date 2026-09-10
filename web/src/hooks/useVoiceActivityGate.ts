@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Track, type LocalAudioTrack, type Room } from "livekit-client";
 
-/** Limiar alto: teclado/ventilador/ambiente não abrem o gate. */
-const OPEN_THRESHOLD = 0.09;
-const CLOSE_THRESHOLD = 0.04;
-const HOLD_MS = 320;
+/** Limiar médio: pega fala mais baixa sem abrir fácil com teclado/ventilador. */
+const OPEN_THRESHOLD = 0.06;
+const CLOSE_THRESHOLD = 0.028;
+const HOLD_MS = 360;
 const TICK_MS = 50;
-const HIGHPASS_HZ = 140;
+const HIGHPASS_HZ = 120;
 
 function rmsFromAnalyser(analyser: AnalyserNode, buffer: Uint8Array): number {
   analyser.getByteTimeDomainData(buffer);
