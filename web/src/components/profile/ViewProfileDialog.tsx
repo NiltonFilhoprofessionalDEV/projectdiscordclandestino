@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
-import { Camera } from "lucide-react";
+import { Camera, UserPlus } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "../../auth/useAuth.ts";
+import { callFriendRelation } from "../../friends/callFriend.ts";
+import type { useFriends } from "../../hooks/useFriends.ts";
 import { fetchPublicProfile, type PublicProfile } from "../../services/profileView.ts";
 import { initials } from "../../lib/utils.ts";
 import { Button } from "../ui/button.tsx";
@@ -8,11 +11,14 @@ import { Icon } from "../ui/icon.tsx";
 import { Loading } from "../ui/loading.tsx";
 import { AppDialog } from "../shell/AppDialog.tsx";
 
+type FriendsApi = ReturnType<typeof useFriends>;
+
 type ViewProfileDialogProps = {
   userId: string | null;
   onClose: () => void;
   onOpenImage: (src: string, alt: string) => void;
   onEditSelf?: () => void;
+  friends?: FriendsApi;
 };
 
 function presenceCopy(profile: PublicProfile): string {
@@ -30,10 +36,12 @@ export function ViewProfileDialog({
   onClose,
   onOpenImage,
   onEditSelf,
+  friends,
 }: ViewProfileDialogProps) {
   const { user } = useAuth();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     if (!userId) {
@@ -63,6 +71,24 @@ export function ViewProfileDialog({
   }
 
   const isSelf = user?.id === userId;
+  const relation =
+    friends && userId
+      ? callFriendRelation(userId, Boolean(isSelf), friends.friends, friends.incoming, friends.outgoing)
+      : { kind: isSelf ? ("self" as const) : ("none" as const) };
+
+  async function addFriend() {
+    if (!friends || !profile) {
+      return;
+    }
+    setAdding(true);
+    const fail = await friends.requestByUserId(userId);
+    setAdding(false);
+    if (fail) {
+      toast.error(fail);
+      return;
+    }
+    toast.success(`Pedido enviado para ${profile.displayName}.`);
+  }
 
   return (
     <AppDialog
@@ -108,6 +134,38 @@ export function ViewProfileDialog({
               <Icon icon={Camera} size="action" />
               Editar nome e avatar
             </Button>
+          ) : null}
+          {!isSelf && relation.kind === "none" && friends ? (
+            <Button
+              type="button"
+              variant="primary"
+              className="w-full"
+              disabled={adding}
+              onClick={() => void addFriend()}
+            >
+              <Icon icon={UserPlus} size="action" />
+              Adicionar amigo
+            </Button>
+          ) : null}
+          {!isSelf && relation.kind === "outgoing" ? (
+            <p className="rounded-xl bg-abyss/55 px-3 py-2.5 text-center text-sm text-haze">
+              Pedido de amizade enviado
+            </p>
+          ) : null}
+          {!isSelf && relation.kind === "incoming" && friends ? (
+            <Button
+              type="button"
+              variant="primary"
+              className="w-full"
+              onClick={() => void friends.accept(relation.friendshipId)}
+            >
+              Aceitar pedido de amizade
+            </Button>
+          ) : null}
+          {!isSelf && relation.kind === "accepted" ? (
+            <p className="rounded-xl bg-signal/10 px-3 py-2.5 text-center text-sm text-signal">
+              Vocês já são amigos
+            </p>
           ) : null}
         </div>
       ) : null}

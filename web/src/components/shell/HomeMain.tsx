@@ -82,7 +82,7 @@ function HomeVoicePane({
     >
       <div
         className={cn(
-          "min-h-0 flex-1 px-3 pt-3 pb-[calc(7.5rem+var(--chrome-share-inset,0px))] sm:px-4 sm:pt-4 sm:pb-[calc(7rem+var(--chrome-share-inset,0px))] lg:px-6 lg:pt-6",
+          "min-h-0 flex-1 px-3 pt-3 pb-[calc(8.5rem+var(--chrome-share-inset,0px)+env(safe-area-inset-bottom,0px))] sm:px-4 sm:pt-4 sm:pb-[calc(8rem+var(--chrome-share-inset,0px)+env(safe-area-inset-bottom,0px))] lg:px-6 lg:pt-6",
           sharing ? "flex flex-col overflow-hidden" : "overflow-y-auto",
         )}
       >
@@ -93,8 +93,8 @@ function HomeVoicePane({
           screen={screen}
         />
       </div>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-center px-2 pb-[max(0.5rem,calc(var(--chrome-share-inset,0px)+env(safe-area-inset-bottom)))] sm:px-3 sm:pb-[calc(1rem+var(--chrome-share-inset,0px))]">
-        <div className="pointer-events-auto w-full max-w-lg sm:w-auto">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-center overflow-visible px-3 pb-[max(1.25rem,calc(1rem+env(safe-area-inset-bottom,0px)+var(--chrome-share-inset,0px)))] sm:px-4 sm:pb-[max(1.5rem,calc(1.25rem+env(safe-area-inset-bottom,0px)+var(--chrome-share-inset,0px)))]">
+        <div className="pointer-events-auto flex w-full max-w-lg justify-center overflow-visible sm:w-auto">
           <ControlBar
             micOn={session.media.micOn}
             voiceActivityOn={session.media.voiceActivityOn}

@@ -197,11 +197,18 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
           );
         },
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "friendships" },
+        () => {
+          void reload();
+        },
+      )
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [reload, userId]);
 
   useEffect(() => {
     if (!userId) {
@@ -319,17 +326,32 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
 
   const remove = useCallback(
     async (friendshipId: string) => {
+      const removedUserId =
+        friends.find((entry) => entry.friendshipId === friendshipId)?.userId ??
+        incoming.find((entry) => entry.friendshipId === friendshipId)?.userId ??
+        outgoing.find((entry) => entry.friendshipId === friendshipId)?.userId ??
+        null;
+
+      // Otimista: some da UI na hora (inclui lista "Na chamada").
+      setFriends((current) => current.filter((entry) => entry.friendshipId !== friendshipId));
+      setIncoming((current) => current.filter((entry) => entry.friendshipId !== friendshipId));
+      setOutgoing((current) => current.filter((entry) => entry.friendshipId !== friendshipId));
+      if (removedUserId) {
+        friendIdsRef.current = friendIdsRef.current.filter((id) => id !== removedUserId);
+      }
+
       const { error: deleteError } = await supabase
         .from("friendships")
         .delete()
         .eq("id", friendshipId);
       if (deleteError) {
+        await reload();
         return "Não foi possível remover esta amizade.";
       }
       await reload();
       return null;
     },
-    [reload],
+    [friends, incoming, outgoing, reload],
   );
 
   const inviteToCommunity = useCallback(async (friendUserId: string, communityId: string) => {

@@ -12,7 +12,10 @@ export type ParticipantView = {
   name: string;
   isLocal: boolean;
   isSpeaking: boolean;
+  /** Intenção de mic disponível (true também em VAD silencioso). */
   micOn: boolean;
+  /** Modo "só transmite quando fala" ativo no participante. */
+  voiceActivityOn: boolean;
   avatarUrl: string | null;
   cameraPublication: TrackPublication | null;
   screenPublication: TrackPublication | null;
@@ -34,27 +37,36 @@ function publicationOf(participant: Participant, source: Track.Source) {
   return pub;
 }
 
-function readAvatar(participant: Participant): string | null {
+function readMetadata(participant: Participant): {
+  avatarUrl: string | null;
+  voiceActivityOn: boolean;
+} {
   try {
     const raw = participant.metadata;
     if (!raw) {
-      return null;
+      return { avatarUrl: null, voiceActivityOn: false };
     }
-    const parsed = JSON.parse(raw) as { avatarUrl?: unknown };
-    return typeof parsed.avatarUrl === "string" && parsed.avatarUrl ? parsed.avatarUrl : null;
+    const parsed = JSON.parse(raw) as { avatarUrl?: unknown; voiceActivity?: unknown };
+    return {
+      avatarUrl: typeof parsed.avatarUrl === "string" && parsed.avatarUrl ? parsed.avatarUrl : null,
+      voiceActivityOn: parsed.voiceActivity === true,
+    };
   } catch {
-    return null;
+    return { avatarUrl: null, voiceActivityOn: false };
   }
 }
 
 function toView(participant: Participant, isLocal: boolean): ParticipantView {
+  const meta = readMetadata(participant);
   return {
     identity: participant.identity,
     name: participant.name || participant.identity,
     isLocal,
     isSpeaking: participant.isSpeaking,
-    micOn: participant.isMicrophoneEnabled,
-    avatarUrl: readAvatar(participant),
+    // Com VAD remoto, isMicrophoneEnabled fica false no silêncio — metadata marca o modo.
+    micOn: meta.voiceActivityOn || participant.isMicrophoneEnabled,
+    voiceActivityOn: meta.voiceActivityOn,
+    avatarUrl: meta.avatarUrl,
     cameraPublication: publicationOf(participant, Track.Source.Camera),
     screenPublication: publicationOf(participant, Track.Source.ScreenShare),
   };
@@ -95,6 +107,7 @@ export function useParticipants(room: Room | null): ParticipantView[] {
       RoomEvent.TrackPublished,
       RoomEvent.TrackUnpublished,
       RoomEvent.TrackSubscribed,
+      RoomEvent.TrackUnsubscribed,
       RoomEvent.LocalTrackPublished,
       RoomEvent.LocalTrackUnpublished,
       RoomEvent.TrackStreamStateChanged,

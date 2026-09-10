@@ -7,6 +7,7 @@ import type { LoadStatus } from "../../hooks/useCommunities.ts";
 import type { VoiceOccupant } from "../../services/api.ts";
 import communityBanner from "../../assets/community/welcome-banner.png";
 import { cn, initials } from "../../lib/utils.ts";
+import { voiceNameClass } from "../../voice/voiceChrome.ts";
 import { Button, IconButton } from "../ui/button.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { Loading } from "../ui/loading.tsx";
@@ -48,6 +49,8 @@ type VoicePerson = {
   avatarUrl?: string | null;
   isSpeaking?: boolean;
   isLocal?: boolean;
+  micOn?: boolean;
+  voiceActivityOn?: boolean;
 };
 
 function VoiceMemberRow({
@@ -57,13 +60,16 @@ function VoiceMemberRow({
   participant: VoicePerson;
   onOpen: () => void;
 }) {
+  const micOn = participant.micOn ?? true;
+  const voiceActivityOn = participant.voiceActivityOn ?? false;
   return (
     <li className="min-w-0">
       <button
         type="button"
         className={cn(
           "flex min-h-8 w-full min-w-0 items-center gap-2 rounded-lg px-2 py-1 text-left text-sm",
-          participant.isSpeaking ? "text-cloud" : "text-haze",
+          voiceNameClass(micOn, voiceActivityOn),
+          participant.isSpeaking && "font-semibold",
         )}
         onClick={onOpen}
       >

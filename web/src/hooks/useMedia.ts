@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createLocalScreenTracks,
   Track,
@@ -9,10 +9,12 @@ import {
 import { toast } from "sonner";
 import {
   readDevicePrefs,
+  readMicMuted,
   readVoiceActivityOn,
   writeMicMuted,
   writeVoiceActivityOn,
 } from "../lib/storage.ts";
+import { MIC_CAPTURE, MIC_CAPTURE_FALLBACK } from "../voice/micCapture.ts";
 import {
   defaultScreenShareConfig,
   isScreenShareCancelError,
@@ -21,6 +23,8 @@ import {
 } from "../voice/screenShare.ts";
 import { useVoiceActivityGate } from "./useVoiceActivityGate.ts";
 
+export { MIC_CAPTURE } from "../voice/micCapture.ts";
+
 const CAMERA_OPTIONS = [
   { facingMode: "user" as const, resolution: VideoPresets.h360.resolution },
   { facingMode: "user" as const, resolution: VideoPresets.h180.resolution },
@@ -28,13 +32,15 @@ const CAMERA_OPTIONS = [
   {},
 ];
 
-const MIC_CAPTURE = {
-  echoCancellation: true,
-  noiseSuppression: true,
-  autoGainControl: true,
-  voiceIsolation: true,
-  channelCount: 1,
-} as const;
+async function patchLocalMetadata(room: Room, patch: Record<string, unknown>) {
+  let current: Record<string, unknown> = {};
+  try {
+    current = JSON.parse(room.localParticipant.metadata || "{}") as Record<string, unknown>;
+  } catch {
+    current = {};
+  }
+  await room.localParticipant.setMetadata(JSON.stringify({ ...current, ...patch }));
+}
 
 function cameraErrorMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error ?? "");
@@ -84,14 +90,12 @@ async function enableMicrophone(room: Room) {
     await room.localParticipant.setMicrophoneEnabled(true, {
       ...MIC_CAPTURE,
       ...device,
-    });
+    } as Parameters<Room["localParticipant"]["setMicrophoneEnabled"]>[1]);
   } catch {
     await room.localParticipant.setMicrophoneEnabled(true, {
-      echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: true,
+      ...MIC_CAPTURE_FALLBACK,
       ...device,
-    });
+    } as Parameters<Room["localParticipant"]["setMicrophoneEnabled"]>[1]);
   }
 }
 
@@ -117,6 +121,10 @@ export function useMedia(room: Room | null, findScreenOwner: () => string | null
   const [screenOn, setScreenOn] = useState(false);
   const [screenConfig, setScreenConfig] = useState(defaultScreenShareConfig);
   const [voiceActivityOn, setVoiceActivityOn] = useState(readVoiceActivityOn);
+  const voiceActivityOnRef = useRef(voiceActivityOn);
+  voiceActivityOnRef.current = voiceActivityOn;
+  /** Snapshot do modo de voz antes do hard-mute — restaurado ao desmutar. */
+  const vadBeforeMuteRef = useRef(true);
 
   useEffect(() => {
     if (!room) {
@@ -125,21 +133,38 @@ export function useMedia(room: Room | null, findScreenOwner: () => string | null
       setScreenOn(false);
       return;
     }
+    // Toda entrada na sala: modo "só transmite quando fala" ligado.
+    setVoiceActivityOn(true);
+    writeVoiceActivityOn(true);
+    setMicOn(!readMicMuted());
 
     const sync = () => {
       setCameraOn(room.localParticipant.isCameraEnabled);
       setScreenOn(room.localParticipant.isScreenShareEnabled);
       // Enquanto o VAD usa track.mute(), LiveKit reporta isMicrophoneEnabled=false.
-      // O botão de mic deve seguir a intenção do usuário, não o getter do LiveKit.
-      if (!voiceActivityOn) {
-        setMicOn(room.localParticipant.isMicrophoneEnabled);
+      // Com hard-mute persistido, nunca ressuscita o mic a partir do LiveKit.
+      if (!voiceActivityOnRef.current) {
+        if (readMicMuted()) {
+          setMicOn(false);
+        } else {
+          setMicOn(room.localParticipant.isMicrophoneEnabled);
+        }
       }
     };
 
     sync();
     const id = window.setInterval(sync, 400);
     return () => window.clearInterval(id);
-  }, [room, voiceActivityOn]);
+  }, [room]);
+
+  useEffect(() => {
+    if (!room) {
+      return;
+    }
+    void patchLocalMetadata(room, {
+      voiceActivity: Boolean(micOn && voiceActivityOn),
+    }).catch(() => undefined);
+  }, [micOn, room, voiceActivityOn]);
 
   const localSpeaking = useVoiceActivityGate(room, micOn, voiceActivityOn);
 
@@ -153,10 +178,18 @@ export function useMedia(room: Room | null, findScreenOwner: () => string | null
         await enableMicrophone(room);
         writeMicMuted(false);
         setMicOn(true);
+        const restoreVad = vadBeforeMuteRef.current;
+        voiceActivityOnRef.current = restoreVad;
+        setVoiceActivityOn(restoreVad);
+        writeVoiceActivityOn(restoreVad);
       } else {
-        // Solta o VAD (track.mute) antes de desligar o mic de verdade.
-        setMicOn(false);
+        // Guarda a config atual e aplica hard mute + desliga VAD no mesmo clique.
+        vadBeforeMuteRef.current = voiceActivityOnRef.current;
         writeMicMuted(true);
+        voiceActivityOnRef.current = false;
+        setMicOn(false);
+        setVoiceActivityOn(false);
+        writeVoiceActivityOn(false);
         await room.localParticipant.setMicrophoneEnabled(false);
       }
     } catch {

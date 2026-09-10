@@ -22,11 +22,17 @@ export function useHomeVoice(
       participant.avatarUrl || (participant.isLocal ? avatarUrl : null) || fromProfile;
     const speaking =
       participant.isSpeaking || (participant.isLocal && media.localSpeaking);
+    const micOn = participant.isLocal ? media.micOn : participant.micOn;
+    const voiceActivityOn = participant.isLocal
+      ? Boolean(media.micOn && media.voiceActivityOn)
+      : participant.voiceActivityOn;
     return {
       ...participant,
       name: participant.isLocal ? participant.name || displayName : participant.name,
       avatarUrl: resolvedAvatar,
       isSpeaking: speaking,
+      micOn,
+      voiceActivityOn,
     };
   });
   const { quality, rttMs } = useConnectionQuality(voice.room);

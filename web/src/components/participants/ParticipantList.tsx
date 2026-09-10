@@ -2,6 +2,7 @@ import { Mic, MicOff, UserPlus } from "lucide-react";
 import type { CallFriendRelation } from "../../friends/callFriend.ts";
 import type { ParticipantView } from "../../hooks/useParticipants.ts";
 import { cn, initials } from "../../lib/utils.ts";
+import { voiceMicIconClass, voiceMicOpen, voiceNameClass } from "../../voice/voiceChrome.ts";
 import { Button, IconButton } from "../ui/button.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { Tooltip } from "../ui/tooltip.tsx";
@@ -15,32 +16,22 @@ type ParticipantListProps = {
   onAcceptFriend?: (friendshipId: string) => void;
 };
 
-function ParticipantName({
-  participant,
-  relation,
-  adding,
-  onAddFriend,
-}: {
-  participant: ParticipantView;
-  relation: CallFriendRelation;
-  adding: boolean;
-  onAddFriend?: (identity: string, name: string) => void;
-}) {
-  const label = participant.name;
-  if (relation.kind === "none" && onAddFriend) {
-    return (
-      <button
-        type="button"
-        className="min-w-0 flex-1 truncate text-left text-sm text-cloud transition duration-150 ease-out hover:text-white"
-        disabled={adding}
-        aria-label={`Adicionar ${participant.name} como amigo`}
-        onClick={() => onAddFriend(participant.identity, participant.name)}
-      >
-        {label}
-      </button>
-    );
-  }
-  return <span className="min-w-0 flex-1 truncate text-sm">{label}</span>;
+function ParticipantName({ participant }: { participant: ParticipantView }) {
+  const peek = useProfilePeek();
+  const nameClass = voiceNameClass(participant.micOn, participant.voiceActivityOn);
+  return (
+    <button
+      type="button"
+      className={cn(
+        "min-w-0 flex-1 truncate text-left text-sm transition duration-150 ease-out hover:text-white",
+        nameClass,
+      )}
+      aria-label={`Ver perfil de ${participant.name}`}
+      onClick={() => peek.openUser(participant.identity)}
+    >
+      {participant.name}
+    </button>
+  );
 }
 
 function ParticipantFriendAction({
@@ -80,11 +71,10 @@ function ParticipantFriendAction({
         <IconButton
           type="button"
           size="iconSm"
-          variant="ghost"
+          variant="secondary"
           className="size-8 min-h-8 min-w-8 shrink-0"
           disabled={adding}
-          tabIndex={-1}
-          aria-hidden
+          aria-label={`Adicionar ${name} como amigo`}
           onClick={() => onAddFriend(identity, name)}
         >
           <Icon icon={UserPlus} size="action" />
@@ -141,12 +131,7 @@ export function ParticipantList({
                 initials(participant.name)
               )}
             </button>
-            <ParticipantName
-              participant={participant}
-              relation={relation}
-              adding={adding}
-              onAddFriend={onAddFriend}
-            />
+            <ParticipantName participant={participant} />
             <ParticipantFriendAction
               relation={relation}
               adding={adding}
@@ -155,10 +140,18 @@ export function ParticipantList({
               onAddFriend={onAddFriend}
               onAcceptFriend={onAcceptFriend}
             />
-            {participant.micOn ? (
-              <Icon icon={Mic} size="sm" className="text-haze" />
+            {voiceMicOpen(participant.micOn, participant.voiceActivityOn, participant.isSpeaking) ? (
+              <Icon
+                icon={Mic}
+                size="sm"
+                className={voiceMicIconClass(participant.micOn, participant.voiceActivityOn)}
+              />
             ) : (
-              <Icon icon={MicOff} size="sm" className="text-coral" />
+              <Icon
+                icon={MicOff}
+                size="sm"
+                className={voiceMicIconClass(participant.micOn, participant.voiceActivityOn)}
+              />
             )}
           </li>
         );

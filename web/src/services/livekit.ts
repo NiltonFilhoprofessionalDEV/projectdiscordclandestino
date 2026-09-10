@@ -7,6 +7,7 @@ import {
   type RemoteTrack,
   type RemoteTrackPublication,
 } from "livekit-client";
+import { MIC_CAPTURE } from "../voice/micCapture.ts";
 
 let remoteOutputVolume = 1;
 let remoteOutputMuted = false;
@@ -21,13 +22,8 @@ export function createLiveKitRoom(): Room {
     dynacast: true,
     disconnectOnPageLeave: true,
     audioCaptureDefaults: {
-      echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: true,
-      // Isolamento de voz quando o browser/suporta (Chrome recente).
-      voiceIsolation: true,
-      channelCount: 1,
-    },
+      ...MIC_CAPTURE,
+    } as never,
     videoCaptureDefaults: {
       facingMode: "user",
       resolution: VideoPresets.h360.resolution,

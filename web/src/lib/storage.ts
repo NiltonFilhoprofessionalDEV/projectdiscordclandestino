@@ -24,8 +24,8 @@ export function writeMicMuted(muted: boolean): void {
 
 export function readVoiceActivityOn(storage: FlagReader = localStorage): boolean {
   const value = storage.getItem(VOICE_ACTIVITY_KEY);
-  // Padrão: desligado — mute do usuário fica limpo; usuário liga o reconhecimento se quiser.
-  return value === "true";
+  // Padrão: ligado — ao entrar na sala já fica em "só transmite quando fala".
+  return value !== "false";
 }
 
 export function writeVoiceActivityOn(enabled: boolean, storage: FlagWriter = localStorage): void {
