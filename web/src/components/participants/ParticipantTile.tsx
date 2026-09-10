@@ -16,6 +16,19 @@ type ParticipantTileProps = {
   compact?: boolean;
 };
 
+function SpeakEcho({ round }: { round?: boolean }) {
+  const shape = round ? "rounded-full" : "rounded-[inherit]";
+  return (
+    <>
+      <span className={cn("speak-ripple pointer-events-none absolute inset-0", shape)} aria-hidden />
+      <span
+        className={cn("speak-ripple speak-ripple-delay pointer-events-none absolute inset-0", shape)}
+        aria-hidden
+      />
+    </>
+  );
+}
+
 function TileFrame({
   speaking,
   className,
@@ -30,17 +43,12 @@ function TileFrame({
   return (
     <div
       className={cn(
-        "relative flex bg-[#12131D] shadow-[0_8px_24px_rgba(0,0,0,0.28)]",
-        speaking ? "border border-signal/50" : "border border-white/[0.06]",
+        "relative flex border border-white/[0.06] bg-[#12131D] shadow-[0_8px_24px_rgba(0,0,0,0.28)]",
+        speaking && "speak-glow",
         className,
       )}
     >
-      {speaking ? (
-        <span
-          className="speak-halo pointer-events-none absolute inset-[-3px] rounded-[inherit]"
-          aria-hidden
-        />
-      ) : null}
+      {speaking ? <SpeakEcho /> : null}
       <div className={cn("relative z-10 flex h-full min-h-0 flex-1 flex-col items-center", contentClassName)}>
         {children}
       </div>
@@ -66,14 +74,12 @@ function AvatarFace({
         compact ? "size-11" : "size-20 sm:size-28",
       )}
     >
-      {speaking ? (
-        <span className="speak-halo pointer-events-none absolute inset-[-4px] rounded-full" aria-hidden />
-      ) : null}
+      {speaking ? <SpeakEcho round /> : null}
       <span
         className={cn(
-          "relative z-10 flex size-full items-center justify-center overflow-hidden rounded-full bg-[#151622] font-semibold text-cloud ring-2",
+          "relative z-10 flex size-full items-center justify-center overflow-hidden rounded-full bg-[#151622] font-semibold text-cloud",
           compact ? "text-xs" : "text-xl sm:text-2xl",
-          speaking ? "ring-signal" : "ring-white/[0.08]",
+          speaking ? "ring-0" : "ring-2 ring-white/[0.08]",
         )}
       >
         {avatarUrl ? (

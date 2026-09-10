@@ -60,7 +60,7 @@ function VoiceMemberRow({ participant }: { participant: VoicePerson }) {
       <span
         className={cn(
           "flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-deck text-[9px] font-semibold text-cloud",
-          participant.isSpeaking && "speak-halo-sm ring-1 ring-signal/70",
+          participant.isSpeaking && "speak-halo-sm",
         )}
       >
         {participant.avatarUrl ? (
