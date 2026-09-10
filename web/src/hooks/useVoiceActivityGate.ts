@@ -19,8 +19,9 @@ function rmsFromAnalyser(analyser: AnalyserNode, buffer: Uint8Array): number {
 /**
  * Gate de atividade de voz — independente do mute do usuário.
  * Só roda quando mic está ligado E a opção de reconhecimento está ativa.
- * Usa mute da track publicada, sem chamar setMicrophoneEnabled.
- * Expõe `speaking` para o anel verde local (LiveKit não detecta bem com track mutada).
+ * Usa mute da track publicada (LiveKit trata isso como isMicrophoneEnabled=false),
+ * então o estado de intenção do mic fica no React (useMedia), não no getter do LiveKit.
+ * Expõe `speaking` para o anel verde local.
  */
 export function useVoiceActivityGate(
   room: Room | null,
@@ -31,16 +32,18 @@ export function useVoiceActivityGate(
   const [speakingUi, setSpeakingUi] = useState(false);
 
   useEffect(() => {
+    function releaseGate(track: LocalAudioTrack | undefined) {
+      if (!track || !gateMutedRef.current) {
+        return;
+      }
+      gateMutedRef.current = false;
+      void track.unmute();
+    }
+
     if (!room || !micOn || !voiceActivityOn) {
       setSpeakingUi(false);
       const publication = room?.localParticipant.getTrackPublication(Track.Source.Microphone);
-      const track = publication?.track as LocalAudioTrack | undefined;
-      // Se o reconhecimento desliga (ou mic desliga), libera o gate — o mute do usuário
-      // continua controlado só por setMicrophoneEnabled.
-      if (track && micOn && gateMutedRef.current) {
-        gateMutedRef.current = false;
-        void track.unmute();
-      }
+      releaseGate(publication?.track as LocalAudioTrack | undefined);
       return;
     }
 
@@ -59,6 +62,11 @@ export function useVoiceActivityGate(
         return;
       }
       localTrack = track as LocalAudioTrack;
+      // Garante áudio no clone mesmo se um gate anterior deixou a track mutada.
+      if (localTrack.isMuted) {
+        gateMutedRef.current = false;
+        await localTrack.unmute();
+      }
       const mediaTrack = localTrack.mediaStreamTrack;
       if (!mediaTrack) {
         return;
@@ -66,6 +74,7 @@ export function useVoiceActivityGate(
 
       // Analisa um clone para o gate não interferir no stream publicado.
       monitorTrack = mediaTrack.clone();
+      monitorTrack.enabled = true;
       const Ctx =
         window.AudioContext ||
         (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -100,8 +109,9 @@ export function useVoiceActivityGate(
         if (cancelled || !localTrack) {
           return;
         }
-        // Se o usuário mutou o mic no meio do caminho, para o gate.
-        if (!room!.localParticipant.isMicrophoneEnabled) {
+        // Intenção do usuário (micOn) é a fonte da verdade — isMicrophoneEnabled
+        // fica false enquanto o gate muta a track.
+        if (!micOn) {
           if (speaking) {
             speaking = false;
             setSpeakingUi(false);
@@ -139,11 +149,8 @@ export function useVoiceActivityGate(
       }
       monitorTrack?.stop();
       void audioContext?.close();
-      // Não desmuta aqui se o usuário desligou o mic — só libera o gate se o mic ainda está on.
-      if (localTrack && room.localParticipant.isMicrophoneEnabled && gateMutedRef.current) {
-        gateMutedRef.current = false;
-        void localTrack.unmute();
-      }
+      // Sempre libera o gate ao desmontar — mute() do LiveKit zera isMicrophoneEnabled.
+      releaseGate(localTrack ?? undefined);
     };
   }, [micOn, room, voiceActivityOn]);
 

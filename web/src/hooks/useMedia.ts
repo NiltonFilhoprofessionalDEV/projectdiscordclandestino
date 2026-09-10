@@ -110,15 +110,19 @@ export function useMedia(room: Room | null, findScreenOwner: () => string | null
     }
 
     const sync = () => {
-      setMicOn(room.localParticipant.isMicrophoneEnabled);
       setCameraOn(room.localParticipant.isCameraEnabled);
       setScreenOn(room.localParticipant.isScreenShareEnabled);
+      // Enquanto o VAD usa track.mute(), LiveKit reporta isMicrophoneEnabled=false.
+      // O botão de mic deve seguir a intenção do usuário, não o getter do LiveKit.
+      if (!voiceActivityOn) {
+        setMicOn(room.localParticipant.isMicrophoneEnabled);
+      }
     };
 
     sync();
     const id = window.setInterval(sync, 400);
     return () => window.clearInterval(id);
-  }, [room]);
+  }, [room, voiceActivityOn]);
 
   const localSpeaking = useVoiceActivityGate(room, micOn, voiceActivityOn);
 
@@ -126,19 +130,22 @@ export function useMedia(room: Room | null, findScreenOwner: () => string | null
     if (!room) {
       return;
     }
-    const next = !room.localParticipant.isMicrophoneEnabled;
+    const next = !micOn;
     try {
       if (next) {
         await enableMicrophone(room);
+        writeMicMuted(false);
+        setMicOn(true);
       } else {
+        // Solta o VAD (track.mute) antes de desligar o mic de verdade.
+        setMicOn(false);
+        writeMicMuted(true);
         await room.localParticipant.setMicrophoneEnabled(false);
       }
-      writeMicMuted(!next);
-      setMicOn(next);
     } catch {
       toast.error("Não foi possível usar o microfone.");
     }
-  }, [room]);
+  }, [micOn, room]);
 
   const toggleVoiceActivity = useCallback(() => {
     setVoiceActivityOn((current) => {
