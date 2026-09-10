@@ -47,7 +47,14 @@ async function syncAvatar(user: User, profile: Profile): Promise<Profile> {
   return data ?? { ...profile, avatar_url: avatarUrl };
 }
 
-export function applyAuthSnapshot(next: Session | null, sink: SessionSink) {
+/** Soft auth events must not remount the "Carregando sessão…" gate. */
+const SOFT_AUTH_EVENTS = new Set(["TOKEN_REFRESHED", "USER_UPDATED"]);
+
+export function applyAuthSnapshot(
+  next: Session | null,
+  sink: SessionSink,
+  event?: string,
+) {
   if (sink.isCancelled()) {
     return;
   }
@@ -57,6 +64,12 @@ export function applyAuthSnapshot(next: Session | null, sink: SessionSink) {
     sink.setProfile(null);
     sink.setError(null);
     sink.setLoading(false);
+    return;
+  }
+  // Returning from background often refreshes the JWT. That updates the session
+  // object but keeps the same user id — loadUserProfile does not re-run, so
+  // flipping loading=true here would strand the UI until a full page reload.
+  if (event && SOFT_AUTH_EVENTS.has(event)) {
     return;
   }
   // Keep the gate on "Carregando sessão…" until loadUserProfile finishes.

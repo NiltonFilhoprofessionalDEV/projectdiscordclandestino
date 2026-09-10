@@ -30,7 +30,9 @@ export function App() {
 function AppGate() {
   const { session, user, profile, loading, error, signOut } = useAuth();
 
-  if (loading) {
+  // If we already have a usable session, never blank the app on soft auth
+  // events (token refresh when returning from another tab/app).
+  if (loading && !(session && user && profile)) {
     return (
       <main className="flex min-h-dvh items-center justify-center bg-night px-5">
         <Loading label="Carregando sessão…" />

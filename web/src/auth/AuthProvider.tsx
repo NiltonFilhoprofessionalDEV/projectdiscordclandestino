@@ -63,8 +63,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading,
     );
     void restoreSession(sink);
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => {
-      applyAuthSnapshot(next, sink);
+    const { data } = supabase.auth.onAuthStateChange((event, next) => {
+      applyAuthSnapshot(next, sink, event);
     });
     const timeoutId = window.setTimeout(() => {
       if (cancelled) {
