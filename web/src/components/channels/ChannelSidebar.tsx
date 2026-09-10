@@ -11,6 +11,7 @@ import { Button, IconButton } from "../ui/button.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { Loading } from "../ui/loading.tsx";
 import { Tooltip } from "../ui/tooltip.tsx";
+import { UserFooterBar } from "../shell/ShellHeader.tsx";
 import { useProfilePeek } from "../../profile/ProfilePeek.tsx";
 
 type ChannelSidebarProps = {
