@@ -16,6 +16,12 @@ type ParticipantTileProps = {
   compact?: boolean;
 };
 
+function tileChrome(speaking: boolean) {
+  return speaking
+    ? "border border-signal bg-[#11301c] shadow-[0_0_32px_rgba(34,197,94,0.35)]"
+    : "border border-white/[0.06] bg-[#12131D] shadow-[0_8px_24px_rgba(0,0,0,0.28)]";
+}
+
 function AvatarFace({
   name,
   avatarUrl,
@@ -30,25 +36,33 @@ function AvatarFace({
   return (
     <span
       className={cn(
-        "flex items-center justify-center overflow-hidden rounded-full bg-[#151622] font-semibold text-cloud transition duration-200",
-        compact ? "size-11 text-xs ring-2" : "size-20 text-xl ring-4 sm:size-28 sm:text-2xl",
-        speaking
-          ? "speak-ring ring-signal shadow-[0_0_24px_rgba(34,197,94,0.45)]"
-          : "ring-white/[0.08]",
+        "relative inline-flex items-center justify-center",
+        compact ? "size-11" : "size-20 sm:size-28",
       )}
     >
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt=""
-          className="size-full object-cover"
-          onError={(event) => {
-            event.currentTarget.remove();
-          }}
-        />
-      ) : (
-        initials(name)
-      )}
+      {speaking ? (
+        <span className="speak-halo pointer-events-none absolute inset-[-6px] rounded-full" aria-hidden />
+      ) : null}
+      <span
+        className={cn(
+          "relative z-10 flex size-full items-center justify-center overflow-hidden rounded-full bg-[#151622] font-semibold text-cloud ring-2",
+          compact ? "text-xs" : "text-xl sm:text-2xl",
+          speaking ? "ring-signal" : "ring-white/[0.08]",
+        )}
+      >
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt=""
+            className="size-full object-cover"
+            onError={(event) => {
+              event.currentTarget.remove();
+            }}
+          />
+        ) : (
+          initials(name)
+        )}
+      </span>
     </span>
   );
 }
@@ -99,7 +113,7 @@ function ParticipantVolumeControls({ identity, isLocal }: { identity: string; is
 export function ParticipantTile({ participant, compact = false }: ParticipantTileProps) {
   if (compact) {
     return (
-      <div className="flex w-[7.5rem] shrink-0 flex-col items-center rounded-2xl border border-white/[0.06] bg-[#12131D] px-2 py-2 text-center">
+      <div className={cn("flex w-[7.5rem] shrink-0 flex-col items-center rounded-2xl px-2 py-2 text-center", tileChrome(participant.isSpeaking))}>
         {participant.cameraPublication ? (
           <div
             className={cn(
@@ -144,7 +158,7 @@ export function ParticipantTile({ participant, compact = false }: ParticipantTil
 
   if (participant.cameraPublication) {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-[18px] border border-white/[0.06] bg-[#12131D] p-3 shadow-[0_8px_24px_rgba(0,0,0,0.28)]">
+      <div className={cn("flex flex-col items-center gap-2 rounded-[18px] p-3", tileChrome(participant.isSpeaking))}>
         <div
           className={cn(
             "w-full overflow-hidden rounded-[14px] ring-2 transition",
@@ -177,7 +191,12 @@ export function ParticipantTile({ participant, compact = false }: ParticipantTil
   }
 
   return (
-    <div className="flex min-h-44 flex-col items-center justify-center rounded-[18px] border border-white/[0.06] bg-[#12131D] px-4 py-5 text-center shadow-[0_8px_24px_rgba(0,0,0,0.28)] sm:min-h-56 sm:py-6">
+    <div
+      className={cn(
+        "flex min-h-44 flex-col items-center justify-center rounded-[18px] px-4 py-5 text-center sm:min-h-56 sm:py-6",
+        tileChrome(participant.isSpeaking),
+      )}
+    >
       <AvatarFace
         name={participant.name}
         avatarUrl={participant.avatarUrl}
