@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { readVoiceChatOpen, writeVoiceChatOpen } from "./storage.ts";
+import {
+  readDevicePrefs,
+  readVoiceChatOpen,
+  writeDevicePrefs,
+  writeVoiceChatOpen,
+} from "./storage.ts";
 
 function memoryStorage(initial: Record<string, string> = {}): Pick<Storage, "getItem" | "setItem"> {
   const data = new Map(Object.entries(initial));
@@ -26,5 +31,32 @@ describe("voiceChatOpen", () => {
     const storage = memoryStorage({ voiceChatOpen: "true" });
     writeVoiceChatOpen(false, storage);
     expect(readVoiceChatOpen(storage)).toBe(false);
+  });
+});
+
+describe("devicePrefs", () => {
+  it("reads saved microphone and camera ids", () => {
+    const storage = memoryStorage({
+      "device.audioinput": "mic-1",
+      "device.videoinput": "cam-2",
+    });
+    expect(readDevicePrefs(storage)).toEqual({
+      audioinput: "mic-1",
+      videoinput: "cam-2",
+      audiooutput: undefined,
+    });
+  });
+
+  it("writes device preferences", () => {
+    const storage = memoryStorage();
+    writeDevicePrefs(
+      { audioinput: "mic-9", videoinput: "cam-9", audiooutput: "spk-9" },
+      storage,
+    );
+    expect(readDevicePrefs(storage)).toEqual({
+      audioinput: "mic-9",
+      videoinput: "cam-9",
+      audiooutput: "spk-9",
+    });
   });
 });
