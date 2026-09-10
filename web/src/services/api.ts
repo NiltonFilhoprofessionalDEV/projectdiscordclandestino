@@ -89,6 +89,12 @@ export function updateCommunity(communityId: CommunityId, input: UpdateCommunity
   });
 }
 
+export function deleteCommunity(communityId: CommunityId) {
+  return apiRequest<{ id: CommunityId }>(`/api/communities/${communityId}`, {
+    method: "DELETE",
+  });
+}
+
 export function createChannel(communityId: CommunityId, input: CreateChannelInput) {
   return apiRequest<Channel>(`/api/communities/${communityId}/channels`, {
     method: "POST",
@@ -100,6 +106,12 @@ export function updateChannel(channelId: ChannelId, input: UpdateChannelInput) {
   return apiRequest<Channel>(`/api/channels/${channelId}`, {
     method: "PATCH",
     body: JSON.stringify(input),
+  });
+}
+
+export function deleteChannel(channelId: ChannelId) {
+  return apiRequest<{ id: ChannelId }>(`/api/channels/${channelId}`, {
+    method: "DELETE",
   });
 }
 

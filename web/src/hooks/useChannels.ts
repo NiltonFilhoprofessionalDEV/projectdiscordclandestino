@@ -3,7 +3,7 @@ import type { Channel, CreateChannelInput, UpdateChannelInput } from "../../../s
 import type { ChannelId, CommunityId } from "../../../shared/community.ts";
 import { groupChannels } from "../channels/groups.ts";
 import { createRequestGuard } from "../lib/requestGuard.ts";
-import { createChannel, fetchCommunityChannels, updateChannel } from "../services/api.ts";
+import { createChannel, deleteChannel, fetchCommunityChannels, updateChannel } from "../services/api.ts";
 import { beginCommunityResourceLoad } from "./communityResource.ts";
 import type { LoadStatus } from "./useCommunities.ts";
 
@@ -74,5 +74,16 @@ export function useChannels(communityId: CommunityId | null) {
     [reload],
   );
 
-  return { ...grouped, status, error, create, update, retry: reload };
+  const remove = useCallback(
+    async (channelId: ChannelId) => {
+      const result = await deleteChannel(channelId);
+      if (result.ok) {
+        await reload();
+      }
+      return result;
+    },
+    [reload],
+  );
+
+  return { ...grouped, status, error, create, update, remove, retry: reload };
 }

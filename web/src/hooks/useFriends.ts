@@ -317,6 +317,21 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
     [reload],
   );
 
+  const remove = useCallback(
+    async (friendshipId: string) => {
+      const { error: deleteError } = await supabase
+        .from("friendships")
+        .delete()
+        .eq("id", friendshipId);
+      if (deleteError) {
+        return "Não foi possível remover esta amizade.";
+      }
+      await reload();
+      return null;
+    },
+    [reload],
+  );
+
   const inviteToCommunity = useCallback(async (friendUserId: string, communityId: string) => {
     const { error: rpcError } = await supabase.rpc("invite_friend_to_community", {
       target_community: communityId,
@@ -344,6 +359,7 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
     requestByEmail,
     requestByUserId,
     accept,
+    remove,
     inviteToCommunity,
     retry: reload,
   };

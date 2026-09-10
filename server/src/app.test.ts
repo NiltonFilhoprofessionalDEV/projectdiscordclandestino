@@ -44,6 +44,7 @@ function stubRepo(
     createCommunity: missing,
     getCommunity: missing,
     updateCommunity: missing,
+    deleteCommunity: missing,
     createChannel: missing,
     updateChannel: missing,
     deleteChannel: missing,

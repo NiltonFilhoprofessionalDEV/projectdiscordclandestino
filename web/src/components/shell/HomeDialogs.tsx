@@ -58,10 +58,12 @@ type HomeDialogsProps = {
     channelId: ChannelId,
     input: UpdateChannelInput,
   ) => Promise<ApiResult<Channel>>;
+  onDeleteChannel: (channelId: ChannelId) => Promise<ApiResult<{ id: ChannelId }>>;
   onUpdateCommunity: (
     communityId: CommunityId,
     input: UpdateCommunityInput,
   ) => Promise<ApiResult<Community>>;
+  onDeleteCommunity: (communityId: CommunityId) => Promise<ApiResult<{ id: CommunityId }>>;
   onSaveProfile: (input: {
     displayName: string;
     avatarUrl: string | null;
@@ -103,7 +105,9 @@ export function HomeDialogs({
   onCreateCommunity,
   onCreateChannel,
   onUpdateChannel,
+  onDeleteChannel,
   onUpdateCommunity,
+  onDeleteCommunity,
   onSaveProfile,
   onCreatedCommunity,
   onCreatedChannel,
@@ -120,6 +124,7 @@ export function HomeDialogs({
         community={editingCommunity}
         onClose={onCloseEditCommunity}
         onUpdate={onUpdateCommunity}
+        onDelete={onDeleteCommunity}
       />
       <CreateChannelDialog
         open={createChannelOpen}
@@ -144,6 +149,7 @@ export function HomeDialogs({
         channel={editingChannel}
         onClose={onCloseEditChannel}
         onUpdate={onUpdateChannel}
+        onDelete={onDeleteChannel}
         onUpdated={() => undefined}
       />
       <SwitchVoiceDialog

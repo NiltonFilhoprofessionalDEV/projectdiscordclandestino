@@ -6,7 +6,7 @@ import type {
 } from "../../../shared/api.ts";
 import type { CommunityId } from "../../../shared/community.ts";
 import { createRequestGuard } from "../lib/requestGuard.ts";
-import { createCommunity, fetchCommunities, updateCommunity } from "../services/api.ts";
+import { createCommunity, deleteCommunity, fetchCommunities, updateCommunity } from "../services/api.ts";
 
 export type LoadStatus = "idle" | "loading" | "ready" | "error";
 
@@ -80,5 +80,17 @@ export function useCommunities(accessToken: string | null) {
     [reload],
   );
 
-  return { communities, selectedId, select, create, update, status, error, retry: reload };
+  const remove = useCallback(
+    async (communityId: CommunityId) => {
+      const result = await deleteCommunity(communityId);
+      if (result.ok) {
+        setSelectedId((current) => (current === communityId ? null : current));
+        await reload();
+      }
+      return result;
+    },
+    [reload],
+  );
+
+  return { communities, selectedId, select, create, update, remove, status, error, retry: reload };
 }

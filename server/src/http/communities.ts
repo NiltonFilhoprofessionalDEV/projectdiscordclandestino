@@ -133,9 +133,25 @@ function registerUpdateCommunity(app: Hono<AuthEnv>, deps: AppDeps) {
   });
 }
 
+function registerDeleteCommunity(app: Hono<AuthEnv>, deps: AppDeps) {
+  app.delete("/api/communities/:id", async (c) => {
+    const user = c.get("user");
+    const limit = deps.allowRequest(
+      "community.update",
+      rateLimitKey(clientIp(c), user.id),
+    );
+    if (!limit.allowed) {
+      return rateLimited(c, limit.retryAfterSeconds);
+    }
+    const repo = deps.getRepository(c.get("accessToken"));
+    return apiJson(c, await repo.deleteCommunity(user.id, c.req.param("id")));
+  });
+}
+
 export function registerCommunityRoutes(app: Hono<AuthEnv>, deps: AppDeps) {
   registerListCommunities(app, deps);
   registerCreateCommunity(app, deps);
   registerGetCommunity(app, deps);
   registerUpdateCommunity(app, deps);
+  registerDeleteCommunity(app, deps);
 }
