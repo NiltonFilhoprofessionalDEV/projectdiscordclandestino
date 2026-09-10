@@ -16,7 +16,7 @@ import type { useHomeNavigation } from "../../hooks/useHomeNavigation.ts";
 import type { useHomeVoice } from "../../hooks/useHomeVoice.ts";
 import type { useMembers } from "../../hooks/useMembers.ts";
 import { useVoiceOccupancy } from "../../hooks/useVoiceOccupancy.ts";
-import { occupancyWithoutLocalElsewhere } from "../../voice/switch.ts";
+import { ProfilePeekProvider } from "../../profile/ProfilePeek.tsx";
 import { HomeDialogs } from "./HomeDialogs.tsx";
 import { HomeMain } from "./HomeMain.tsx";
 import { HomeNav } from "./HomeNav.tsx";
@@ -239,9 +239,9 @@ function HomeDialogHost({
 
 export function HomeWorkspace(props: HomeWorkspaceProps) {
   return (
-    <>
+    <ProfilePeekProvider onEditSelf={props.dialogs.openProfile}>
       <HomeGrid {...props} />
       <HomeDialogHost {...props} />
-    </>
+    </ProfilePeekProvider>
   );
 }

@@ -6,7 +6,7 @@ import type { FriendEntry } from "../../hooks/useFriends.ts";
 import { Button, IconButton } from "../ui/button.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { Input } from "../ui/input.tsx";
-import { Tooltip } from "../ui/tooltip.tsx";
+import { useProfilePeek } from "../../profile/ProfilePeek.tsx";
 
 type FriendsPanelProps = {
   friends: {
@@ -85,9 +85,15 @@ function FriendRow({
   action?: { label: string; onClick: () => void };
   inviteAction?: InviteAction;
 }) {
+  const peek = useProfilePeek();
   return (
     <li className="flex min-h-11 items-center gap-2 rounded-xl px-2 py-1.5 transition duration-150 hover:bg-white/[0.04]">
-      <span className="relative size-8 shrink-0">
+      <button
+        type="button"
+        className="relative size-8 shrink-0"
+        aria-label={`Ver perfil de ${entry.displayName}`}
+        onClick={() => peek.openUser(entry.userId)}
+      >
         <span className="flex size-full items-center justify-center overflow-hidden rounded-full bg-deck text-[11px] font-semibold text-cloud ring-1 ring-white/[0.06]">
           {entry.avatarUrl ? (
             <img src={entry.avatarUrl} alt="" className="size-full object-cover" />
@@ -101,11 +107,15 @@ function FriendRow({
             aria-hidden
           />
         ) : null}
-      </span>
-      <span className="min-w-0 flex-1">
+      </button>
+      <button
+        type="button"
+        className="min-w-0 flex-1 text-left"
+        onClick={() => peek.openUser(entry.userId)}
+      >
         <span className="block truncate text-sm text-cloud">{entry.displayName}</span>
         <span className="text-xs text-haze">{presenceLabel(entry)}</span>
-      </span>
+      </button>
       {inviteAction ? <FriendInviteControl invite={inviteAction} /> : null}
       {action ? (
         <Button

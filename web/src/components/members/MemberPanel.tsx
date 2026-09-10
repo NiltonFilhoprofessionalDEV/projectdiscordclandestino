@@ -8,7 +8,7 @@ import { callFriendRelation } from "../../friends/callFriend.ts";
 import { initials } from "../../lib/utils.ts";
 import { Button } from "../ui/button.tsx";
 import { Loading } from "../ui/loading.tsx";
-import { ParticipantList } from "../participants/ParticipantList.tsx";
+import { useProfilePeek } from "../../profile/ProfilePeek.tsx";
 
 type MemberPanelProps = {
   members: CommunityMember[];
@@ -42,6 +42,7 @@ function MemberRoster({
   members: CommunityMember[];
   onRetry: () => void;
 }) {
+  const peek = useProfilePeek();
   if (status === "error") {
     return (
       <div className="mt-3">
@@ -68,10 +69,12 @@ function MemberRoster({
   return (
     <ul className="mt-2 space-y-0.5">
       {members.map((member) => (
-        <li
-          key={member.userId}
-          className="flex min-h-10 items-center gap-3 rounded-xl px-2 py-1.5 transition duration-150 ease-out hover:bg-white/[0.04]"
-        >
+        <li key={member.userId}>
+          <button
+            type="button"
+            className="flex min-h-10 w-full items-center gap-3 rounded-xl px-2 py-1.5 text-left transition duration-150 ease-out hover:bg-white/[0.04]"
+            onClick={() => peek.openUser(member.userId)}
+          >
           <span className="relative flex size-8 items-center justify-center overflow-hidden rounded-full bg-deck text-[11px] font-semibold text-cloud ring-1 ring-white/[0.06]">
             {member.avatarUrl ? (
               <img
@@ -90,6 +93,7 @@ function MemberRoster({
             <span className="block truncate text-sm text-cloud">{member.displayName}</span>
             <span className="text-xs text-haze">{roleLabel(member.role)}</span>
           </span>
+          </button>
         </li>
       ))}
     </ul>

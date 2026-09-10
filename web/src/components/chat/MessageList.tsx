@@ -3,7 +3,7 @@ import type { ChatMessage } from "../../hooks/useChat.ts";
 import { initials } from "../../lib/utils.ts";
 import { Button } from "../ui/button.tsx";
 import { Loading } from "../ui/loading.tsx";
-import { WelcomeBanner } from "./WelcomeBanner.tsx";
+import { useProfilePeek } from "../../profile/ProfilePeek.tsx";
 
 type MessageListProps = {
   messages: ChatMessage[];
@@ -57,9 +57,15 @@ function MessageArticle({
   message: ChatMessage;
   onRetry: (clientNonce: string) => void;
 }) {
+  const peek = useProfilePeek();
   return (
     <article className="group -mx-2 flex gap-3 rounded-lg px-2 py-1.5 transition duration-150 hover:bg-white/[0.03]">
-      <span className="mt-0.5 flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-deck text-[11px] font-semibold text-cloud ring-1 ring-white/[0.06]">
+      <button
+        type="button"
+        className="mt-0.5 flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-deck text-[11px] font-semibold text-cloud ring-1 ring-white/[0.06]"
+        aria-label={`Ver perfil de ${message.displayName}`}
+        onClick={() => peek.openUser(message.authorId)}
+      >
         {message.avatarUrl ? (
           <img
             src={message.avatarUrl}
@@ -72,7 +78,7 @@ function MessageArticle({
         ) : (
           initials(message.displayName)
         )}
-      </span>
+      </button>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <p className="text-sm font-semibold text-electric">{message.displayName}</p>

@@ -2,7 +2,7 @@ import { Maximize2, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ConnectionState } from "livekit-client";
 import type { ParticipantView } from "../../hooks/useParticipants.ts";
-import { cn } from "../../lib/utils.ts";
+import { enterFullscreen } from "../../lib/fullscreen.ts";
 import { setScreenShareAudioOutput } from "../../services/livekit.ts";
 import { IconButton } from "../ui/button.tsx";
 import { Icon } from "../ui/icon.tsx";
@@ -61,7 +61,11 @@ function ScreenShareStage({ screen }: { screen: ParticipantView }) {
           variant="secondary"
           className="absolute top-3 right-3"
           aria-label="Abrir em tela cheia"
-          onClick={() => void ref.current?.requestFullscreen()}
+          onClick={() => {
+            if (ref.current) {
+              void enterFullscreen(ref.current);
+            }
+          }}
         >
           <Icon icon={Maximize2} size="action" />
         </IconButton>
