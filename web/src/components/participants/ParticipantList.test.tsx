@@ -11,6 +11,7 @@ function person(overrides: Partial<ParticipantView>): ParticipantView {
     isLocal: false,
     isSpeaking: false,
     micOn: true,
+    voiceActivityOn: false,
     avatarUrl: null,
     cameraPublication: null,
     screenPublication: null,

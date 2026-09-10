@@ -17,6 +17,7 @@ import {
   detachTrack,
 } from "../services/livekit.ts";
 import { applySavedDevices } from "../voice/devices.ts";
+import { MIC_CAPTURE, MIC_CAPTURE_FALLBACK } from "../voice/micCapture.ts";
 
 function onTrackSubscribed(
   track: RemoteTrack,
@@ -72,8 +73,17 @@ async function connectVoice(
     try {
       await instance.localParticipant.setName(profile.displayName);
       if (profile.avatarUrl) {
+        let current: Record<string, unknown> = {};
+        try {
+          current = JSON.parse(instance.localParticipant.metadata || "{}") as Record<
+            string,
+            unknown
+          >;
+        } catch {
+          current = {};
+        }
         await instance.localParticipant.setMetadata(
-          JSON.stringify({ avatarUrl: profile.avatarUrl }),
+          JSON.stringify({ ...current, avatarUrl: profile.avatarUrl }),
         );
       }
     } catch {
@@ -86,20 +96,14 @@ async function connectVoice(
     if (enableMic) {
       try {
         await instance.localParticipant.setMicrophoneEnabled(true, {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          voiceIsolation: true,
-          channelCount: 1,
+          ...MIC_CAPTURE,
           ...(prefs.audioinput ? { deviceId: prefs.audioinput } : {}),
-        });
+        } as Parameters<Room["localParticipant"]["setMicrophoneEnabled"]>[1]);
       } catch {
         await instance.localParticipant.setMicrophoneEnabled(true, {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
+          ...MIC_CAPTURE_FALLBACK,
           ...(prefs.audioinput ? { deviceId: prefs.audioinput } : {}),
-        });
+        } as Parameters<Room["localParticipant"]["setMicrophoneEnabled"]>[1]);
       }
     } else {
       await instance.localParticipant.setMicrophoneEnabled(false);

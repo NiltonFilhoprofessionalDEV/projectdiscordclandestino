@@ -271,49 +271,49 @@ svg.lucide {
   }
 }
 
-@keyframes speak-ripple {
-  0% {
-    opacity: 0.7;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.06);
-  }
-}
-
-@keyframes speak-glow {
+@keyframes speak-halo {
   0%,
   100% {
-    box-shadow: 0 0 14px rgba(34, 197, 94, 0.28);
+    opacity: 1;
+    transform: scale(1);
+    box-shadow:
+      0 0 0 3px rgba(34, 197, 94, 0.95),
+      0 0 18px 4px rgba(34, 197, 94, 0.55);
   }
   50% {
-    box-shadow: 0 0 6px rgba(34, 197, 94, 0.1);
+    opacity: 0.35;
+    transform: scale(1.08);
+    box-shadow:
+      0 0 0 10px rgba(34, 197, 94, 0.2),
+      0 0 28px 8px rgba(34, 197, 94, 0.25);
   }
 }
 
-.speak-ripple {
-  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.85);
-  animation: speak-ripple 1.6s ease-out infinite;
-}
-
-.speak-ripple-delay {
-  animation-delay: 0.8s;
-}
-
-.speak-glow {
-  animation: speak-glow 1.6s ease-in-out infinite;
+.speak-halo {
+  animation: speak-halo 0.9s ease-in-out infinite;
 }
 
 .speak-halo-sm {
   box-shadow: 0 0 0 1.5px rgba(34, 197, 94, 0.7);
-  animation: speak-glow 1.6s ease-in-out infinite;
+  animation: speak-halo 0.9s ease-in-out infinite;
 }
 
 .voice-slider {
   height: 4px;
   cursor: pointer;
   appearance: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  accent-color: #7c3aed;
+}
+
+.voice-slider-vertical {
+  width: 4px;
+  height: 6.5rem;
+  cursor: pointer;
+  appearance: slider-vertical;
+  writing-mode: vertical-lr;
+  direction: rtl;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.12);
   accent-color: #7c3aed;
@@ -330,11 +330,22 @@ svg.lucide {
   transition: transform 150ms ease;
 }
 
+.voice-slider-vertical::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #7c3aed;
+  border: 2px solid #f8fafc;
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.35);
+}
+
 .voice-slider::-webkit-slider-thumb:hover {
   transform: scale(1.12);
 }
 
-.voice-slider::-moz-range-thumb {
+.voice-slider::-moz-range-thumb,
+.voice-slider-vertical::-moz-range-thumb {
   width: 12px;
   height: 12px;
   border-radius: 999px;
@@ -372,12 +383,14 @@ svg.lucide {
     opacity: 0.5;
   }
 
-  .speak-ripple,
-  .speak-ripple-delay,
-  .speak-glow,
+  .speak-halo,
   .speak-halo-sm {
     animation: none;
-    opacity: 0.7;
+    opacity: 1;
+    transform: none;
+    box-shadow:
+      0 0 0 3px rgba(34, 197, 94, 0.95),
+      0 0 16px 2px rgba(34, 197, 94, 0.4);
   }
 
   *,

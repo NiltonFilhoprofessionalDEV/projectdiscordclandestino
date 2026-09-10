@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   readDevicePrefs,
+  readVoiceActivityOn,
   readVoiceChatOpen,
   writeDevicePrefs,
+  writeVoiceActivityOn,
   writeVoiceChatOpen,
 } from "./storage.ts";
 
@@ -31,6 +33,24 @@ describe("voiceChatOpen", () => {
     const storage = memoryStorage({ voiceChatOpen: "true" });
     writeVoiceChatOpen(false, storage);
     expect(readVoiceChatOpen(storage)).toBe(false);
+  });
+});
+
+describe("voiceActivityOn", () => {
+  it("defaults to on when the key is missing", () => {
+    expect(readVoiceActivityOn(memoryStorage())).toBe(true);
+  });
+
+  it("persists off as false", () => {
+    const storage = memoryStorage();
+    writeVoiceActivityOn(false, storage);
+    expect(readVoiceActivityOn(storage)).toBe(false);
+  });
+
+  it("persists on as true", () => {
+    const storage = memoryStorage({ voiceActivityOn: "false" });
+    writeVoiceActivityOn(true, storage);
+    expect(readVoiceActivityOn(storage)).toBe(true);
   });
 });
 

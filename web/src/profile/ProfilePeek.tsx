@@ -1,6 +1,9 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { ImageLightbox } from "../components/media/ImageLightbox.tsx";
 import { ViewProfileDialog } from "../components/profile/ViewProfileDialog.tsx";
+import type { useFriends } from "../hooks/useFriends.ts";
+
+type FriendsApi = ReturnType<typeof useFriends>;
 
 type ProfilePeekValue = {
   openUser: (userId: string) => void;
@@ -19,9 +22,11 @@ export function useProfilePeek(): ProfilePeekValue {
 export function ProfilePeekProvider({
   children,
   onEditSelf,
+  friends,
 }: {
   children: ReactNode;
   onEditSelf?: () => void;
+  friends?: FriendsApi;
 }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [image, setImage] = useState<{ src: string; alt: string } | null>(null);
@@ -42,6 +47,7 @@ export function ProfilePeekProvider({
         userId={userId}
         onClose={() => setUserId(null)}
         onOpenImage={openImage}
+        friends={friends}
         onEditSelf={
           onEditSelf
             ? () => {

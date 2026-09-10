@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Track, type LocalAudioTrack, type Room } from "livekit-client";
 
-const OPEN_THRESHOLD = 0.045;
-const CLOSE_THRESHOLD = 0.022;
-const HOLD_MS = 450;
+/** Limiar alto: teclado/ventilador/ambiente não abrem o gate. */
+const OPEN_THRESHOLD = 0.09;
+const CLOSE_THRESHOLD = 0.04;
+const HOLD_MS = 320;
 const TICK_MS = 50;
+const HIGHPASS_HZ = 140;
 
 function rmsFromAnalyser(analyser: AnalyserNode, buffer: Uint8Array): number {
   analyser.getByteTimeDomainData(buffer);
@@ -29,6 +31,8 @@ export function useVoiceActivityGate(
   voiceActivityOn: boolean,
 ): boolean {
   const gateMutedRef = useRef(false);
+  const micOnRef = useRef(micOn);
+  micOnRef.current = micOn;
   const [speakingUi, setSpeakingUi] = useState(false);
 
   useEffect(() => {
@@ -43,7 +47,12 @@ export function useVoiceActivityGate(
     if (!room || !micOn || !voiceActivityOn) {
       setSpeakingUi(false);
       const publication = room?.localParticipant.getTrackPublication(Track.Source.Microphone);
-      releaseGate(publication?.track as LocalAudioTrack | undefined);
+      // Só libera o gate se o mic continua ligado e só o VAD foi desligado.
+      if (room && micOn && !voiceActivityOn) {
+        releaseGate(publication?.track as LocalAudioTrack | undefined);
+      } else {
+        gateMutedRef.current = false;
+      }
       return;
     }
 
@@ -62,7 +71,6 @@ export function useVoiceActivityGate(
         return;
       }
       localTrack = track as LocalAudioTrack;
-      // Garante áudio no clone mesmo se um gate anterior deixou a track mutada.
       if (localTrack.isMuted) {
         gateMutedRef.current = false;
         await localTrack.unmute();
@@ -72,7 +80,6 @@ export function useVoiceActivityGate(
         return;
       }
 
-      // Analisa um clone para o gate não interferir no stream publicado.
       monitorTrack = mediaTrack.clone();
       monitorTrack.enabled = true;
       const Ctx =
@@ -93,10 +100,15 @@ export function useVoiceActivityGate(
       }
 
       const source = audioContext.createMediaStreamSource(new MediaStream([monitorTrack]));
+      const highpass = audioContext.createBiquadFilter();
+      highpass.type = "highpass";
+      highpass.frequency.value = HIGHPASS_HZ;
+      highpass.Q.value = 0.7;
       const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 1024;
-      analyser.smoothingTimeConstant = 0.55;
-      source.connect(analyser);
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.35;
+      source.connect(highpass);
+      highpass.connect(analyser);
       const buffer = new Uint8Array(analyser.fftSize);
 
       gateMutedRef.current = true;
@@ -106,12 +118,7 @@ export function useVoiceActivityGate(
       await localTrack.mute();
 
       intervalId = window.setInterval(() => {
-        if (cancelled || !localTrack) {
-          return;
-        }
-        // Intenção do usuário (micOn) é a fonte da verdade — isMicrophoneEnabled
-        // fica false enquanto o gate muta a track.
-        if (!micOn) {
+        if (cancelled || !localTrack || !micOnRef.current) {
           if (speaking) {
             speaking = false;
             setSpeakingUi(false);
@@ -149,8 +156,12 @@ export function useVoiceActivityGate(
       }
       monitorTrack?.stop();
       void audioContext?.close();
-      // Sempre libera o gate ao desmontar — mute() do LiveKit zera isMicrophoneEnabled.
-      releaseGate(localTrack ?? undefined);
+      // Lê a intenção ATUAL — o cleanup fecha sobre micOn antigo=true e reabria o mic.
+      if (micOnRef.current) {
+        releaseGate(localTrack ?? undefined);
+      } else {
+        gateMutedRef.current = false;
+      }
     };
   }, [micOn, room, voiceActivityOn]);
 

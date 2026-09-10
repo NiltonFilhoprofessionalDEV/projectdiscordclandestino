@@ -18,7 +18,7 @@ const buttonVariants = cva(
         danger:
           "bg-[#9D174D] text-white shadow-[0_8px_24px_rgba(157,23,77,0.22)] hover:bg-[#BE185D]",
         live: "bg-[rgba(124,58,237,0.20)] text-[#A78BFA] ring-1 ring-electric/35 hover:bg-electric/25",
-        mute: "bg-coral/16 text-[#f9a8d4] ring-1 ring-coral/30 hover:bg-coral/24",
+        mute: "bg-coral/20 text-coral ring-1 ring-coral/40 hover:bg-coral/30",
         send: "bg-[linear-gradient(135deg,#7c3aed_0%,#ec4899_100%)] text-white shadow-[0_8px_24px_rgba(124,58,237,0.32)] hover:brightness-110 hover:shadow-[0_0_22px_rgba(124,58,237,0.35)]",
       },
       size: {

@@ -92,7 +92,7 @@ function HomeGrid(props: HomeWorkspaceProps) {
   };
 
   return (
-    <div className="grid h-dvh w-dvw overflow-hidden bg-night pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] text-cloud md:grid-cols-[68px_256px_minmax(0,1fr)] xl:grid-cols-[68px_256px_minmax(0,1fr)_288px]">
+    <div className="grid h-dvh w-dvw overflow-hidden bg-night pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] text-cloud md:grid-cols-[68px_256px_minmax(0,1fr)] xl:grid-cols-[68px_256px_minmax(0,1fr)_288px]">
       <HomeNav
         communities={props.communities}
         nav={props.nav}
@@ -242,7 +242,7 @@ function HomeDialogHost({
 
 export function HomeWorkspace(props: HomeWorkspaceProps) {
   return (
-    <ProfilePeekProvider onEditSelf={props.dialogs.openProfile}>
+    <ProfilePeekProvider onEditSelf={props.dialogs.openProfile} friends={props.friends}>
       <HomeGrid {...props} />
       <HomeDialogHost {...props} />
     </ProfilePeekProvider>

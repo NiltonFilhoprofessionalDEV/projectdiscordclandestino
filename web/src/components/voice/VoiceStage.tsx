@@ -1,8 +1,8 @@
-import { Maximize2, Volume2, VolumeX } from "lucide-react";
+import { Maximize2, Minimize2, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ConnectionState } from "livekit-client";
 import type { ParticipantView } from "../../hooks/useParticipants.ts";
-import { enterFullscreen } from "../../lib/fullscreen.ts";
+import { isFullscreenActive, toggleFullscreen } from "../../lib/fullscreen.ts";
 import { cn } from "../../lib/utils.ts";
 import { setScreenShareAudioOutput } from "../../services/livekit.ts";
 import { IconButton } from "../ui/button.tsx";
@@ -22,6 +22,7 @@ function ScreenShareStage({ screen }: { screen: ParticipantView }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const publication = screen.screenPublication!;
 
   useEffect(() => {
@@ -44,10 +45,34 @@ function ScreenShareStage({ screen }: { screen: ParticipantView }) {
     setScreenShareAudioOutput(volume, muted);
   }, [muted, volume]);
 
+  useEffect(() => {
+    function syncFullscreen() {
+      setFullscreen(isFullscreenActive(frameRef.current));
+    }
+    syncFullscreen();
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    document.addEventListener("webkitfullscreenchange", syncFullscreen);
+    return () => {
+      document.removeEventListener("fullscreenchange", syncFullscreen);
+      document.removeEventListener("webkitfullscreenchange", syncFullscreen);
+    };
+  }, []);
+
+  function handleToggleFullscreen() {
+    if (frameRef.current) {
+      void toggleFullscreen(frameRef.current, videoRef.current);
+    }
+  }
+
   return (
     <figure
       ref={frameRef}
-      className="relative h-full min-h-0 overflow-hidden rounded-[18px] border border-white/[0.06] bg-[#12131D]"
+      className="relative h-full min-h-0 cursor-pointer overflow-hidden rounded-[18px] border border-white/[0.06] bg-[#12131D]"
+      title="Clique duas vezes para tela cheia"
+      onDoubleClick={(event) => {
+        event.preventDefault();
+        handleToggleFullscreen();
+      }}
     >
       <video
         ref={videoRef}
@@ -56,27 +81,31 @@ function ScreenShareStage({ screen }: { screen: ParticipantView }) {
         playsInline
         muted={screen.isLocal}
       />
-      <p className="absolute top-3 left-3 rounded-lg border border-white/[0.08] bg-abyss/80 px-3 py-1.5 text-xs font-medium text-cloud backdrop-blur-sm">
+      <p className="pointer-events-none absolute top-3 left-3 z-10 max-w-[min(70%,20rem)] truncate rounded-lg border border-white/[0.08] bg-abyss/80 px-3 py-1.5 text-xs font-medium text-cloud backdrop-blur-sm">
         {screen.name} está compartilhando a tela
       </p>
-      <Tooltip label="Tela cheia">
-        <IconButton
-          type="button"
-          size="iconSm"
-          variant="secondary"
-          className="absolute top-3 right-3 z-10"
-          aria-label="Abrir em tela cheia"
-          onClick={() => {
-            if (frameRef.current) {
-              void enterFullscreen(frameRef.current, videoRef.current);
-            }
-          }}
-        >
-          <Icon icon={Maximize2} size="action" />
-        </IconButton>
-      </Tooltip>
+      <div
+        className="absolute top-3 right-3 z-20"
+        onDoubleClick={(event) => event.stopPropagation()}
+      >
+        <Tooltip label={fullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+          <IconButton
+            type="button"
+            size="iconSm"
+            variant="secondary"
+            className="size-9 min-h-9 min-w-9 border border-white/[0.1] bg-abyss/80 backdrop-blur-sm"
+            aria-label={fullscreen ? "Sair da tela cheia" : "Abrir em tela cheia"}
+            onClick={handleToggleFullscreen}
+          >
+            <Icon icon={fullscreen ? Minimize2 : Maximize2} size="action" />
+          </IconButton>
+        </Tooltip>
+      </div>
       {!screen.isLocal ? (
-        <div className="absolute right-3 bottom-3 flex items-center gap-2 rounded-xl border border-white/[0.08] bg-abyss/80 px-3 py-2 backdrop-blur-sm">
+        <div
+          className="absolute right-3 bottom-3 z-20 flex items-center gap-2 rounded-xl border border-white/[0.08] bg-abyss/80 px-3 py-2 backdrop-blur-sm"
+          onDoubleClick={(event) => event.stopPropagation()}
+        >
           <Tooltip label={muted ? "Ativar áudio" : "Mutar transmissão"}>
             <IconButton
               type="button"
@@ -127,7 +156,7 @@ export function VoiceStage({ error, connectionState, participants, screen }: Voi
           ) : null}
         </>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3">
           {participants.map((participant) => (
             <ParticipantTile key={participant.identity} participant={participant} />
           ))}

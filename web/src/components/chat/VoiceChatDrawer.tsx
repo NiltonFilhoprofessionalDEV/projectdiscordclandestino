@@ -18,7 +18,7 @@ const HEADING_ID = "voice-chat-heading";
 
 /** Espaço da barra de controles + faixa nativa do Chrome ao transmitir. */
 const CONTROLS_CLEARANCE =
-  "bottom-[calc(5.25rem+var(--chrome-share-inset,0px)+env(safe-area-inset-bottom,0px))] sm:bottom-[calc(5.75rem+var(--chrome-share-inset,0px))]";
+  "bottom-[calc(6rem+var(--chrome-share-inset,0px)+env(safe-area-inset-bottom,0px))] sm:bottom-[calc(6.5rem+var(--chrome-share-inset,0px)+env(safe-area-inset-bottom,0px))]";
 
 function useVoiceChatUnseen(
   channelId: ChannelId | null,

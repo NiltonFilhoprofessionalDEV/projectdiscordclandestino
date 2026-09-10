@@ -10,7 +10,9 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
+import { useState } from "react";
 import { IconButton } from "../ui/button.tsx";
+import { HoverVolumePopover } from "../ui/HoverVolumePopover.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { Tooltip } from "../ui/tooltip.tsx";
 import { cn } from "../../lib/utils.ts";
@@ -59,11 +61,12 @@ export function ControlBar({
   const cameraLabel = cameraOn ? "Desligar câmera" : "Ligar câmera";
   const screenLabel = screenOn ? "Configurar transmissão" : "Compartilhar tela";
   const outputLabel = outputMuted ? "Ativar áudio recebido" : "Mutar áudio recebido";
+  const [roomVolOpen, setRoomVolOpen] = useState(false);
 
   return (
     <div
       className={cn(
-        "flex w-full max-w-full items-center justify-center gap-1.5 rounded-[18px] border border-white/[0.08] bg-[#12131D]/95 px-2 py-2 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur-md sm:w-fit sm:max-w-[calc(100vw-2rem)] sm:flex-wrap sm:px-2.5",
+        "flex w-full max-w-full flex-nowrap items-center justify-center gap-1.5 overflow-visible rounded-[18px] border border-white/[0.08] bg-[#12131D]/95 px-2.5 py-2 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur-md sm:w-fit sm:max-w-[calc(100vw-2rem)]",
         className,
       )}
     >
@@ -126,26 +129,34 @@ export function ControlBar({
           <Icon icon={Settings} />
         </IconButton>
       </Tooltip>
-      <Tooltip label="Áudio recebido">
+      <HoverVolumePopover
+        open={roomVolOpen}
+        onOpenChange={setRoomVolOpen}
+        panel={
+          <input
+            id="room-volume-slider"
+            type="range"
+            min={0}
+            max={100}
+            value={Math.round(outputVolume * 100)}
+            onChange={(event) => onOutputVolume(Number(event.target.value) / 100)}
+            aria-label="Volume da sala"
+            className="voice-slider-vertical"
+          />
+        }
+      >
         <IconButton
           type="button"
           variant={outputMuted ? "mute" : "secondary"}
           onClick={onToggleOutputMute}
           aria-label={outputLabel}
+          aria-expanded={roomVolOpen}
+          aria-controls={roomVolOpen ? "room-volume-slider" : undefined}
+          title="Áudio da sala"
         >
           <Icon icon={outputMuted ? VolumeX : Volume2} />
         </IconButton>
-      </Tooltip>
-      <input
-        type="range"
-        min={0}
-        max={100}
-        value={Math.round(outputVolume * 100)}
-        onChange={(event) => onOutputVolume(Number(event.target.value) / 100)}
-        aria-label="Volume do áudio recebido"
-        className="voice-slider mx-1 hidden w-20 sm:block"
-      />
-      <span className="mx-0.5 h-7 w-px bg-white/[0.1]" aria-hidden />
+      </HoverVolumePopover>
       <Tooltip label="Sair da chamada">
         <IconButton type="button" variant="danger" onClick={onLeave} aria-label="Sair da sala">
           <Icon icon={PhoneOff} />
