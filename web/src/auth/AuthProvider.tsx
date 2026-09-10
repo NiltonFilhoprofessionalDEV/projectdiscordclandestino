@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { applyAuthSnapshot, loadUserProfile, type SessionSink } from "./sessionSync.ts";
+import { applyAuthSnapshot, loadUserProfile, restoreSession, type SessionSink } from "./sessionSync.ts";
 import { supabase } from "../services/supabase.ts";
 import type { Profile } from "./types.ts";
 
@@ -43,6 +43,8 @@ function createSink(
   return { isCancelled, setSession, setUser, setProfile, setError, setLoading };
 }
 
+const SESSION_LOAD_TIMEOUT_MS = 12_000;
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -60,11 +62,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setError,
       setLoading,
     );
+    void restoreSession(sink);
     const { data } = supabase.auth.onAuthStateChange((_event, next) => {
       applyAuthSnapshot(next, sink);
     });
+    const timeoutId = window.setTimeout(() => {
+      if (cancelled) {
+        return;
+      }
+      setLoading((stillLoading) => {
+        if (!stillLoading) {
+          return stillLoading;
+        }
+        setError((current) => current ?? "A sessão demorou para carregar. Tente de novo.");
+        return false;
+      });
+    }, SESSION_LOAD_TIMEOUT_MS);
     return () => {
       cancelled = true;
+      window.clearTimeout(timeoutId);
       data.subscription.unsubscribe();
     };
   }, []);

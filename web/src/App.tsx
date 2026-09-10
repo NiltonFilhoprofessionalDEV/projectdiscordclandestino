@@ -51,6 +51,19 @@ function AppGate() {
     );
   }
 
+  if (!session && error) {
+    return (
+      <main className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-night px-5">
+        <p className="max-w-md text-center text-coral" role="alert">
+          {error}
+        </p>
+        <Button type="button" variant="primary" onClick={() => window.location.reload()}>
+          Recarregar
+        </Button>
+      </main>
+    );
+  }
+
   if (!session || !user || !profile) {
     return <AuthPage />;
   }
