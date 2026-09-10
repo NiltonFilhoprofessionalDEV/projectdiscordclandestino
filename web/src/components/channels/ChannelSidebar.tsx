@@ -57,16 +57,12 @@ function VoiceMemberRow({ participant }: { participant: VoicePerson }) {
         participant.isSpeaking ? "text-cloud" : "text-haze",
       )}
     >
-      <span className="relative flex size-6 shrink-0 items-center justify-center">
-        {participant.isSpeaking ? (
-          <span className="speak-halo pointer-events-none absolute inset-[-4px] rounded-full" aria-hidden />
-        ) : null}
-        <span
-          className={cn(
-            "relative z-10 flex size-full items-center justify-center overflow-hidden rounded-full bg-deck text-[9px] font-semibold text-cloud",
-            participant.isSpeaking && "ring-2 ring-signal",
-          )}
-        >
+      <span
+        className={cn(
+          "flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-deck text-[9px] font-semibold text-cloud",
+          participant.isSpeaking && "speak-halo-sm ring-1 ring-signal/70",
+        )}
+      >
         {participant.avatarUrl ? (
           <img
             src={participant.avatarUrl}
@@ -79,7 +75,6 @@ function VoiceMemberRow({ participant }: { participant: VoicePerson }) {
         ) : (
           initials(participant.name)
         )}
-        </span>
       </span>
       <span className="truncate">
         {participant.name}

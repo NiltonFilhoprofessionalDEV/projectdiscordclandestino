@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import type { ParticipantView } from "../../hooks/useParticipants.ts";
 import { cn, initials } from "../../lib/utils.ts";
@@ -16,10 +16,36 @@ type ParticipantTileProps = {
   compact?: boolean;
 };
 
-function tileChrome(speaking: boolean) {
-  return speaking
-    ? "border border-signal bg-[#11301c] shadow-[0_0_32px_rgba(34,197,94,0.35)]"
-    : "border border-white/[0.06] bg-[#12131D] shadow-[0_8px_24px_rgba(0,0,0,0.28)]";
+function TileFrame({
+  speaking,
+  className,
+  contentClassName,
+  children,
+}: {
+  speaking: boolean;
+  className: string;
+  contentClassName?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        "relative flex bg-[#12131D] shadow-[0_8px_24px_rgba(0,0,0,0.28)]",
+        speaking ? "border border-signal/50" : "border border-white/[0.06]",
+        className,
+      )}
+    >
+      {speaking ? (
+        <span
+          className="speak-halo pointer-events-none absolute inset-[-3px] rounded-[inherit]"
+          aria-hidden
+        />
+      ) : null}
+      <div className={cn("relative z-10 flex h-full min-h-0 flex-1 flex-col items-center", contentClassName)}>
+        {children}
+      </div>
+    </div>
+  );
 }
 
 function AvatarFace({
@@ -41,7 +67,7 @@ function AvatarFace({
       )}
     >
       {speaking ? (
-        <span className="speak-halo pointer-events-none absolute inset-[-6px] rounded-full" aria-hidden />
+        <span className="speak-halo pointer-events-none absolute inset-[-4px] rounded-full" aria-hidden />
       ) : null}
       <span
         className={cn(
@@ -113,7 +139,10 @@ function ParticipantVolumeControls({ identity, isLocal }: { identity: string; is
 export function ParticipantTile({ participant, compact = false }: ParticipantTileProps) {
   if (compact) {
     return (
-      <div className={cn("flex w-[7.5rem] shrink-0 flex-col items-center rounded-2xl px-2 py-2 text-center", tileChrome(participant.isSpeaking))}>
+      <TileFrame
+        speaking={participant.isSpeaking}
+        className="w-[7.5rem] shrink-0 rounded-2xl px-2 py-2 text-center"
+      >
         {participant.cameraPublication ? (
           <div
             className={cn(
@@ -152,13 +181,17 @@ export function ParticipantTile({ participant, compact = false }: ParticipantTil
             <Icon icon={MicOff} size="sm" className="size-3 shrink-0 text-coral" />
           )}
         </p>
-      </div>
+      </TileFrame>
     );
   }
 
   if (participant.cameraPublication) {
     return (
-      <div className={cn("flex flex-col items-center gap-2 rounded-[18px] p-3", tileChrome(participant.isSpeaking))}>
+      <TileFrame
+        speaking={participant.isSpeaking}
+        className="rounded-[18px] p-3"
+        contentClassName="gap-2"
+      >
         <div
           className={cn(
             "w-full overflow-hidden rounded-[14px] ring-2 transition",
@@ -186,16 +219,15 @@ export function ParticipantTile({ participant, compact = false }: ParticipantTil
           )}
         </p>
         <ParticipantVolumeControls identity={participant.identity} isLocal={participant.isLocal} />
-      </div>
+      </TileFrame>
     );
   }
 
   return (
-    <div
-      className={cn(
-        "flex min-h-44 flex-col items-center justify-center rounded-[18px] px-4 py-5 text-center sm:min-h-56 sm:py-6",
-        tileChrome(participant.isSpeaking),
-      )}
+    <TileFrame
+      speaking={participant.isSpeaking}
+      className="min-h-44 rounded-[18px] px-4 py-5 text-center sm:min-h-56 sm:py-6"
+      contentClassName="justify-center"
     >
       <AvatarFace
         name={participant.name}
@@ -217,6 +249,6 @@ export function ParticipantTile({ participant, compact = false }: ParticipantTil
         )}
       </p>
       <ParticipantVolumeControls identity={participant.identity} isLocal={participant.isLocal} />
-    </div>
+    </TileFrame>
   );
 }
