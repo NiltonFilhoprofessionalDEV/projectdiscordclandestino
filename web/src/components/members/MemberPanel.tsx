@@ -8,6 +8,7 @@ import { callFriendRelation } from "../../friends/callFriend.ts";
 import { initials } from "../../lib/utils.ts";
 import { Button } from "../ui/button.tsx";
 import { Loading } from "../ui/loading.tsx";
+import { ParticipantList } from "../participants/ParticipantList.tsx";
 import { useProfilePeek } from "../../profile/ProfilePeek.tsx";
 
 type MemberPanelProps = {

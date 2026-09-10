@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ConnectionState } from "livekit-client";
 import type { ParticipantView } from "../../hooks/useParticipants.ts";
 import { enterFullscreen } from "../../lib/fullscreen.ts";
+import { cn } from "../../lib/utils.ts";
 import { setScreenShareAudioOutput } from "../../services/livekit.ts";
 import { IconButton } from "../ui/button.tsx";
 import { Icon } from "../ui/icon.tsx";
