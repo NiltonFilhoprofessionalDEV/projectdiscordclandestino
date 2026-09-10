@@ -70,17 +70,25 @@ describe("parseCommunityName", () => {
 });
 
 describe("parseChannelName", () => {
-  it("replaces spaces with hyphens", () => {
+  it("keeps spaces and capitalization as typed", () => {
     expect(parseChannelName("dev front")).toEqual({
       ok: true,
-      value: "dev-front",
+      value: "dev front",
+    });
+    expect(parseChannelName("Chat Geral")).toEqual({
+      ok: true,
+      value: "Chat Geral",
+    });
+    expect(parseChannelName("WARZONE")).toEqual({
+      ok: true,
+      value: "WARZONE",
     });
   });
 
-  it("trims and collapses repeated whitespace before hyphenating", () => {
+  it("trims and collapses repeated whitespace without changing the words", () => {
     expect(parseChannelName("  chat   geral  ")).toEqual({
       ok: true,
-      value: "chat-geral",
+      value: "chat geral",
     });
   });
 
