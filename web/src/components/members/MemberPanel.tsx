@@ -1,6 +1,10 @@
+import { useState } from "react";
+import { toast } from "sonner";
 import type { CommunityMember } from "../../services/api.ts";
 import type { LoadStatus } from "../../hooks/useCommunities.ts";
+import type { useFriends } from "../../hooks/useFriends.ts";
 import type { ParticipantView } from "../../hooks/useParticipants.ts";
+import { callFriendRelation } from "../../friends/callFriend.ts";
 import { initials } from "../../lib/utils.ts";
 import { Button } from "../ui/button.tsx";
 import { Loading } from "../ui/loading.tsx";
@@ -12,6 +16,7 @@ type MemberPanelProps = {
   error: string | null;
   participants?: ParticipantView[];
   voiceActive?: boolean;
+  friends?: ReturnType<typeof useFriends>;
   onRetry: () => void;
   embedded?: boolean;
 };
@@ -97,9 +102,26 @@ export function MemberPanel({
   error,
   participants = [],
   voiceActive = false,
+  friends,
   onRetry,
   embedded = false,
 }: MemberPanelProps) {
+  const [addingId, setAddingId] = useState<string | null>(null);
+
+  async function addFriend(identity: string, name: string) {
+    if (!friends) {
+      return;
+    }
+    setAddingId(identity);
+    const error = await friends.requestByUserId(identity);
+    setAddingId(null);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    toast.success(`Pedido enviado para ${name}.`);
+  }
+
   const body = (
     <>
       <div>
@@ -118,7 +140,24 @@ export function MemberPanel({
               Conectando à chamada…
             </p>
           ) : (
-            <ParticipantList participants={participants} />
+            <ParticipantList
+              participants={participants}
+              relationFor={
+                friends
+                  ? (identity, isLocal) =>
+                      callFriendRelation(
+                        identity,
+                        isLocal,
+                        friends.friends,
+                        friends.incoming,
+                        friends.outgoing,
+                      )
+                  : undefined
+              }
+              addingId={addingId}
+              onAddFriend={friends ? addFriend : undefined}
+              onAcceptFriend={friends ? (id) => void friends.accept(id) : undefined}
+            />
           )}
         </div>
       ) : null}

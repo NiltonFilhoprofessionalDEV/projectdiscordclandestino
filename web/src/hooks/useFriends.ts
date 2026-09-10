@@ -81,6 +81,7 @@ async function pushMyPresence(
 export function useFriends(userId: string | null, voiceActivity: string | null) {
   const [friends, setFriends] = useState<FriendEntry[]>([]);
   const [incoming, setIncoming] = useState<FriendEntry[]>([]);
+  const [outgoing, setOutgoing] = useState<FriendEntry[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
@@ -90,6 +91,7 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
     if (!userId) {
       setFriends([]);
       setIncoming([]);
+      setOutgoing([]);
       setStatus("idle");
       friendIdsRef.current = [];
       return;
@@ -126,6 +128,7 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
     }
     const nextFriends: FriendEntry[] = [];
     const nextIncoming: FriendEntry[] = [];
+    const nextOutgoing: FriendEntry[] = [];
     for (const row of rows) {
       const mine = row.requester_id === userId;
       const otherId = mine ? row.addressee_id : row.requester_id;
@@ -143,11 +146,14 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
         nextFriends.push(entry);
       } else if (!mine) {
         nextIncoming.push(entry);
+      } else {
+        nextOutgoing.push(entry);
       }
     }
     nextFriends.sort((a, b) => a.displayName.localeCompare(b.displayName, "pt-BR"));
     setFriends(nextFriends);
     setIncoming(nextIncoming);
+    setOutgoing(nextOutgoing);
     setError(null);
     setStatus("ready");
   }, [userId]);
@@ -265,6 +271,37 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
     [reload],
   );
 
+  const requestByUserId = useCallback(
+    async (targetUserId: string) => {
+      const value = targetUserId.trim();
+      if (!value) {
+        return "Usuário não encontrado.";
+      }
+      const { error: rpcError } = await supabase.rpc("request_friend_by_id", {
+        friend_user: value,
+      });
+      if (rpcError) {
+        const message = rpcError.message.toLowerCase();
+        if (message.includes("já são amigos") || message.includes("already")) {
+          return "Vocês já são amigos.";
+        }
+        if (message.includes("já recebido")) {
+          return "Esse usuário já te enviou um pedido.";
+        }
+        if (message.includes("si mesmo") || message.includes("yourself")) {
+          return "Você não pode adicionar a si mesmo.";
+        }
+        if (message.includes("não encontrado") || message.includes("not found")) {
+          return "Usuário não encontrado.";
+        }
+        return "Não foi possível enviar o pedido.";
+      }
+      await reload();
+      return null;
+    },
+    [reload],
+  );
+
   const accept = useCallback(
     async (friendshipId: string) => {
       await supabase.from("friendships").update({ status: "accepted" }).eq("id", friendshipId);
@@ -294,9 +331,11 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
   return {
     friends,
     incoming,
+    outgoing,
     status,
     error,
     requestByEmail,
+    requestByUserId,
     accept,
     inviteToCommunity,
     retry: reload,
