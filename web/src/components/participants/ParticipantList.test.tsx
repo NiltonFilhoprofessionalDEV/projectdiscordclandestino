@@ -45,7 +45,7 @@ describe("ParticipantList", () => {
       />,
     );
     expect(screen.queryByRole("button", { name: /Adicionar/ })).toBeNull();
-    expect(screen.getByText("Nilton (você)")).toBeTruthy();
+    expect(screen.getByText("Nilton")).toBeTruthy();
   });
 
   it("accepts an incoming request from someone in the call", () => {
