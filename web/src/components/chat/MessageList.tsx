@@ -115,7 +115,7 @@ export function MessageList({
   hasMore,
   olderError,
   channelName = "geral",
-  showWelcome = true,
+  showWelcome = false,
   onLoadOlder,
   onRetry,
 }: MessageListProps) {
