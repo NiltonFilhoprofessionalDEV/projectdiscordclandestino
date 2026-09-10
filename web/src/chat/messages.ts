@@ -7,6 +7,7 @@ export type ChatMessage = {
   channelId: ChannelId;
   authorId: string;
   displayName: string;
+  avatarUrl: string | null;
   content: string;
   createdAt: string;
   clientNonce: string;
@@ -66,6 +67,7 @@ export function upsertMessages(current: ChatMessage[], incoming: ChatMessage[]):
     byId.set(message.id, {
       ...previous,
       ...message,
+      avatarUrl: message.avatarUrl ?? previous?.avatarUrl ?? null,
       delivery: preferDelivery(previous?.delivery, message.delivery),
     });
     idByNonce.set(key, message.id);

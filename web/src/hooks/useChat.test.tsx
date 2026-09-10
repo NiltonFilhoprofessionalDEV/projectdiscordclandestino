@@ -24,8 +24,8 @@ const auth = vi.hoisted(() => ({
 const fetchMessagePage = vi.hoisted(() => vi.fn());
 const insertChannelMessage = vi.hoisted(() => vi.fn());
 const subscribeMessageInserts = vi.hoisted(() => vi.fn(() => () => undefined));
-const fetchDisplayNames = vi.hoisted(() =>
-  vi.fn(async (_authorIds: string[], cache: Map<string, string>) => cache),
+const fetchAuthorProfiles = vi.hoisted(() =>
+  vi.fn(async (_authorIds: string[], cache: Map<string, { displayName: string; avatarUrl: string | null }>) => cache),
 );
 
 vi.mock("../services/supabase.ts", async () => await import("../test/supabase.stub.ts"));
@@ -37,13 +37,14 @@ vi.mock("../auth/useAuth.ts", () => ({
 vi.mock("../chat/query.ts", () => ({
   toChatMessage: (
     row: MessageRecord,
-    displayName: string,
+    author: { displayName: string; avatarUrl: string | null },
     delivery: "sending" | "sent" | "failed" = "sent",
   ) => ({
     id: row.id,
     channelId: row.channel_id,
     authorId: row.author_id,
-    displayName,
+    displayName: author.displayName,
+    avatarUrl: author.avatarUrl,
     content: row.content,
     createdAt: row.created_at,
     clientNonce: row.client_nonce,
@@ -52,7 +53,8 @@ vi.mock("../chat/query.ts", () => ({
   fetchMessagePage,
   insertChannelMessage,
   subscribeMessageInserts,
-  fetchDisplayNames,
+  fetchAuthorProfiles,
+  fetchDisplayNames: fetchAuthorProfiles,
 }));
 
 import { useChat } from "./useChat.ts";
@@ -116,8 +118,8 @@ describe("useChat", () => {
     insertChannelMessage.mockReset();
     subscribeMessageInserts.mockReset();
     subscribeMessageInserts.mockReturnValue(() => undefined);
-    fetchDisplayNames.mockReset();
-    fetchDisplayNames.mockImplementation(async (_authorIds, cache) => cache);
+    fetchAuthorProfiles.mockReset();
+    fetchAuthorProfiles.mockImplementation(async (_authorIds, cache) => cache);
   });
 
   it("does not show a sent message from the previous channel after switch", async () => {

@@ -15,11 +15,12 @@ import {
 import { loadOlderMessages } from "../chat/older.ts";
 import { persistOptimistic, type MessageSetter } from "../chat/persist.ts";
 import {
-  fetchDisplayNames,
+  fetchAuthorProfiles,
   fetchMessagePage,
   insertChannelMessage,
   subscribeMessageInserts,
   toChatMessage,
+  type AuthorCache,
   type MessageRecord,
 } from "../chat/query.ts";
 
@@ -39,9 +40,17 @@ const MISSING_MESSAGE: ApiResult<never> = {
   error: { code: "NOT_FOUND", message: "Mensagem não encontrada." },
 };
 
+function authorFromCache(cache: AuthorCache, authorId: string) {
+  const author = cache.get(authorId);
+  return {
+    displayName: author?.displayName ?? "Usuário",
+    avatarUrl: author?.avatarUrl ?? null,
+  };
+}
+
 async function bootstrapChannel(
   channelId: ChannelId,
-  names: Map<string, string>,
+  authors: AuthorCache,
   isCurrent: () => boolean,
   setMessages: MessageSetter,
   setHasMore: (value: boolean) => void,
@@ -58,12 +67,15 @@ async function bootstrapChannel(
     setStatus("error");
     return;
   }
-  await fetchDisplayNames(page.data.map((row) => row.author_id), names);
+  await fetchAuthorProfiles(
+    page.data.map((row) => row.author_id),
+    authors,
+  );
   if (!isCurrent()) {
     return;
   }
   const mapped = reverseNewestFirst(page.data).map((row) =>
-    toChatMessage(row, names.get(row.author_id) ?? "Usuário"),
+    toChatMessage(row, authorFromCache(authors, row.author_id)),
   );
   setMessages((current) => upsertMessages(current, mapped));
   setHasMore(hasMorePages(page.data.length));
@@ -72,19 +84,19 @@ async function bootstrapChannel(
 
 function applyRealtimeInsert(
   row: MessageRecord,
-  names: Map<string, string>,
+  authors: AuthorCache,
   isCurrent: () => boolean,
   setMessages: MessageSetter,
 ) {
   if (row.deleted_at) {
     return;
   }
-  void fetchDisplayNames([row.author_id], names).then(() => {
+  void fetchAuthorProfiles([row.author_id], authors).then(() => {
     if (!isCurrent()) {
       return;
     }
     setMessages((current) =>
-      upsertMessages(current, [toChatMessage(row, names.get(row.author_id) ?? "Usuário")]),
+      upsertMessages(current, [toChatMessage(row, authorFromCache(authors, row.author_id))]),
     );
   });
 }
@@ -93,7 +105,8 @@ async function sendChatMessage(input: {
   channelId: ChannelId | null;
   userId: string | undefined;
   displayName: string;
-  names: Map<string, string>;
+  avatarUrl: string | null;
+  authors: AuthorCache;
   setMessages: MessageSetter;
   isCurrent: () => boolean;
   text: string;
@@ -114,12 +127,16 @@ async function sendChatMessage(input: {
     channelId: input.channelId,
     authorId: input.userId,
     displayName: input.displayName,
+    avatarUrl: input.avatarUrl,
     content: parsed.value,
     createdAt: new Date().toISOString(),
     clientNonce,
     delivery: "sending",
   };
-  input.names.set(input.userId, input.displayName);
+  input.authors.set(input.userId, {
+    displayName: input.displayName,
+    avatarUrl: input.avatarUrl,
+  });
   input.setMessages((current) => upsertMessages(current, [optimistic]));
   return persistOptimistic(optimistic, input.setMessages, input.isCurrent, insertChannelMessage);
 }
@@ -147,7 +164,7 @@ function useChatSubscription(
   channelId: ChannelId | null,
   user: { id: string } | null,
   profile: Profile | null,
-  names: MutableRefObject<Map<string, string>>,
+  authors: MutableRefObject<AuthorCache>,
   setMessages: MessageSetter,
   setHasMore: (value: boolean) => void,
   setStatus: (value: ChatStatus) => void,
@@ -156,10 +173,13 @@ function useChatSubscription(
   const guard = useRef(createRequestGuard());
   useEffect(() => {
     const ticket = guard.current.next();
-    names.current = new Map();
+    authors.current = new Map();
     setOlderError(null);
     if (user && profile) {
-      names.current.set(user.id, profile.display_name);
+      authors.current.set(user.id, {
+        displayName: profile.display_name,
+        avatarUrl: profile.avatar_url,
+      });
     }
     if (!channelId) {
       setMessages(() => []);
@@ -169,23 +189,27 @@ function useChatSubscription(
     }
     let cancelled = false;
     const isCurrent = () => !cancelled && ticket.isCurrent();
-    void bootstrapChannel(channelId, names.current, isCurrent, setMessages, setHasMore, setStatus);
+    void bootstrapChannel(channelId, authors.current, isCurrent, setMessages, setHasMore, setStatus);
     const unsubscribe = subscribeMessageInserts(channelId, (row) => {
-      applyRealtimeInsert(row, names.current, isCurrent, setMessages);
+      applyRealtimeInsert(row, authors.current, isCurrent, setMessages);
     });
     return () => {
       cancelled = true;
       unsubscribe();
     };
-  }, [channelId, names, profile, setHasMore, setMessages, setOlderError, setStatus, user]);
+  }, [channelId, authors, profile, setHasMore, setMessages, setOlderError, setStatus, user]);
 }
 
-function useChatState(channelId: ChannelId | null, user: { id: string } | null, profile: Profile | null) {
+function useChatState(
+  channelId: ChannelId | null,
+  user: { id: string } | null,
+  profile: Profile | null,
+) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<ChatStatus>("idle");
   const [hasMore, setHasMore] = useState(false);
   const [olderError, setOlderError] = useState<string | null>(null);
-  const names = useRef(new Map<string, string>());
+  const authors = useRef<AuthorCache>(new Map());
   const messagesRef = useRef(messages);
   const channelRef = useRef(channelId);
   messagesRef.current = messages;
@@ -194,7 +218,7 @@ function useChatState(channelId: ChannelId | null, user: { id: string } | null, 
     channelId,
     user,
     profile,
-    names,
+    authors,
     setMessages,
     setHasMore,
     setStatus,
@@ -213,11 +237,21 @@ function useChatState(channelId: ChannelId | null, user: { id: string } | null, 
       setHasMore,
       setOlderError,
       fetchPage: fetchMessagePage,
-      resolveNames: (authorIds) => fetchDisplayNames(authorIds, names.current),
+      resolveNames: (authorIds) => fetchAuthorProfiles(authorIds, authors.current),
     });
   }, [channelId]);
 
-  return { messages, status, hasMore, olderError, loadOlder, setMessages, names, messagesRef, channelRef };
+  return {
+    messages,
+    status,
+    hasMore,
+    olderError,
+    loadOlder,
+    setMessages,
+    authors,
+    messagesRef,
+    channelRef,
+  };
 }
 
 export function useChat(channelId: ChannelId | null) {
@@ -229,12 +263,21 @@ export function useChat(channelId: ChannelId | null) {
         channelId,
         userId: user?.id,
         displayName: profile?.display_name ?? "Usuário",
-        names: state.names.current,
+        avatarUrl: profile?.avatar_url ?? null,
+        authors: state.authors.current,
         setMessages: state.setMessages,
         isCurrent: () => state.channelRef.current === channelId,
         text,
       }),
-    [channelId, profile?.display_name, state.channelRef, state.names, state.setMessages, user?.id],
+    [
+      channelId,
+      profile?.avatar_url,
+      profile?.display_name,
+      state.authors,
+      state.channelRef,
+      state.setMessages,
+      user?.id,
+    ],
   );
   const retry = useCallback(
     (clientNonce: string) => {

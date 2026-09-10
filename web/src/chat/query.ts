@@ -20,16 +20,24 @@ export function isNonceConflict(error: { code?: string; message?: string } | nul
   return error.code === "23505" || /duplicate key|unique/i.test(error.message ?? "");
 }
 
+export type AuthorProfile = {
+  displayName: string;
+  avatarUrl: string | null;
+};
+
+export type AuthorCache = Map<string, AuthorProfile>;
+
 export function toChatMessage(
   row: MessageRecord,
-  displayName: string,
+  author: AuthorProfile,
   delivery: ChatMessage["delivery"] = "sent",
 ): ChatMessage {
   return {
     id: row.id,
     channelId: row.channel_id as ChannelId,
     authorId: row.author_id,
-    displayName,
+    displayName: author.displayName,
+    avatarUrl: author.avatarUrl,
     content: row.content,
     createdAt: row.created_at,
     clientNonce: row.client_nonce,
@@ -37,17 +45,31 @@ export function toChatMessage(
   };
 }
 
+/** @deprecated Prefer fetchAuthorProfiles — kept as alias for call-site clarity. */
 export async function fetchDisplayNames(
   authorIds: string[],
-  cache: Map<string, string>,
-): Promise<Map<string, string>> {
+  cache: AuthorCache,
+): Promise<AuthorCache> {
+  return fetchAuthorProfiles(authorIds, cache);
+}
+
+export async function fetchAuthorProfiles(
+  authorIds: string[],
+  cache: AuthorCache,
+): Promise<AuthorCache> {
   const missing = [...new Set(authorIds)].filter((id) => !cache.has(id));
   if (missing.length === 0) {
     return cache;
   }
-  const { data } = await supabase.from("profiles").select("id, display_name").in("id", missing);
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, display_name, avatar_url")
+    .in("id", missing);
   for (const row of data ?? []) {
-    cache.set(row.id, row.display_name);
+    cache.set(row.id, {
+      displayName: row.display_name,
+      avatarUrl: row.avatar_url ?? null,
+    });
   }
   return cache;
 }

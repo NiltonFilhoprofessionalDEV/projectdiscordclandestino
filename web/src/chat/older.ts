@@ -3,7 +3,7 @@ import { hasMorePages, oldestCursor } from "./cursor.ts";
 import type { ChatMessage } from "./messages.ts";
 import { upsertMessages } from "./messages.ts";
 import type { MessageSetter } from "./persist.ts";
-import { toChatMessage, type MessageRecord } from "./query.ts";
+import { toChatMessage, type AuthorCache, type MessageRecord } from "./query.ts";
 
 type ChatStatus = "idle" | "loading" | "ready" | "error";
 
@@ -21,7 +21,7 @@ export async function loadOlderMessages(input: {
   setStatus?: (value: ChatStatus) => void;
   setOlderError: (value: string | null) => void;
   fetchPage: FetchPage;
-  resolveNames: (authorIds: string[]) => Promise<Map<string, string>>;
+  resolveNames: (authorIds: string[]) => Promise<AuthorCache>;
 }) {
   const cursor = oldestCursor(input.messages);
   if (!cursor) {
@@ -40,7 +40,13 @@ export async function loadOlderMessages(input: {
   if (!input.stillOnChannel()) {
     return;
   }
-  const mapped = page.data.map((row) => toChatMessage(row, names.get(row.author_id) ?? "Usuário"));
+  const mapped = page.data.map((row) => {
+    const author = names.get(row.author_id);
+    return toChatMessage(row, {
+      displayName: author?.displayName ?? "Usuário",
+      avatarUrl: author?.avatarUrl ?? null,
+    });
+  });
   input.setMessages((current) => upsertMessages(current, mapped));
   input.setHasMore(hasMorePages(page.data.length));
 }

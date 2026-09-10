@@ -33,7 +33,12 @@ export async function persistOptimistic(
     return result;
   }
   setMessages((current) =>
-    upsertMessages(current, [toChatMessage(result.data, optimistic.displayName)]),
+    upsertMessages(current, [
+      toChatMessage(result.data, {
+        displayName: optimistic.displayName,
+        avatarUrl: optimistic.avatarUrl,
+      }),
+    ]),
   );
   return { ok: true, data: undefined };
 }
