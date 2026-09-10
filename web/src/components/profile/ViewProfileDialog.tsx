@@ -1,12 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import { Camera, ImagePlus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Camera } from "lucide-react";
 import { useAuth } from "../../auth/useAuth.ts";
-import {
-  addProfilePhoto,
-  fetchPublicProfile,
-  MAX_PHOTOS,
-  type PublicProfile,
-} from "../../services/profileView.ts";
+import { fetchPublicProfile, type PublicProfile } from "../../services/profileView.ts";
 import { initials } from "../../lib/utils.ts";
 import { Button } from "../ui/button.tsx";
 import { Icon } from "../ui/icon.tsx";
@@ -37,10 +32,8 @@ export function ViewProfileDialog({
   onEditSelf,
 }: ViewProfileDialogProps) {
   const { user } = useAuth();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
 
   useEffect(() => {
     if (!userId) {
@@ -70,23 +63,6 @@ export function ViewProfileDialog({
   }
 
   const isSelf = user?.id === userId;
-  const gallery = profile?.photoUrls ?? [];
-
-  async function onPick(file: File | undefined) {
-    if (!file || !userId) {
-      return;
-    }
-    setPending(true);
-    setError(null);
-    try {
-      const next = await addProfilePhoto(userId, file);
-      setProfile(next);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível enviar a foto.");
-    } finally {
-      setPending(false);
-    }
-  }
 
   return (
     <AppDialog
@@ -126,45 +102,6 @@ export function ViewProfileDialog({
               <p className="font-display text-lg font-bold text-cloud">{profile.displayName}</p>
               <p className="text-sm text-haze">{presenceCopy(profile)}</p>
             </div>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-haze">Fotos</p>
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              {gallery.map((url) => (
-                <button
-                  key={url}
-                  type="button"
-                  className="aspect-square overflow-hidden rounded-xl bg-deck ring-1 ring-white/10"
-                  aria-label="Abrir foto"
-                  onClick={() => onOpenImage(url, profile.displayName)}
-                >
-                  <img src={url} alt="" className="size-full object-cover" />
-                </button>
-              ))}
-              {isSelf && gallery.length < MAX_PHOTOS ? (
-                <button
-                  type="button"
-                  className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-white/15 text-haze transition hover:border-electric/40 hover:text-cloud"
-                  onClick={() => fileRef.current?.click()}
-                  disabled={pending}
-                >
-                  <Icon icon={ImagePlus} size="action" />
-                  <span className="text-[11px]">{pending ? "Enviando…" : "Enviar"}</span>
-                </button>
-              ) : null}
-            </div>
-            {gallery.length === 0 && !isSelf ? (
-              <p className="mt-2 text-sm text-muted">Este usuário ainda não enviou fotos.</p>
-            ) : null}
-            {isSelf ? (
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                className="hidden"
-                onChange={(event) => void onPick(event.target.files?.[0])}
-              />
-            ) : null}
           </div>
           {isSelf && onEditSelf ? (
             <Button type="button" variant="secondary" className="w-full" onClick={onEditSelf}>

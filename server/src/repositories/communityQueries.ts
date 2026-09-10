@@ -85,6 +85,25 @@ export async function updateCommunity(
   return { ok: true, data: mapCommunity(data) };
 }
 
+export async function deleteCommunity(
+  client: DbClient,
+  communityId: string,
+): Promise<ApiResult<{ id: CommunityId }>> {
+  const { data, error } = await client
+    .from("communities")
+    .delete()
+    .eq("id", communityId)
+    .select("id")
+    .maybeSingle();
+  if (error) {
+    return mapRepositoryError(error);
+  }
+  if (!data) {
+    return fail("FORBIDDEN", "Sem permissão para excluir esta comunidade.");
+  }
+  return { ok: true, data: { id: data.id as CommunityId } };
+}
+
 export async function createCommunity(
   client: DbClient,
   input: CreateCommunityInput,

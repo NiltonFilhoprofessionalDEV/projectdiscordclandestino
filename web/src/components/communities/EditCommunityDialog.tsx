@@ -22,12 +22,14 @@ type EditCommunityDialogProps = {
     communityId: CommunityId,
     input: UpdateCommunityInput,
   ) => Promise<ApiResult<Community>>;
+  onDelete: (communityId: CommunityId) => Promise<ApiResult<{ id: CommunityId }>>;
 };
 
 export function EditCommunityDialog({
   community,
   onClose,
   onUpdate,
+  onDelete,
 }: EditCommunityDialogProps) {
   const open = community !== null;
   const [name, setName] = useState("");
@@ -85,6 +87,27 @@ export function EditCommunityDialog({
     }
   }
 
+  async function handleDelete() {
+    if (!community) {
+      return;
+    }
+    const confirmed = window.confirm(
+      `Excluir a comunidade "${community.name}"? Canais e mensagens serão removidos.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+    setPending(true);
+    setError(null);
+    const result = await onDelete(community.id);
+    setPending(false);
+    if (!result.ok) {
+      setError(result.error.message);
+      return;
+    }
+    onClose();
+  }
+
   return (
     <AppDialog
       open={open}
@@ -134,13 +157,23 @@ export function EditCommunityDialog({
             {error}
           </p>
         ) : null}
-        <div className="mt-6 flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={pending}>
-            Cancelar
+        <div className="mt-6 flex flex-wrap justify-between gap-2">
+          <Button
+            type="button"
+            variant="danger"
+            onClick={() => void handleDelete()}
+            disabled={pending}
+          >
+            Excluir
           </Button>
-          <Button type="submit" variant="primary" disabled={pending}>
-            {pending ? "Salvando…" : "Salvar"}
-          </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="ghost" onClick={onClose} disabled={pending}>
+              Cancelar
+            </Button>
+            <Button type="submit" variant="primary" disabled={pending}>
+              {pending ? "Salvando…" : "Salvar"}
+            </Button>
+          </div>
         </div>
       </form>
     </AppDialog>

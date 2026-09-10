@@ -22,6 +22,7 @@ import {
   listCommunities as queryCommunities,
   listMemberVoiceChannels as queryMemberVoiceChannels,
   updateCommunity as patchCommunity,
+  deleteCommunity as removeCommunity,
 } from "./communityQueries.ts";
 import {
   createChannel as insertCommunityChannel,
@@ -49,6 +50,10 @@ export type CommunityRepository = {
     communityId: string,
     input: UpdateCommunityInput,
   ): Promise<ApiResult<Community>>;
+  deleteCommunity(
+    userId: string,
+    communityId: string,
+  ): Promise<ApiResult<{ id: CommunityId }>>;
   createChannel(
     userId: string,
     communityId: string,
@@ -105,6 +110,8 @@ export function createCommunityRepository(client: DbClient): CommunityRepository
       wrap("getCommunity", () => loadCommunity(client, communityId)),
     updateCommunity: (_userId, communityId, input) =>
       wrap("updateCommunity", () => patchCommunity(client, communityId, input)),
+    deleteCommunity: (_userId, communityId) =>
+      wrap("deleteCommunity", () => removeCommunity(client, communityId)),
     createChannel: (userId, communityId, input) =>
       wrap("createChannel", () =>
         insertCommunityChannel(client, userId, communityId, input),

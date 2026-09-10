@@ -13,11 +13,13 @@ type FriendsPanelProps = {
   friends: {
     friends: FriendEntry[];
     incoming: FriendEntry[];
+    outgoing: FriendEntry[];
     status: string;
     error: string | null;
     requestByEmail: (email: string) => Promise<string | null>;
     requestByUserId?: (userId: string) => Promise<string | null>;
     accept: (id: string) => Promise<void>;
+    remove: (id: string) => Promise<string | null>;
     inviteToCommunity: (friendUserId: string, communityId: string) => Promise<string | null>;
     retry: () => Promise<void>;
   };
@@ -80,10 +82,12 @@ function FriendInviteControl({ invite }: { invite: InviteAction }) {
 function FriendRow({
   entry,
   action,
+  secondaryAction,
   inviteAction,
 }: {
   entry: FriendEntry;
-  action?: { label: string; onClick: () => void };
+  action?: { label: string; onClick: () => void; variant?: "primary" | "secondary" | "danger" };
+  secondaryAction?: { label: string; onClick: () => void };
   inviteAction?: InviteAction;
 }) {
   const peek = useProfilePeek();
@@ -118,10 +122,21 @@ function FriendRow({
         <span className="text-xs text-haze">{presenceLabel(entry)}</span>
       </button>
       {inviteAction ? <FriendInviteControl invite={inviteAction} /> : null}
+      {secondaryAction ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-9 min-h-9 px-2 text-haze"
+          onClick={secondaryAction.onClick}
+        >
+          {secondaryAction.label}
+        </Button>
+      ) : null}
       {action ? (
         <Button
           type="button"
-          variant="primary"
+          variant={action.variant ?? "primary"}
           size="sm"
           className="h-9 min-h-9 px-3"
           onClick={action.onClick}
@@ -188,6 +203,15 @@ export function FriendsPanel({
       text: `${entry.displayName} entrou em ${communityName ?? "a comunidade"}.`,
     });
     onInvited?.();
+  }
+
+  async function handleRemove(entry: FriendEntry, successText: string) {
+    const error = await friends.remove(entry.friendshipId);
+    if (error) {
+      setFeedback({ kind: "error", text: error });
+      return;
+    }
+    setFeedback({ kind: "success", text: successText });
   }
 
   function inviteActionFor(entry: FriendEntry): InviteAction | undefined {
@@ -281,7 +305,34 @@ export function FriendsPanel({
               <FriendRow
                 key={entry.friendshipId}
                 entry={entry}
+                secondaryAction={{
+                  label: "Recusar",
+                  onClick: () =>
+                    void handleRemove(entry, `Pedido de ${entry.displayName} recusado.`),
+                }}
                 action={{ label: "Aceitar", onClick: () => void friends.accept(entry.friendshipId) }}
+              />
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {friends.outgoing.length > 0 ? (
+        <div className="mt-4">
+          <p className="px-1 text-[11px] font-semibold tracking-wide text-haze uppercase">
+            Enviados — {friends.outgoing.length}
+          </p>
+          <ul className="mt-2 space-y-2">
+            {friends.outgoing.map((entry) => (
+              <FriendRow
+                key={entry.friendshipId}
+                entry={entry}
+                action={{
+                  label: "Cancelar",
+                  variant: "secondary",
+                  onClick: () =>
+                    void handleRemove(entry, `Pedido para ${entry.displayName} cancelado.`),
+                }}
               />
             ))}
           </ul>
@@ -303,6 +354,11 @@ export function FriendsPanel({
                 key={entry.friendshipId}
                 entry={entry}
                 inviteAction={inviteActionFor(entry)}
+                secondaryAction={{
+                  label: "Remover",
+                  onClick: () =>
+                    void handleRemove(entry, `${entry.displayName} removido dos amigos.`),
+                }}
               />
             ))
           )}
@@ -320,6 +376,11 @@ export function FriendsPanel({
                 key={entry.friendshipId}
                 entry={entry}
                 inviteAction={inviteActionFor(entry)}
+                secondaryAction={{
+                  label: "Remover",
+                  onClick: () =>
+                    void handleRemove(entry, `${entry.displayName} removido dos amigos.`),
+                }}
               />
             ))}
           </ul>

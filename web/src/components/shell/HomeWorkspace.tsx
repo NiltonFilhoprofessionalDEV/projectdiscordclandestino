@@ -226,7 +226,9 @@ function HomeDialogHost({
       onCreateCommunity={communities.create}
       onCreateChannel={channels.create}
       onUpdateChannel={channels.update}
+      onDeleteChannel={channels.remove}
       onUpdateCommunity={communities.update}
+      onDeleteCommunity={communities.remove}
       onSaveProfile={updateProfile}
       onCreatedCommunity={(community) => {
         void communities.retry().then(() => {
