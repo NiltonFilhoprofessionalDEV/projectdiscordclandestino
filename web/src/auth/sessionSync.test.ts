@@ -72,4 +72,29 @@ describe("applyAuthSnapshot", () => {
     );
     expect(snapshot().loading).toBe(true);
   });
+
+  it("does not re-open the loading gate on token refresh", () => {
+    const { sink, snapshot } = createSink();
+    applyAuthSnapshot(
+      {
+        access_token: "tok-1",
+        user: { id: "user-1" },
+      } as Session,
+      sink,
+    );
+    sink.setLoading(false);
+    applyAuthSnapshot(
+      {
+        access_token: "tok-2",
+        user: { id: "user-1" },
+      } as Session,
+      sink,
+      "TOKEN_REFRESHED",
+    );
+    expect(snapshot()).toMatchObject({
+      loading: false,
+      user: { id: "user-1" },
+    });
+    expect(snapshot().session?.access_token).toBe("tok-2");
+  });
 });
