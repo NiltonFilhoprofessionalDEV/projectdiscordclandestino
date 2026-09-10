@@ -6,6 +6,7 @@ import type { FriendEntry } from "../../hooks/useFriends.ts";
 import { Button, IconButton } from "../ui/button.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { Input } from "../ui/input.tsx";
+import { Tooltip } from "../ui/tooltip.tsx";
 import { useProfilePeek } from "../../profile/ProfilePeek.tsx";
 
 type FriendsPanelProps = {
