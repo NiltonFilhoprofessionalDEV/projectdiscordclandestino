@@ -141,6 +141,7 @@ function HomeGrid(props: HomeWorkspaceProps) {
               error={props.members.error}
               participants={props.session.participants}
               voiceActive={props.nav.activeVoiceChannelId !== null}
+              friends={friendsForPanel}
               onRetry={() => void props.members.retry()}
               embedded
             />

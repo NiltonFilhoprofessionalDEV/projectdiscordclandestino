@@ -15,6 +15,7 @@ type FriendsPanelProps = {
     status: string;
     error: string | null;
     requestByEmail: (email: string) => Promise<string | null>;
+    requestByUserId?: (userId: string) => Promise<string | null>;
     accept: (id: string) => Promise<void>;
     inviteToCommunity: (friendUserId: string, communityId: string) => Promise<string | null>;
     retry: () => Promise<void>;

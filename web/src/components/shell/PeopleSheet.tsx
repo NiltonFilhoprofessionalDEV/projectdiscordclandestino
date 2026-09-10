@@ -104,6 +104,7 @@ export function PeopleSheet({
               error={memberError}
               participants={participants}
               voiceActive={voiceActive}
+              friends={friends}
               onRetry={onRetryMembers}
               embedded
             />
