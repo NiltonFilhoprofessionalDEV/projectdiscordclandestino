@@ -11,7 +11,7 @@ import { Button, IconButton } from "../ui/button.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { Loading } from "../ui/loading.tsx";
 import { Tooltip } from "../ui/tooltip.tsx";
-import { UserFooterBar } from "../shell/ShellHeader.tsx";
+import { useProfilePeek } from "../../profile/ProfilePeek.tsx";
 
 type ChannelSidebarProps = {
   community: CommunitySummary | null;
@@ -49,14 +49,23 @@ type VoicePerson = {
   isLocal?: boolean;
 };
 
-function VoiceMemberRow({ participant }: { participant: VoicePerson }) {
+function VoiceMemberRow({
+  participant,
+  onOpen,
+}: {
+  participant: VoicePerson;
+  onOpen: () => void;
+}) {
   return (
-    <li
-      className={cn(
-        "flex min-h-8 min-w-0 items-center gap-2 rounded-lg px-2 py-1 text-sm",
-        participant.isSpeaking ? "text-cloud" : "text-haze",
-      )}
-    >
+    <li className="min-w-0">
+      <button
+        type="button"
+        className={cn(
+          "flex min-h-8 w-full min-w-0 items-center gap-2 rounded-lg px-2 py-1 text-left text-sm",
+          participant.isSpeaking ? "text-cloud" : "text-haze",
+        )}
+        onClick={onOpen}
+      >
       <span
         className={cn(
           "flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-deck text-[9px] font-semibold text-cloud",
@@ -80,6 +89,7 @@ function VoiceMemberRow({ participant }: { participant: VoicePerson }) {
         {participant.name}
         {participant.isLocal ? " (você)" : ""}
       </span>
+      </button>
     </li>
   );
 }
@@ -93,6 +103,7 @@ function ChannelRow({
   participants,
   onSelect,
   onEdit,
+  onOpenUser,
 }: {
   channel: Channel;
   active: boolean;
@@ -102,6 +113,7 @@ function ChannelRow({
   participants?: VoicePerson[];
   onSelect: () => void;
   onEdit: () => void;
+  onOpenUser?: (userId: string) => void;
 }) {
   const count = participants?.length ?? 0;
   return (
@@ -151,7 +163,11 @@ function ChannelRow({
       {participants && participants.length > 0 ? (
         <ul className="mt-1 mb-1 ml-7 space-y-0.5" aria-label={`Na chamada ${channel.name}`}>
           {participants.map((participant) => (
-            <VoiceMemberRow key={participant.identity} participant={participant} />
+            <VoiceMemberRow
+              key={participant.identity}
+              participant={participant}
+              onOpen={() => onOpenUser?.(participant.identity)}
+            />
           ))}
         </ul>
       ) : null}
@@ -218,6 +234,7 @@ function VoiceChannels({
   canManage,
   onSelect,
   onEdit,
+  onOpenUser,
 }: {
   channels: Channel[];
   activeId: ChannelId | null;
@@ -226,6 +243,7 @@ function VoiceChannels({
   canManage: boolean;
   onSelect: (id: ChannelId) => void;
   onEdit: (channel: Channel) => void;
+  onOpenUser?: (userId: string) => void;
 }) {
   return (
     <>
@@ -249,6 +267,7 @@ function VoiceChannels({
             )}
             onSelect={() => onSelect(channel.id)}
             onEdit={() => onEdit(channel)}
+            onOpenUser={onOpenUser}
           />
         ))}
       </nav>
@@ -283,6 +302,8 @@ export function ChannelSidebar({
   onOpenProfile,
   onOpenSettings,
 }: ChannelSidebarProps) {
+  const peek = useProfilePeek();
+  const communityPhoto = community?.avatarUrl || communityBanner;
   let body: ReactNode;
   if (!community) {
     body = <p className="px-2 text-sm text-haze">Abra o Explore para entrar em um espaço.</p>;
@@ -321,6 +342,7 @@ export function ChannelSidebar({
           canManage={canManage}
           onSelect={onSelectVoice}
           onEdit={onEdit}
+          onOpenUser={peek.openUser}
         />
       </>
     );
@@ -329,24 +351,32 @@ export function ChannelSidebar({
   return (
     <aside className="flex h-full w-[256px] shrink-0 flex-col border-r border-white/[0.07] bg-panel">
       <div className="relative min-h-[7.5rem] shrink-0 overflow-hidden border-b border-white/[0.07]">
-        <img
-          src={community?.avatarUrl || communityBanner}
-          alt=""
-          className="absolute inset-0 size-full object-cover object-center"
-        />
+        <button
+          type="button"
+          className="absolute inset-0"
+          aria-label="Abrir imagem da comunidade"
+          onClick={() => peek.openImage(communityPhoto, community?.name ?? "Comunidade")}
+        >
+          <img src={communityPhoto} alt="" className="size-full object-cover object-center" />
+        </button>
         <div
-          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,9,15,0.28)_0%,rgba(16,17,26,0.62)_48%,rgba(16,17,26,0.92)_100%)]"
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,9,15,0.28)_0%,rgba(16,17,26,0.62)_48%,rgba(16,17,26,0.92)_100%)]"
           aria-hidden
         />
         <div className="relative flex h-full min-h-[7.5rem] flex-col justify-end px-4 pb-3.5 pt-8">
           <div className="flex items-end gap-3">
-            <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-deck/80 text-xs font-semibold text-cloud ring-1 ring-white/15">
+            <button
+              type="button"
+              className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-deck/80 text-xs font-semibold text-cloud ring-1 ring-white/15"
+              aria-label="Abrir foto da comunidade"
+              onClick={() => peek.openImage(communityPhoto, community?.name ?? "Comunidade")}
+            >
               {community?.avatarUrl ? (
                 <img src={community.avatarUrl} alt="" className="size-full object-cover" />
               ) : (
                 initials(community?.name ?? "G")
               )}
-            </span>
+            </button>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-semibold tracking-[0.04em] text-muted uppercase">
                 Comunidade

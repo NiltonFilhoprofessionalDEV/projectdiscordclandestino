@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import type { ParticipantView } from "../../hooks/useParticipants.ts";
+import { useProfilePeek } from "../../profile/ProfilePeek.tsx";
 import { cn, initials } from "../../lib/utils.ts";
 import {
   getParticipantAudioOutput,
@@ -143,6 +144,10 @@ function ParticipantVolumeControls({ identity, isLocal }: { identity: string; is
 }
 
 export function ParticipantTile({ participant, compact = false }: ParticipantTileProps) {
+  const peek = useProfilePeek();
+  function openProfile() {
+    peek.openUser(participant.identity);
+  }
   if (compact) {
     return (
       <TileFrame
@@ -164,18 +169,21 @@ export function ParticipantTile({ participant, compact = false }: ParticipantTil
             />
           </div>
         ) : (
-          <AvatarFace
-            name={participant.name}
-            avatarUrl={participant.avatarUrl}
-            speaking={participant.isSpeaking}
-            compact
-          />
+          <button type="button" aria-label={`Ver perfil de ${participant.name}`} onClick={openProfile}>
+            <AvatarFace
+              name={participant.name}
+              avatarUrl={participant.avatarUrl}
+              speaking={participant.isSpeaking}
+              compact
+            />
+          </button>
         )}
         <p
           className={cn(
-            "mt-1.5 flex w-full items-center justify-center gap-1 truncate text-[11px] font-medium",
+            "mt-1.5 flex w-full cursor-pointer items-center justify-center gap-1 truncate text-[11px] font-medium",
             participant.micOn ? "text-cloud" : "text-[#f9a8d4]",
           )}
+          onClick={openProfile}
         >
           <span className="truncate">
             {participant.name}
@@ -212,9 +220,10 @@ export function ParticipantTile({ participant, compact = false }: ParticipantTil
         </div>
         <p
           className={cn(
-            "flex items-center gap-2 text-sm font-medium",
+            "flex cursor-pointer items-center gap-2 text-sm font-medium",
             participant.micOn ? "text-cloud" : "text-[#f9a8d4]",
           )}
+          onClick={openProfile}
         >
           {participant.name}
           {participant.isLocal ? " (você)" : ""}
@@ -235,16 +244,19 @@ export function ParticipantTile({ participant, compact = false }: ParticipantTil
       className="min-h-44 rounded-[18px] px-4 py-5 text-center sm:min-h-56 sm:py-6"
       contentClassName="justify-center"
     >
-      <AvatarFace
-        name={participant.name}
-        avatarUrl={participant.avatarUrl}
-        speaking={participant.isSpeaking}
-      />
+      <button type="button" aria-label={`Ver perfil de ${participant.name}`} onClick={openProfile}>
+        <AvatarFace
+          name={participant.name}
+          avatarUrl={participant.avatarUrl}
+          speaking={participant.isSpeaking}
+        />
+      </button>
       <p
         className={cn(
-          "mt-4 flex items-center gap-2 text-sm font-medium",
+          "mt-4 flex cursor-pointer items-center gap-2 text-sm font-medium",
           participant.micOn ? "text-cloud" : "text-[#f9a8d4]",
         )}
+        onClick={openProfile}
       >
         {participant.name}
         {participant.isLocal ? " (você)" : ""}

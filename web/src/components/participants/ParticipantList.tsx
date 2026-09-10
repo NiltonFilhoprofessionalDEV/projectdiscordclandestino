@@ -5,6 +5,7 @@ import { cn, initials } from "../../lib/utils.ts";
 import { Button, IconButton } from "../ui/button.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { Tooltip } from "../ui/tooltip.tsx";
+import { useProfilePeek } from "../../profile/ProfilePeek.tsx";
 
 type ParticipantListProps = {
   participants: ParticipantView[];
@@ -102,6 +103,7 @@ export function ParticipantList({
   onAddFriend,
   onAcceptFriend,
 }: ParticipantListProps) {
+  const peek = useProfilePeek();
   return (
     <ul className="space-y-0.5">
       {participants.map((participant) => {
@@ -117,12 +119,15 @@ export function ParticipantList({
               participant.isSpeaking && "bg-signal/5",
             )}
           >
-            <span
+            <button
+              type="button"
               className={cn(
                 "flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-deck text-[10px] font-semibold text-cloud transition",
                 participant.isSpeaking &&
                   "ring-2 ring-signal shadow-[0_0_10px_rgba(34,197,94,0.45)]",
               )}
+              aria-label={`Ver perfil de ${participant.name}`}
+              onClick={() => peek.openUser(participant.identity)}
             >
               {participant.avatarUrl ? (
                 <img
@@ -136,7 +141,7 @@ export function ParticipantList({
               ) : (
                 initials(participant.name)
               )}
-            </span>
+            </button>
             <ParticipantName
               participant={participant}
               relation={relation}
