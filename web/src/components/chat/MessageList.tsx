@@ -4,6 +4,7 @@ import { initials } from "../../lib/utils.ts";
 import { Button } from "../ui/button.tsx";
 import { Loading } from "../ui/loading.tsx";
 import { useProfilePeek } from "../../profile/ProfilePeek.tsx";
+import { WelcomeBanner } from "./WelcomeBanner.tsx";
 
 type MessageListProps = {
   messages: ChatMessage[];
