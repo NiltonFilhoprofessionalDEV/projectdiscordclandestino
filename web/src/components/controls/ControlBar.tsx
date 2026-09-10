@@ -54,8 +54,8 @@ export function ControlBar({
 }: ControlBarProps) {
   const micLabel = micOn ? "Mutar microfone" : "Desmutar microfone";
   const voiceLabel = voiceActivityOn
-    ? "Desligar reconhecimento de voz"
-    : "Ligar reconhecimento de voz";
+    ? "Desligar: só transmite quando você fala"
+    : "Ligar: só transmite quando você fala";
   const cameraLabel = cameraOn ? "Desligar câmera" : "Ligar câmera";
   const screenLabel = screenOn ? "Configurar transmissão" : "Compartilhar tela";
   const outputLabel = outputMuted ? "Ativar áudio recebido" : "Mutar áudio recebido";
@@ -77,7 +77,13 @@ export function ControlBar({
           <Icon icon={micOn ? Mic : MicOff} />
         </IconButton>
       </Tooltip>
-      <Tooltip label={voiceActivityOn ? "Só transmite quando você fala" : "Transmissão contínua"}>
+      <Tooltip
+        label={
+          voiceActivityOn
+            ? "Modo voz: só transmite quando você fala"
+            : "Transmissão contínua (microfone sempre aberto)"
+        }
+      >
         <IconButton
           type="button"
           variant={voiceActivityOn ? "live" : "secondary"}

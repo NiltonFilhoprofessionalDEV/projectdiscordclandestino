@@ -70,9 +70,7 @@ export function ViewProfileDialog({
   }
 
   const isSelf = user?.id === userId;
-  const photos = profile
-    ? [profile.avatarUrl, ...profile.photoUrls].filter((url): url is string => Boolean(url))
-    : [];
+  const gallery = profile?.photoUrls ?? [];
 
   async function onPick(file: File | undefined) {
     if (!file || !userId) {
@@ -132,7 +130,7 @@ export function ViewProfileDialog({
           <div>
             <p className="text-sm font-medium text-haze">Fotos</p>
             <div className="mt-2 grid grid-cols-3 gap-2">
-              {photos.map((url) => (
+              {gallery.map((url) => (
                 <button
                   key={url}
                   type="button"
@@ -143,7 +141,7 @@ export function ViewProfileDialog({
                   <img src={url} alt="" className="size-full object-cover" />
                 </button>
               ))}
-              {isSelf && profile.photoUrls.length < MAX_PHOTOS ? (
+              {isSelf && gallery.length < MAX_PHOTOS ? (
                 <button
                   type="button"
                   className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-white/15 text-haze transition hover:border-electric/40 hover:text-cloud"
@@ -155,7 +153,7 @@ export function ViewProfileDialog({
                 </button>
               ) : null}
             </div>
-            {photos.length === 0 && !isSelf ? (
+            {gallery.length === 0 && !isSelf ? (
               <p className="mt-2 text-sm text-muted">Este usuário ainda não enviou fotos.</p>
             ) : null}
             {isSelf ? (
