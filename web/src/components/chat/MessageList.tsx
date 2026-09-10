@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, type UIEvent } from "react";
 import type { ChatMessage } from "../../hooks/useChat.ts";
+import { splitMessageLinks } from "../../chat/messageLinks.ts";
 import { initials } from "../../lib/utils.ts";
 import { Button } from "../ui/button.tsx";
 import { Loading } from "../ui/loading.tsx";
@@ -19,12 +20,50 @@ type MessageListProps = {
 
 const NEAR_BOTTOM_PX = 96;
 
-function formatTime(iso: string): string {
+function formatMessageWhen(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) {
     return "";
   }
-  return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const time = date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const today = new Date();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const startOfMessage = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dayDiff = Math.round((startOfToday.getTime() - startOfMessage.getTime()) / 86_400_000);
+  if (dayDiff === 0) {
+    return `Hoje às ${time}`;
+  }
+  if (dayDiff === 1) {
+    return `Ontem às ${time}`;
+  }
+  const day = date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  return `${day} às ${time}`;
+}
+
+function MessageContent({ content }: { content: string }) {
+  return (
+    <>
+      {splitMessageLinks(content).map((part, index) =>
+        part.type === "link" ? (
+          <a
+            key={`${part.href}-${index}`}
+            href={part.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-electric underline-offset-2 hover:underline"
+          >
+            {part.value}
+          </a>
+        ) : (
+          <span key={`t-${index}`}>{part.value}</span>
+        ),
+      )}
+    </>
+  );
 }
 
 function MessageStatus({
@@ -84,11 +123,11 @@ function MessageArticle({
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <p className="text-sm font-semibold text-electric">{message.displayName}</p>
           <time className="text-[11px] text-muted" dateTime={message.createdAt}>
-            {formatTime(message.createdAt)}
+            {formatMessageWhen(message.createdAt)}
           </time>
         </div>
         <p className="mt-0.5 wrap-break-word whitespace-pre-wrap text-[15px] leading-relaxed text-cloud">
-          {message.content}
+          <MessageContent content={message.content} />
         </p>
         <MessageStatus message={message} onRetry={onRetry} />
       </div>

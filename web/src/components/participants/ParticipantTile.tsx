@@ -163,7 +163,7 @@ export function ParticipantTile({ participant, compact = false }: ParticipantTil
           >
             <MediaTile
               publication={participant.cameraPublication}
-              label={`${participant.name}${participant.isLocal ? " (você)" : ""}`}
+              label={participant.name}
               muteElement={participant.isLocal}
               compact
             />
@@ -185,10 +185,7 @@ export function ParticipantTile({ participant, compact = false }: ParticipantTil
           )}
           onClick={openProfile}
         >
-          <span className="truncate">
-            {participant.name}
-            {participant.isLocal ? " (você)" : ""}
-          </span>
+          <span className="truncate">{participant.name}</span>
           {participant.micOn ? (
             <Icon icon={Mic} size="sm" className="size-3 shrink-0 text-haze" />
           ) : (
@@ -214,7 +211,7 @@ export function ParticipantTile({ participant, compact = false }: ParticipantTil
         >
           <MediaTile
             publication={participant.cameraPublication}
-            label={`${participant.name}${participant.isLocal ? " (você)" : ""}`}
+            label={participant.name}
             muteElement={participant.isLocal}
           />
         </div>
@@ -226,7 +223,6 @@ export function ParticipantTile({ participant, compact = false }: ParticipantTil
           onClick={openProfile}
         >
           {participant.name}
-          {participant.isLocal ? " (você)" : ""}
           {participant.micOn ? (
             <Icon icon={Mic} size="sm" className="text-haze" />
           ) : (
@@ -259,7 +255,6 @@ export function ParticipantTile({ participant, compact = false }: ParticipantTil
         onClick={openProfile}
       >
         {participant.name}
-        {participant.isLocal ? " (você)" : ""}
         {participant.micOn ? (
           <Icon icon={Mic} size="sm" className="text-haze" />
         ) : (

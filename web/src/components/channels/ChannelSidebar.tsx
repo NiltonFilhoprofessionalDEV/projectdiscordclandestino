@@ -86,10 +86,7 @@ function VoiceMemberRow({
           initials(participant.name)
         )}
       </span>
-      <span className="truncate">
-        {participant.name}
-        {participant.isLocal ? " (você)" : ""}
-      </span>
+      <span className="truncate">{participant.name}</span>
       </button>
     </li>
   );

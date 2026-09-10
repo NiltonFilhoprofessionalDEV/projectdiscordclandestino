@@ -26,8 +26,7 @@ function ParticipantName({
   adding: boolean;
   onAddFriend?: (identity: string, name: string) => void;
 }) {
-  const suffix = participant.isLocal ? " (você)" : "";
-  const label = `${participant.name}${suffix}`;
+  const label = participant.name;
   if (relation.kind === "none" && onAddFriend) {
     return (
       <button
