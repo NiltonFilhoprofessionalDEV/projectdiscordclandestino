@@ -56,7 +56,7 @@ export function parseCommunityName(raw: string): ParseResult {
 }
 
 export function parseChannelName(raw: string): ParseResult {
-  const value = normalizeWhitespace(raw).replaceAll(" ", "-");
+  const value = normalizeWhitespace(raw);
 
   if (!value) {
     return { ok: false, error: "Digite um nome de canal." };
