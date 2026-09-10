@@ -6,6 +6,7 @@ import { useAuth } from "../../auth/useAuth.ts";
 import type { Profile } from "../../auth/AuthProvider.tsx";
 import { canManageCommunity } from "../../communities/roles.ts";
 import { enrichFriendsWithCallPresence, occupancyIdentitySet } from "../../friends/presence.ts";
+import { occupancyWithoutLocalElsewhere } from "../../voice/switch.ts";
 import { FriendsPanel } from "../friends/FriendsPanel.tsx";
 import { MemberPanel } from "../members/MemberPanel.tsx";
 import type { useChannels } from "../../hooks/useChannels.ts";
