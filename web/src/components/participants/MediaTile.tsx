@@ -3,6 +3,7 @@ import type { TrackPublication } from "livekit-client";
 import { Maximize2 } from "lucide-react";
 import { IconButton } from "../ui/button.tsx";
 import { Icon } from "../ui/icon.tsx";
+import { Tooltip } from "../ui/tooltip.tsx";
 import { enterFullscreen } from "../../lib/fullscreen.ts";
 
 type MediaTileProps = {
