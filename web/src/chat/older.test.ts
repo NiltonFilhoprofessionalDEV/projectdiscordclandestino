@@ -8,6 +8,7 @@ const existing: ChatMessage = {
   channelId: "chan-a" as ChannelId,
   authorId: "u1",
   displayName: "Ana",
+  avatarUrl: null,
   content: "oi",
   createdAt: "2026-09-09T12:00:00.000Z",
   clientNonce: "n1",

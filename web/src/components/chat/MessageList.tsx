@@ -60,7 +60,18 @@ function MessageArticle({
   return (
     <article className="group -mx-2 flex gap-3 rounded-lg px-2 py-1.5 transition duration-150 hover:bg-white/[0.03]">
       <span className="mt-0.5 flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-deck text-[11px] font-semibold text-cloud ring-1 ring-white/[0.06]">
-        {initials(message.displayName)}
+        {message.avatarUrl ? (
+          <img
+            src={message.avatarUrl}
+            alt=""
+            className="size-full object-cover"
+            onError={(event) => {
+              event.currentTarget.style.display = "none";
+            }}
+          />
+        ) : (
+          initials(message.displayName)
+        )}
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">

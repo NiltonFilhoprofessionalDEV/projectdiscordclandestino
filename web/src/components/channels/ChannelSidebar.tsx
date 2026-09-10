@@ -57,16 +57,12 @@ function VoiceMemberRow({ participant }: { participant: VoicePerson }) {
         participant.isSpeaking ? "text-cloud" : "text-haze",
       )}
     >
-      <span className="relative flex size-6 shrink-0 items-center justify-center">
-        {participant.isSpeaking ? (
-          <span className="speak-halo pointer-events-none absolute inset-[-4px] rounded-full" aria-hidden />
-        ) : null}
-        <span
-          className={cn(
-            "relative z-10 flex size-full items-center justify-center overflow-hidden rounded-full bg-deck text-[9px] font-semibold text-cloud",
-            participant.isSpeaking && "ring-2 ring-signal",
-          )}
-        >
+      <span
+        className={cn(
+          "flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-deck text-[9px] font-semibold text-cloud",
+          participant.isSpeaking && "speak-halo-sm ring-1 ring-signal/70",
+        )}
+      >
         {participant.avatarUrl ? (
           <img
             src={participant.avatarUrl}
@@ -79,7 +75,6 @@ function VoiceMemberRow({ participant }: { participant: VoicePerson }) {
         ) : (
           initials(participant.name)
         )}
-        </span>
       </span>
       <span className="truncate">
         {participant.name}
@@ -335,12 +330,12 @@ export function ChannelSidebar({
     <aside className="flex h-full w-[256px] shrink-0 flex-col border-r border-white/[0.07] bg-panel">
       <div className="relative min-h-[7.5rem] shrink-0 overflow-hidden border-b border-white/[0.07]">
         <img
-          src={communityBanner}
+          src={community?.avatarUrl || communityBanner}
           alt=""
-          className="absolute inset-0 size-full object-cover object-[center_right]"
+          className="absolute inset-0 size-full object-cover object-center"
         />
         <div
-          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,9,15,0.45)_0%,rgba(16,17,26,0.78)_50%,rgba(16,17,26,0.97)_100%)]"
+          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,9,15,0.28)_0%,rgba(16,17,26,0.62)_48%,rgba(16,17,26,0.92)_100%)]"
           aria-hidden
         />
         <div className="relative flex h-full min-h-[7.5rem] flex-col justify-end px-4 pb-3.5 pt-8">

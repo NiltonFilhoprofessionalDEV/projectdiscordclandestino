@@ -9,6 +9,7 @@ function msg(id: string, delivery: ChatMessage["delivery"] = "sent"): ChatMessag
     channelId: "c" as ChannelId,
     authorId: "u",
     displayName: "Ana",
+    avatarUrl: null,
     content: "oi",
     createdAt: "2026-09-09T12:00:00.000Z",
     clientNonce: id,

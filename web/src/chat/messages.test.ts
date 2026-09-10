@@ -9,6 +9,7 @@ function msg(partial: Partial<ChatMessage> & Pick<ChatMessage, "id">): ChatMessa
     channelId: channel,
     authorId: "user-1",
     displayName: "Ana",
+    avatarUrl: null,
     content: "oi",
     createdAt: "2026-09-09T12:00:00.000Z",
     clientNonce: partial.id,
