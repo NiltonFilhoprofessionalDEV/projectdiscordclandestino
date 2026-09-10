@@ -4,8 +4,12 @@ import { ConnectionState } from "livekit-client";
 import type { ParticipantView } from "../../hooks/useParticipants.ts";
 import { isFullscreenActive, toggleFullscreen } from "../../lib/fullscreen.ts";
 import { cn } from "../../lib/utils.ts";
-import { setScreenShareAudioOutput } from "../../services/livekit.ts";
+import {
+  getScreenShareAudioOutput,
+  setScreenShareAudioOutput,
+} from "../../services/livekit.ts";
 import { IconButton } from "../ui/button.tsx";
+import { HoverVolumePopover } from "../ui/HoverVolumePopover.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { Tooltip } from "../ui/tooltip.tsx";
 import { ParticipantTile } from "../participants/ParticipantTile.tsx";
@@ -17,11 +21,60 @@ type VoiceStageProps = {
   screen: ParticipantView | null | undefined;
 };
 
+function ScreenShareVolumeControl() {
+  const initial = getScreenShareAudioOutput();
+  const [volume, setVolume] = useState(initial.volume);
+  const [muted, setMuted] = useState(initial.muted);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setScreenShareAudioOutput(volume, muted);
+  }, [muted, volume]);
+
+  return (
+    <div
+      className="absolute bottom-3 left-3 z-20"
+      onDoubleClick={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <HoverVolumePopover
+        open={open}
+        onOpenChange={setOpen}
+        align="start"
+        panel={
+          <input
+            id="screen-share-volume-slider"
+            type="range"
+            min={0}
+            max={100}
+            value={Math.round(volume * 100)}
+            onChange={(event) => setVolume(Number(event.target.value) / 100)}
+            aria-label="Volume da transmissão"
+            className="voice-slider-vertical"
+          />
+        }
+      >
+        <IconButton
+          type="button"
+          size="iconSm"
+          variant={muted ? "mute" : "secondary"}
+          className="size-9 min-h-9 min-w-9 border border-white/[0.1] bg-abyss/80 text-cloud backdrop-blur-sm"
+          aria-label={muted ? "Ativar áudio da transmissão" : "Volume da transmissão"}
+          aria-expanded={open}
+          aria-controls={open ? "screen-share-volume-slider" : undefined}
+          title="Volume da transmissão"
+          onClick={() => setMuted((current) => !current)}
+        >
+          <Icon icon={muted ? VolumeX : Volume2} size="action" />
+        </IconButton>
+      </HoverVolumePopover>
+    </div>
+  );
+}
+
 function ScreenShareStage({ screen }: { screen: ParticipantView }) {
   const frameRef = useRef<HTMLFigureElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [volume, setVolume] = useState(1);
-  const [muted, setMuted] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const publication = screen.screenPublication!;
 
@@ -32,18 +85,16 @@ function ScreenShareStage({ screen }: { screen: ParticipantView }) {
       return;
     }
     track.attach(el);
-    el.muted = Boolean(screen.isLocal);
+    // Vídeo da tela nunca deve tocar áudio — o áudio da transmissão
+    // passa pelos elementos controlados em livekit.ts (audioKind=screen).
+    el.muted = true;
     el.playsInline = true;
     el.autoplay = true;
     void el.play().catch(() => undefined);
     return () => {
       track.detach(el);
     };
-  }, [publication, publication.track, screen.isLocal]);
-
-  useEffect(() => {
-    setScreenShareAudioOutput(volume, muted);
-  }, [muted, volume]);
+  }, [publication, publication.track]);
 
   useEffect(() => {
     function syncFullscreen() {
@@ -79,11 +130,8 @@ function ScreenShareStage({ screen }: { screen: ParticipantView }) {
         className="h-full w-full bg-black object-contain"
         autoPlay
         playsInline
-        muted={screen.isLocal}
+        muted
       />
-      <p className="pointer-events-none absolute top-3 left-3 z-10 max-w-[min(70%,20rem)] truncate rounded-lg border border-white/[0.08] bg-abyss/80 px-3 py-1.5 text-xs font-medium text-cloud backdrop-blur-sm">
-        {screen.name} está compartilhando a tela
-      </p>
       <div
         className="absolute top-3 right-3 z-20"
         onDoubleClick={(event) => event.stopPropagation()}
@@ -101,34 +149,7 @@ function ScreenShareStage({ screen }: { screen: ParticipantView }) {
           </IconButton>
         </Tooltip>
       </div>
-      {!screen.isLocal ? (
-        <div
-          className="absolute right-3 bottom-3 z-20 flex items-center gap-2 rounded-xl border border-white/[0.08] bg-abyss/80 px-3 py-2 backdrop-blur-sm"
-          onDoubleClick={(event) => event.stopPropagation()}
-        >
-          <Tooltip label={muted ? "Ativar áudio" : "Mutar transmissão"}>
-            <IconButton
-              type="button"
-              size="iconSm"
-              variant={muted ? "mute" : "ghost"}
-              className="size-8 min-h-8 min-w-8"
-              onClick={() => setMuted((current) => !current)}
-              aria-label={muted ? "Ativar áudio da transmissão" : "Mutar transmissão"}
-            >
-              <Icon icon={muted ? VolumeX : Volume2} size="action" />
-            </IconButton>
-          </Tooltip>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={Math.round(volume * 100)}
-            onChange={(event) => setVolume(Number(event.target.value) / 100)}
-            aria-label="Volume da transmissão"
-            className="voice-slider w-28"
-          />
-        </div>
-      ) : null}
+      {!screen.isLocal ? <ScreenShareVolumeControl /> : null}
     </figure>
   );
 }
