@@ -294,6 +294,13 @@ export function useFriends(userId: string | null, voiceActivity: string | null) 
         if (message.includes("não encontrado") || message.includes("not found")) {
           return "Usuário não encontrado.";
         }
+        if (
+          message.includes("could not find the function") ||
+          message.includes("schema cache") ||
+          rpcError.code === "PGRST202"
+        ) {
+          return "Pedido de amizade indisponível no servidor. Tente de novo em instantes.";
+        }
         return "Não foi possível enviar o pedido.";
       }
       await reload();

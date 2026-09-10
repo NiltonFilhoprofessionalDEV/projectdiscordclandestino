@@ -18,13 +18,14 @@ type VoiceStageProps = {
 };
 
 function ScreenShareStage({ screen }: { screen: ParticipantView }) {
-  const ref = useRef<HTMLVideoElement>(null);
+  const frameRef = useRef<HTMLFigureElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
   const publication = screen.screenPublication!;
 
   useEffect(() => {
-    const el = ref.current;
+    const el = videoRef.current;
     const track = publication.track;
     if (!el || !track) {
       return;
@@ -44,9 +45,12 @@ function ScreenShareStage({ screen }: { screen: ParticipantView }) {
   }, [muted, volume]);
 
   return (
-    <figure className="relative h-full min-h-0 overflow-hidden rounded-[18px] border border-white/[0.06] bg-[#12131D]">
+    <figure
+      ref={frameRef}
+      className="relative h-full min-h-0 overflow-hidden rounded-[18px] border border-white/[0.06] bg-[#12131D]"
+    >
       <video
-        ref={ref}
+        ref={videoRef}
         className="h-full w-full bg-black object-contain"
         autoPlay
         playsInline
@@ -60,11 +64,11 @@ function ScreenShareStage({ screen }: { screen: ParticipantView }) {
           type="button"
           size="iconSm"
           variant="secondary"
-          className="absolute top-3 right-3"
+          className="absolute top-3 right-3 z-10"
           aria-label="Abrir em tela cheia"
           onClick={() => {
-            if (ref.current) {
-              void enterFullscreen(ref.current);
+            if (frameRef.current) {
+              void enterFullscreen(frameRef.current, videoRef.current);
             }
           }}
         >

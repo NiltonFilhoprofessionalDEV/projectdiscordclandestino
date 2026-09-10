@@ -15,10 +15,11 @@ type MediaTileProps = {
 };
 
 export function MediaTile({ publication, label, large, muteElement, compact }: MediaTileProps) {
-  const ref = useRef<HTMLVideoElement>(null);
+  const frameRef = useRef<HTMLFigureElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    const el = ref.current;
+    const el = videoRef.current;
     const track = publication.track;
     if (!el || !track) {
       return;
@@ -36,15 +37,15 @@ export function MediaTile({ publication, label, large, muteElement, compact }: M
   }, [publication, publication.track]);
 
   async function openFullscreen() {
-    const el = ref.current;
-    if (!el) {
+    if (!frameRef.current) {
       return;
     }
-    await enterFullscreen(el);
+    await enterFullscreen(frameRef.current, videoRef.current);
   }
 
   return (
     <figure
+      ref={frameRef}
       className={
         compact
           ? "relative aspect-video overflow-hidden rounded-xl bg-black"
@@ -54,7 +55,7 @@ export function MediaTile({ publication, label, large, muteElement, compact }: M
       }
     >
       <video
-        ref={ref}
+        ref={videoRef}
         className="h-full w-full bg-black object-contain"
         autoPlay
         playsInline
@@ -67,8 +68,8 @@ export function MediaTile({ publication, label, large, muteElement, compact }: M
           variant="secondary"
           className={
             compact
-              ? "glass-bar absolute top-1 right-1 size-8 min-h-8 min-w-8"
-              : "glass-bar absolute top-3 right-3"
+              ? "glass-bar absolute top-1 right-1 z-10 size-8 min-h-8 min-w-8"
+              : "glass-bar absolute top-3 right-3 z-10"
           }
           aria-label="Abrir câmera em tela cheia"
           onClick={() => void openFullscreen()}
