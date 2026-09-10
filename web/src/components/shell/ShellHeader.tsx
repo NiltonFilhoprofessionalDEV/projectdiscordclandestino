@@ -1,10 +1,12 @@
 import type { RefObject } from "react";
 import { LogOut, Menu, Settings, Users } from "lucide-react";
 import { ConnectionQuality, ConnectionState } from "livekit-client";
+import { usePwaInstall } from "../../pwa/usePwaInstall.ts";
 import { IconButton } from "../ui/button.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { Tooltip } from "../ui/tooltip.tsx";
 import { ConnectionBadge } from "../controls/ConnectionBadge.tsx";
+import { PwaInstallButton, PwaInstallHint } from "./PwaInstallControls.tsx";
 
 type ShellHeaderProps = {
   communityName: string;
@@ -86,6 +88,7 @@ export function UserFooterBar({
   onOpenProfile?: () => void;
   onOpenSettings?: () => void;
 }) {
+  const pwa = usePwaInstall();
   const initials = displayName
     .trim()
     .split(/\s+/)
@@ -95,7 +98,15 @@ export function UserFooterBar({
     .join("") || "?";
 
   return (
-    <div className="flex shrink-0 items-center gap-1 border-t border-white/[0.07] bg-[#0A0B11] px-2 py-2">
+    <div className="shrink-0">
+      {pwa.showHint ? (
+        <PwaInstallHint
+          label={pwa.label}
+          onInstall={() => void pwa.install()}
+          onDismiss={pwa.dismissHint}
+        />
+      ) : null}
+      <div className="flex items-center gap-1 border-t border-white/[0.07] bg-[#0A0B11] px-2 py-2">
       <button
         type="button"
         className="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl px-1.5 py-1 text-left transition duration-150 ease-out hover:bg-white/[0.05]"
@@ -123,6 +134,9 @@ export function UserFooterBar({
           <span className="block truncate text-[11px] text-haze">Editar perfil</span>
         </span>
       </button>
+      {pwa.canInstall ? (
+        <PwaInstallButton label={pwa.label} onInstall={() => void pwa.install()} />
+      ) : null}
       <Tooltip label="Configurações">
         <IconButton
           type="button"
@@ -146,7 +160,8 @@ export function UserFooterBar({
         >
           <Icon icon={LogOut} size="action" />
         </IconButton>
-      </Tooltip>
+        </Tooltip>
+      </div>
     </div>
   );
 }
