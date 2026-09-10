@@ -57,7 +57,10 @@ export function applyAuthSnapshot(next: Session | null, sink: SessionSink) {
     sink.setProfile(null);
     sink.setError(null);
     sink.setLoading(false);
+    return;
   }
+  // Keep the gate on "Carregando sessão…" until loadUserProfile finishes.
+  sink.setLoading(true);
 }
 
 export async function loadUserProfile(user: User, sink: SessionSink) {
@@ -81,6 +84,23 @@ export async function loadUserProfile(user: User, sink: SessionSink) {
   sink.setProfile(nextProfile);
   sink.setError(null);
   sink.setLoading(false);
+}
+
+/** Bootstrap from storage/URL — do not rely only on onAuthStateChange INITIAL_SESSION. */
+export async function restoreSession(sink: SessionSink) {
+  const { data, error } = await supabase.auth.getSession();
+  if (sink.isCancelled()) {
+    return;
+  }
+  if (error) {
+    sink.setSession(null);
+    sink.setUser(null);
+    sink.setProfile(null);
+    sink.setError("Não foi possível restaurar a sessão.");
+    sink.setLoading(false);
+    return;
+  }
+  applyAuthSnapshot(data.session, sink);
 }
 
 

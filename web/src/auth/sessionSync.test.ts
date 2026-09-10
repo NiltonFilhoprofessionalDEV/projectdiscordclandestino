@@ -58,4 +58,18 @@ describe("applyAuthSnapshot", () => {
     expect(snapshot().loading).toBe(true);
     expect(snapshot().user?.id).toBe("user-1");
   });
+
+  it("marks loading again when a signed-in snapshot arrives after a logged-out gate", () => {
+    const { sink, snapshot } = createSink();
+    applyAuthSnapshot(null, sink);
+    expect(snapshot().loading).toBe(false);
+    applyAuthSnapshot(
+      {
+        access_token: "tok",
+        user: { id: "user-1" },
+      } as Session,
+      sink,
+    );
+    expect(snapshot().loading).toBe(true);
+  });
 });
