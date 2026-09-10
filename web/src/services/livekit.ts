@@ -112,6 +112,10 @@ export function setScreenShareAudioOutput(volume: number, muted: boolean): void 
   refreshAllRemoteAudio();
 }
 
+export function getScreenShareAudioOutput(): { volume: number; muted: boolean } {
+  return { volume: screenShareVolume, muted: screenShareMuted };
+}
+
 export async function readRoundTripMs(room: Room): Promise<number | null> {
   const engine = room as unknown as {
     engine?: { pcManager?: { subscriber?: { pc?: RTCPeerConnection } } };
