@@ -9,13 +9,14 @@ import {
   type Room,
 } from "livekit-client";
 import type { ChannelId } from "../../../shared/community.ts";
-import { readMicMuted } from "../lib/storage.ts";
+import { readMicMuted, readDevicePrefs } from "../lib/storage.ts";
 import { fetchLiveKitToken } from "../services/api.ts";
 import {
   attachRemoteAudio,
   createLiveKitRoom,
   detachTrack,
 } from "../services/livekit.ts";
+import { applySavedDevices } from "../voice/devices.ts";
 
 function onTrackSubscribed(
   track: RemoteTrack,
@@ -81,6 +82,7 @@ async function connectVoice(
   }
   try {
     const enableMic = !readMicMuted();
+    const prefs = readDevicePrefs();
     if (enableMic) {
       try {
         await instance.localParticipant.setMicrophoneEnabled(true, {
@@ -89,17 +91,20 @@ async function connectVoice(
           autoGainControl: true,
           voiceIsolation: true,
           channelCount: 1,
+          ...(prefs.audioinput ? { deviceId: prefs.audioinput } : {}),
         });
       } catch {
         await instance.localParticipant.setMicrophoneEnabled(true, {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
+          ...(prefs.audioinput ? { deviceId: prefs.audioinput } : {}),
         });
       }
     } else {
       await instance.localParticipant.setMicrophoneEnabled(false);
     }
+    await applySavedDevices(instance);
   } catch {
     setError("Microfone indisponível. Você ainda pode ouvir a sala.");
   }

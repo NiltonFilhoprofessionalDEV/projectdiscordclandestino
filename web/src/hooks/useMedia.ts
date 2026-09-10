@@ -8,6 +8,7 @@ import {
 } from "livekit-client";
 import { toast } from "sonner";
 import {
+  readDevicePrefs,
   readVoiceActivityOn,
   writeMicMuted,
   writeVoiceActivityOn,
@@ -54,8 +55,18 @@ function cameraErrorMessage(error: unknown): string {
 }
 
 async function enableCamera(room: Room) {
+  const prefs = readDevicePrefs();
   let lastError: unknown;
-  for (const options of CAMERA_OPTIONS) {
+  const optionSets = prefs.videoinput
+    ? [
+        { deviceId: prefs.videoinput, facingMode: "user" as const, resolution: VideoPresets.h360.resolution },
+        { deviceId: prefs.videoinput, facingMode: "user" as const, resolution: VideoPresets.h180.resolution },
+        { deviceId: prefs.videoinput, facingMode: "user" as const },
+        { deviceId: prefs.videoinput },
+        ...CAMERA_OPTIONS,
+      ]
+    : CAMERA_OPTIONS;
+  for (const options of optionSets) {
     try {
       await room.localParticipant.setCameraEnabled(true, options);
       return;
@@ -67,13 +78,19 @@ async function enableCamera(room: Room) {
 }
 
 async function enableMicrophone(room: Room) {
+  const prefs = readDevicePrefs();
+  const device = prefs.audioinput ? { deviceId: prefs.audioinput } : {};
   try {
-    await room.localParticipant.setMicrophoneEnabled(true, MIC_CAPTURE);
+    await room.localParticipant.setMicrophoneEnabled(true, {
+      ...MIC_CAPTURE,
+      ...device,
+    });
   } catch {
     await room.localParticipant.setMicrophoneEnabled(true, {
       echoCancellation: true,
       noiseSuppression: true,
       autoGainControl: true,
+      ...device,
     });
   }
 }
