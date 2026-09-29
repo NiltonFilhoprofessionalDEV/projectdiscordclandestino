@@ -15,7 +15,7 @@ export function useHomeVoice(
   avatarByIdentity: Record<string, string | null> = {},
 ) {
   const voice = useRoom(channelId, { displayName, avatarUrl });
-  const media = useMedia(voice.room, voice.findScreenOwner);
+  const media = useMedia(voice.room);
   const participants = useParticipants(voice.room).map((participant) => {
     const fromProfile = avatarByIdentity[participant.identity] ?? null;
     const resolvedAvatar =

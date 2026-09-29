@@ -13,8 +13,8 @@ let remoteOutputVolume = 1;
 let remoteOutputMuted = false;
 const participantVolumes = new Map<string, number>();
 const participantMuted = new Map<string, boolean>();
-let screenShareVolume = 1;
-let screenShareMuted = false;
+const screenShareVolumes = new Map<string, number>();
+const screenShareMuted = new Map<string, boolean>();
 
 export function createLiveKitRoom(): Room {
   return new Room({
@@ -37,16 +37,16 @@ export function createLiveKitRoom(): Room {
 
 function applyElementGain(el: HTMLAudioElement) {
   const identity = el.dataset.participantIdentity ?? "";
-  const isScreen = el.dataset.audioKind === "screen";
-  const participantVol = participantVolumes.get(identity) ?? 1;
-  const participantMute = participantMuted.get(identity) ?? false;
-  if (isScreen) {
-    el.volume = Math.max(0, Math.min(1, remoteOutputVolume * screenShareVolume * participantVol));
-    el.muted = remoteOutputMuted || screenShareMuted || participantMute;
+  // Áudio da transmissão é independente do volume de voz da mesma pessoa.
+  if (el.dataset.audioKind === "screen") {
+    const shareVol = screenShareVolumes.get(identity) ?? 1;
+    el.volume = Math.max(0, Math.min(1, remoteOutputVolume * shareVol));
+    el.muted = remoteOutputMuted || (screenShareMuted.get(identity) ?? false);
     return;
   }
+  const participantVol = participantVolumes.get(identity) ?? 1;
   el.volume = Math.max(0, Math.min(1, remoteOutputVolume * participantVol));
-  el.muted = remoteOutputMuted || participantMute;
+  el.muted = remoteOutputMuted || (participantMuted.get(identity) ?? false);
 }
 
 function refreshAllRemoteAudio() {
@@ -106,14 +106,21 @@ export function getParticipantAudioOutput(identity: string): { volume: number; m
   };
 }
 
-export function setScreenShareAudioOutput(volume: number, muted: boolean): void {
-  screenShareVolume = Math.max(0, Math.min(1, volume));
-  screenShareMuted = muted;
+export function setScreenShareAudioOutput(
+  identity: string,
+  volume: number,
+  muted: boolean,
+): void {
+  screenShareVolumes.set(identity, Math.max(0, Math.min(1, volume)));
+  screenShareMuted.set(identity, muted);
   refreshAllRemoteAudio();
 }
 
-export function getScreenShareAudioOutput(): { volume: number; muted: boolean } {
-  return { volume: screenShareVolume, muted: screenShareMuted };
+export function getScreenShareAudioOutput(identity: string): { volume: number; muted: boolean } {
+  return {
+    volume: screenShareVolumes.get(identity) ?? 1,
+    muted: screenShareMuted.get(identity) ?? false,
+  };
 }
 
 export async function readRoundTripMs(room: Room): Promise<number | null> {

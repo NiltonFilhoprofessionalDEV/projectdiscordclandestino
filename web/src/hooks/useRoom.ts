@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ConnectionState,
   RoomEvent,
-  Track,
   type RemoteParticipant,
   type RemoteTrack,
   type RemoteTrackPublication,
@@ -29,24 +28,6 @@ function onTrackSubscribed(
 
 function onTrackUnsubscribed(track: RemoteTrack) {
   detachTrack(track);
-}
-
-function findScreenShareOwner(room: Room | null): string | null {
-  if (!room) {
-    return null;
-  }
-  if (room.localParticipant.isScreenShareEnabled) {
-    return room.localParticipant.name || room.localParticipant.identity;
-  }
-  for (const participant of room.remoteParticipants.values()) {
-    const hasShare = Array.from(participant.trackPublications.values()).some(
-      (pub) => pub.source === Track.Source.ScreenShare && !pub.isMuted && pub.track,
-    );
-    if (hasShare) {
-      return participant.name || participant.identity;
-    }
-  }
-  return null;
 }
 
 async function connectVoice(
@@ -178,6 +159,5 @@ export function useRoom(
     connectionState,
     error,
     leave,
-    findScreenOwner: useCallback(() => findScreenShareOwner(roomRef.current), []),
   };
 }
