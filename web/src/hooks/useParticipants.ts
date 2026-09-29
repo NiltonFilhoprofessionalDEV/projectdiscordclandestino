@@ -129,6 +129,6 @@ export function useParticipants(room: Room | null): ParticipantView[] {
   return participants;
 }
 
-export function activeScreenShare(participants: ParticipantView[]): ParticipantView | null {
-  return participants.find((participant) => participant.screenPublication) ?? null;
+export function screenShares(participants: ParticipantView[]): ParticipantView[] {
+  return participants.filter((participant) => participant.screenPublication);
 }

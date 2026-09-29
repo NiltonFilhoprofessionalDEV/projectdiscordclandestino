@@ -115,7 +115,7 @@ async function publishScreenTracks(room: Room, tracks: LocalTrack[]) {
   }
 }
 
-export function useMedia(room: Room | null, findScreenOwner: () => string | null) {
+export function useMedia(room: Room | null) {
   const [micOn, setMicOn] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
   const [screenOn, setScreenOn] = useState(false);
@@ -236,11 +236,6 @@ export function useMedia(room: Room | null, findScreenOwner: () => string | null
       if (room.localParticipant.isScreenShareEnabled) {
         return;
       }
-      const owner = findScreenOwner();
-      if (owner) {
-        toast.message(`${owner} já está compartilhando a tela.`);
-        return;
-      }
       try {
         await room.localParticipant.setScreenShareEnabled(true, screenShareCaptureOptions(config));
         setScreenConfig(config);
@@ -252,7 +247,7 @@ export function useMedia(room: Room | null, findScreenOwner: () => string | null
         toast.error("Não foi possível compartilhar a tela.");
       }
     },
-    [findScreenOwner, room, screenConfig],
+    [room, screenConfig],
   );
 
   const stopScreen = useCallback(async () => {

@@ -15,7 +15,7 @@ import type { useCommunities } from "../../hooks/useCommunities.ts";
 import type { useHomeDialogState } from "../../hooks/useHomeDialogState.ts";
 import type { useHomeNavigation } from "../../hooks/useHomeNavigation.ts";
 import type { useHomeVoice } from "../../hooks/useHomeVoice.ts";
-import { activeScreenShare } from "../../hooks/useParticipants.ts";
+import { screenShares } from "../../hooks/useParticipants.ts";
 import { cn } from "../../lib/utils.ts";
 import { centerSurfaceLabel } from "../../shell/selection.ts";
 import { ShellHeader } from "./ShellHeader.tsx";
@@ -70,8 +70,8 @@ function HomeVoicePane({
   dialogs: ReturnType<typeof useHomeDialogState>;
   onLeaveVoice: () => void;
 }) {
-  const screen = activeScreenShare(session.participants);
-  const sharing = Boolean(screen?.screenPublication);
+  const screens = screenShares(session.participants);
+  const sharing = screens.length > 0;
   const localSharing = session.media.screenOn;
   return (
     <div
@@ -90,7 +90,7 @@ function HomeVoicePane({
           error={session.voice.error}
           connectionState={session.voice.connectionState}
           participants={session.participants}
-          screen={screen}
+          screens={screens}
         />
       </div>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-center overflow-visible px-3 pb-[max(1.25rem,calc(1rem+env(safe-area-inset-bottom,0px)+var(--chrome-share-inset,0px)))] sm:px-4 sm:pb-[max(1.5rem,calc(1.25rem+env(safe-area-inset-bottom,0px)+var(--chrome-share-inset,0px)))]">

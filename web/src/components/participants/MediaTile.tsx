@@ -15,7 +15,7 @@ type MediaTileProps = {
 };
 
 export function MediaTile({ publication, label, large, muteElement, compact }: MediaTileProps) {
-  const frameRef = useRef<HTMLFigureElement>(null);
+  const frameRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [fullscreen, setFullscreen] = useState(false);
 
