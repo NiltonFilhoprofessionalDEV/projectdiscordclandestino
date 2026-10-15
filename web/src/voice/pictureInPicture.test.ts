@@ -35,5 +35,8 @@ describe("pictureInPicture", () => {
     expect(mount.id).toBe("floating-call-root");
     expect(target.body.contains(mount)).toBe(true);
     expect(target.title).toBe("Controles da chamada");
+    expect(target.documentElement.style.background).toBe("transparent");
+    expect(target.body.style.background).toBe("transparent");
+    expect(target.head.textContent).toContain("background: transparent");
   });
 });
