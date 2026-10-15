@@ -24,11 +24,21 @@ describe("screenShareCaptureOptions", () => {
     expect(options.audio).toBe(false);
   });
 
-  it("drops monitor and system-audio constraints on phones", () => {
+  it("asks phones for the whole screen instead of the current tab", () => {
     const options = screenShareCaptureOptions(defaultScreenShareConfig, { mobile: true });
-    expect(options.video).toBe(true);
+    expect(options.video).toEqual({ displaySurface: "monitor" });
+    expect(options.preferCurrentTab).toBe(false);
     expect(options.audio).toBe(false);
     expect(options.systemAudio).toBeUndefined();
+  });
+
+  it("still allows a phone to pick only the browser tab", () => {
+    const options = screenShareCaptureOptions(
+      { ...defaultScreenShareConfig, surface: "browser" },
+      { mobile: true },
+    );
+    expect(options.video).toEqual({ displaySurface: "browser" });
+    expect(options.preferCurrentTab).toBe(true);
   });
 });
 
