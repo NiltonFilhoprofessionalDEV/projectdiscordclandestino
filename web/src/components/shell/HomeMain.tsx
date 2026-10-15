@@ -6,6 +6,7 @@ import { ChatPanel } from "../chat/ChatPanel.tsx";
 import { VoiceChatDrawer } from "../chat/VoiceChatDrawer.tsx";
 import { GuestCommunityView } from "../communities/GuestCommunityView.tsx";
 import { ControlBar } from "../controls/ControlBar.tsx";
+import { useFloatingCallPanel } from "../../hooks/useFloatingCallPanel.ts";
 import { ExploreView } from "../explore/ExploreView.tsx";
 import { VoiceStage } from "../voice/VoiceStage.tsx";
 import { isMemberShell } from "../../communities/roles.ts";
@@ -73,6 +74,21 @@ function HomeVoicePane({
   const screens = screenShares(session.participants);
   const sharing = screens.length > 0;
   const localSharing = session.media.screenOn;
+  const canScreenShare = Boolean(navigator.mediaDevices?.getDisplayMedia);
+  const floating = useFloatingCallPanel({
+    micOn: session.media.micOn,
+    screenOn: session.media.screenOn,
+    canScreenShare,
+    onToggleMic: () => void session.media.toggleMic(),
+    onToggleScreen: () => {
+      if (session.media.screenOn) {
+        void session.media.stopScreen();
+        return;
+      }
+      void session.media.startScreen();
+    },
+    onLeave: onLeaveVoice,
+  });
   return (
     <div
       className="relative flex min-h-0 flex-1 overflow-hidden bg-night"
@@ -100,7 +116,9 @@ function HomeVoicePane({
             voiceActivityOn={session.media.voiceActivityOn}
             cameraOn={session.media.cameraOn}
             screenOn={session.media.screenOn}
-            canScreenShare={Boolean(navigator.mediaDevices?.getDisplayMedia)}
+            canScreenShare={canScreenShare}
+            floatingOpen={floating.open}
+            onToggleFloating={() => void floating.toggle()}
             onToggleMic={() => void session.media.toggleMic()}
             onToggleVoiceActivity={session.media.toggleVoiceActivity}
             onToggleCamera={() => void session.media.toggleCamera()}

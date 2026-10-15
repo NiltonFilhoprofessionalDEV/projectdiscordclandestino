@@ -4,6 +4,7 @@ import {
   MicOff,
   MonitorUp,
   PhoneOff,
+  PictureInPicture2,
   Settings,
   Video,
   VideoOff,
@@ -29,6 +30,8 @@ type ControlBarProps = {
   onToggleScreen: () => void;
   onSettings: () => void;
   onLeave: () => void;
+  floatingOpen?: boolean;
+  onToggleFloating?: () => void;
   outputVolume: number;
   outputMuted: boolean;
   onOutputVolume: (value: number) => void;
@@ -48,6 +51,8 @@ export function ControlBar({
   onToggleScreen,
   onSettings,
   onLeave,
+  floatingOpen = false,
+  onToggleFloating,
   outputVolume,
   outputMuted,
   onOutputVolume,
@@ -157,6 +162,19 @@ export function ControlBar({
           <Icon icon={outputMuted ? VolumeX : Volume2} />
         </IconButton>
       </HoverVolumePopover>
+      {onToggleFloating ? (
+        <Tooltip label={floatingOpen ? "Fechar painel flutuante" : "Painel flutuante"}>
+          <IconButton
+            type="button"
+            variant={floatingOpen ? "live" : "secondary"}
+            className="hidden sm:inline-flex"
+            onClick={onToggleFloating}
+            aria-label={floatingOpen ? "Fechar painel flutuante" : "Abrir painel flutuante"}
+          >
+            <Icon icon={PictureInPicture2} />
+          </IconButton>
+        </Tooltip>
+      ) : null}
       <Tooltip label="Sair da chamada">
         <IconButton type="button" variant="danger" onClick={onLeave} aria-label="Sair da sala">
           <Icon icon={PhoneOff} />
