@@ -18,6 +18,8 @@ export const defaultScreenShareConfig: ScreenShareConfig = {
 export const SIMPLE_SCREEN_SHARE: ScreenShareCaptureOptions = {
   audio: false,
   video: true,
+  preferCurrentTab: false,
+  selfBrowserSurface: "include",
 };
 
 export function isMobileScreenShareHost(): boolean {
@@ -37,8 +39,13 @@ export function screenShareCaptureOptions(
 ): ScreenShareCaptureOptions {
   const mobile = host.mobile ?? isMobileScreenShareHost();
   if (mobile) {
+    const surface = config.surface === "browser" ? "browser" : "monitor";
     return {
-      ...SIMPLE_SCREEN_SHARE,
+      audio: false,
+      video: { displaySurface: surface },
+      preferCurrentTab: surface === "browser",
+      selfBrowserSurface: "include",
+      surfaceSwitching: "include",
       resolution: ScreenSharePresets.h720fps15.resolution,
       contentHint: config.quality,
     };
