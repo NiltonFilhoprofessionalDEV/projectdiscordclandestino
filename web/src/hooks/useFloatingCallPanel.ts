@@ -11,7 +11,7 @@ import {
   preparePictureInPictureDocument,
 } from "../voice/pictureInPicture.ts";
 
-const PIP_SIZE = { width: 220, height: 64 } as const;
+const PIP_SIZE = { width: 300, height: 64 } as const;
 
 export function useFloatingCallPanel(controls: FloatingCallBarProps) {
   const [open, setOpen] = useState(false);
@@ -69,7 +69,15 @@ export function useFloatingCallPanel(controls: FloatingCallBarProps) {
     if (open) {
       renderBar();
     }
-  }, [open, renderBar, controls.micOn, controls.screenOn, controls.canScreenShare]);
+  }, [
+    open,
+    renderBar,
+    controls.micOn,
+    controls.screenOn,
+    controls.canScreenShare,
+    controls.outputVolume,
+    controls.outputMuted,
+  ]);
 
   useEffect(() => {
     return () => {
