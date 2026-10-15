@@ -74,11 +74,9 @@ function HomeVoicePane({
   const screens = screenShares(session.participants);
   const sharing = screens.length > 0;
   const localSharing = session.media.screenOn;
-  const canScreenShare = Boolean(navigator.mediaDevices?.getDisplayMedia);
   const floating = useFloatingCallPanel({
     micOn: session.media.micOn,
     screenOn: session.media.screenOn,
-    canScreenShare,
     outputVolume: session.outputVolume,
     outputMuted: session.outputMuted,
     onToggleMic: () => void session.media.toggleMic(),
@@ -120,7 +118,6 @@ function HomeVoicePane({
             voiceActivityOn={session.media.voiceActivityOn}
             cameraOn={session.media.cameraOn}
             screenOn={session.media.screenOn}
-            canScreenShare={canScreenShare}
             floatingOpen={floating.open}
             onToggleFloating={() => void floating.toggle()}
             onToggleMic={() => void session.media.toggleMic()}

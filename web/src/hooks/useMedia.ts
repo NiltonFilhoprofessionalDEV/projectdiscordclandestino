@@ -16,9 +16,12 @@ import {
 } from "../lib/storage.ts";
 import { MIC_CAPTURE, MIC_CAPTURE_FALLBACK } from "../voice/micCapture.ts";
 import {
+  canCaptureDisplay,
   defaultScreenShareConfig,
   isScreenShareCancelError,
   screenShareCaptureOptions,
+  screenShareErrorMessage,
+  SIMPLE_SCREEN_SHARE,
   type ScreenShareConfig,
 } from "../voice/screenShare.ts";
 import { useVoiceActivityGate } from "./useVoiceActivityGate.ts";
@@ -233,6 +236,12 @@ export function useMedia(room: Room | null) {
       if (!room) {
         return;
       }
+      if (!canCaptureDisplay()) {
+        toast.error(
+          "Este celular não transmite tela neste navegador. No iPhone use o Safari; no Android, o Chrome.",
+        );
+        return;
+      }
       if (room.localParticipant.isScreenShareEnabled) {
         return;
       }
@@ -244,7 +253,16 @@ export function useMedia(room: Room | null) {
         if (isScreenShareCancelError(err)) {
           return;
         }
-        toast.error("Não foi possível compartilhar a tela.");
+        try {
+          await room.localParticipant.setScreenShareEnabled(true, SIMPLE_SCREEN_SHARE);
+          setScreenConfig(config);
+          setScreenOn(true);
+        } catch (retryError) {
+          if (isScreenShareCancelError(retryError)) {
+            return;
+          }
+          toast.error(screenShareErrorMessage(retryError));
+        }
       }
     },
     [room, screenConfig],

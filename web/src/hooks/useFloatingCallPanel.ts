@@ -74,7 +74,6 @@ export function useFloatingCallPanel(controls: FloatingCallBarProps) {
     renderBar,
     controls.micOn,
     controls.screenOn,
-    controls.canScreenShare,
     controls.outputVolume,
     controls.outputMuted,
   ]);
