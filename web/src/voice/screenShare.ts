@@ -15,7 +15,34 @@ export const defaultScreenShareConfig: ScreenShareConfig = {
   audio: true,
 };
 
-export function screenShareCaptureOptions(config: ScreenShareConfig): ScreenShareCaptureOptions {
+export const SIMPLE_SCREEN_SHARE: ScreenShareCaptureOptions = {
+  audio: false,
+  video: true,
+};
+
+export function isMobileScreenShareHost(): boolean {
+  if (typeof navigator === "undefined") {
+    return false;
+  }
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+export function canCaptureDisplay(): boolean {
+  return typeof navigator.mediaDevices?.getDisplayMedia === "function";
+}
+
+export function screenShareCaptureOptions(
+  config: ScreenShareConfig,
+  host: { mobile?: boolean } = {},
+): ScreenShareCaptureOptions {
+  const mobile = host.mobile ?? isMobileScreenShareHost();
+  if (mobile) {
+    return {
+      ...SIMPLE_SCREEN_SHARE,
+      resolution: ScreenSharePresets.h720fps15.resolution,
+      contentHint: config.quality,
+    };
+  }
   return {
     audio: config.audio,
     video: { displaySurface: config.surface },
@@ -33,9 +60,22 @@ export function isScreenShareCancelError(error: unknown): boolean {
   const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
   const name = error instanceof Error ? error.name : "";
   return (
+    name === "AbortError" ||
     name === "NotAllowedError" ||
     message.includes("cancel") ||
     message.includes("denied") ||
     message.includes("permission")
   );
+}
+
+export function screenShareErrorMessage(error: unknown): string {
+  const name = error instanceof Error ? error.name : "";
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  if (name === "NotSupportedError" || message.includes("not supported")) {
+    return "Este celular não transmite tela neste navegador. No iPhone use o Safari; no Android, o Chrome.";
+  }
+  if (name === "NotFoundError") {
+    return "Nenhuma tela disponível para transmitir neste aparelho.";
+  }
+  return "Não foi possível compartilhar a tela.";
 }

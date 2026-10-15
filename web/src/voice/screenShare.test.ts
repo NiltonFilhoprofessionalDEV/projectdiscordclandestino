@@ -23,6 +23,13 @@ describe("screenShareCaptureOptions", () => {
     expect(options.contentHint).toBe("motion");
     expect(options.audio).toBe(false);
   });
+
+  it("drops monitor and system-audio constraints on phones", () => {
+    const options = screenShareCaptureOptions(defaultScreenShareConfig, { mobile: true });
+    expect(options.video).toBe(true);
+    expect(options.audio).toBe(false);
+    expect(options.systemAudio).toBeUndefined();
+  });
 });
 
 describe("isScreenShareCancelError", () => {

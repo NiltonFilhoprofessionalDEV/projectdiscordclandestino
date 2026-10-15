@@ -6,7 +6,6 @@ import { FloatingCallBar } from "./FloatingCallBar.tsx";
 const baseProps = {
   micOn: true,
   screenOn: false,
-  canScreenShare: true,
   outputVolume: 1,
   outputMuted: false,
   onToggleMic: vi.fn(),

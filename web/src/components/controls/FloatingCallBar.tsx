@@ -7,7 +7,6 @@ import { Icon } from "../ui/icon.tsx";
 export type FloatingCallBarProps = {
   micOn: boolean;
   screenOn: boolean;
-  canScreenShare: boolean;
   outputVolume: number;
   outputMuted: boolean;
   onToggleMic: () => void;
@@ -54,7 +53,6 @@ function PillButton({
 export function FloatingCallBar({
   micOn,
   screenOn,
-  canScreenShare,
   outputVolume,
   outputMuted,
   onToggleMic,
@@ -73,11 +71,9 @@ export function FloatingCallBar({
         <PillButton label={micLabel} onClick={onToggleMic} active={!micOn}>
           <Icon icon={micOn ? Mic : MicOff} size="sm" />
         </PillButton>
-        {canScreenShare ? (
-          <PillButton label={screenLabel} onClick={onToggleScreen} active={screenOn}>
-            <Icon icon={MonitorUp} size="sm" />
-          </PillButton>
-        ) : null}
+        <PillButton label={screenLabel} onClick={onToggleScreen} active={screenOn}>
+          <Icon icon={MonitorUp} size="sm" />
+        </PillButton>
         <PillButton label={volumeLabel} onClick={onToggleOutputMute} active={outputMuted}>
           <Icon icon={outputMuted ? VolumeX : Volume2} size="sm" />
         </PillButton>

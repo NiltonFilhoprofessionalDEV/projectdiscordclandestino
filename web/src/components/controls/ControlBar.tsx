@@ -23,7 +23,6 @@ type ControlBarProps = {
   voiceActivityOn: boolean;
   cameraOn: boolean;
   screenOn: boolean;
-  canScreenShare: boolean;
   onToggleMic: () => void;
   onToggleVoiceActivity: () => void;
   onToggleCamera: () => void;
@@ -44,7 +43,6 @@ export function ControlBar({
   voiceActivityOn,
   cameraOn,
   screenOn,
-  canScreenShare,
   onToggleMic,
   onToggleVoiceActivity,
   onToggleCamera,
@@ -71,7 +69,7 @@ export function ControlBar({
   return (
     <div
       className={cn(
-        "flex w-full max-w-full flex-nowrap items-center justify-center gap-1.5 overflow-visible rounded-[18px] border border-white/[0.08] bg-[#12131D]/95 px-2.5 py-2 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur-md sm:w-fit sm:max-w-[calc(100vw-2rem)]",
+        "flex w-full max-w-full flex-nowrap items-center justify-center gap-1.5 overflow-x-auto overflow-y-visible rounded-[18px] border border-white/[0.08] bg-[#12131D]/95 px-2.5 py-2 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur-md sm:w-fit sm:max-w-[calc(100vw-2rem)] sm:overflow-visible",
         className,
       )}
     >
@@ -111,19 +109,16 @@ export function ControlBar({
           <Icon icon={cameraOn ? Video : VideoOff} />
         </IconButton>
       </Tooltip>
-      {canScreenShare ? (
-        <Tooltip label={screenLabel}>
-          <IconButton
-            type="button"
-            variant={screenOn ? "live" : "secondary"}
-            className="hidden sm:inline-flex"
-            onClick={onToggleScreen}
-            aria-label={screenLabel}
-          >
-            <Icon icon={MonitorUp} />
-          </IconButton>
-        </Tooltip>
-      ) : null}
+      <Tooltip label={screenLabel}>
+        <IconButton
+          type="button"
+          variant={screenOn ? "live" : "secondary"}
+          onClick={onToggleScreen}
+          aria-label={screenLabel}
+        >
+          <Icon icon={MonitorUp} />
+        </IconButton>
+      </Tooltip>
       <Tooltip label="Dispositivos">
         <IconButton
           type="button"
