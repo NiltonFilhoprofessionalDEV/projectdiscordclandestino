@@ -79,6 +79,8 @@ function HomeVoicePane({
     micOn: session.media.micOn,
     screenOn: session.media.screenOn,
     canScreenShare,
+    outputVolume: session.outputVolume,
+    outputMuted: session.outputMuted,
     onToggleMic: () => void session.media.toggleMic(),
     onToggleScreen: () => {
       if (session.media.screenOn) {
@@ -87,6 +89,8 @@ function HomeVoicePane({
       }
       void session.media.startScreen();
     },
+    onOutputVolume: session.setOutputVolume,
+    onToggleOutputMute: () => session.setOutputMuted((current) => !current),
     onLeave: onLeaveVoice,
   });
   return (
