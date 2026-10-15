@@ -47,17 +47,34 @@ export function copyStyleSheets(fromDoc: Document, toDoc: Document): void {
   });
 }
 
+const PIP_DOCUMENT_CSS = `
+html, body, #floating-call-root {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent !important;
+}
+html {
+  color-scheme: dark;
+}
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+}
+`;
+
 export function preparePictureInPictureDocument(pipDocument: Document): HTMLDivElement {
   pipDocument.title = "Controles da chamada";
-  pipDocument.documentElement.style.height = "100%";
-  pipDocument.documentElement.style.colorScheme = "dark";
-  pipDocument.body.style.margin = "0";
-  pipDocument.body.style.height = "100%";
-  pipDocument.body.style.overflow = "hidden";
-  pipDocument.body.style.background = "#0A0B11";
+  pipDocument.documentElement.style.background = "transparent";
+  pipDocument.body.style.background = "transparent";
+  const style = pipDocument.createElement("style");
+  style.textContent = PIP_DOCUMENT_CSS;
+  pipDocument.head.appendChild(style);
   const mount = pipDocument.createElement("div");
   mount.id = "floating-call-root";
-  mount.style.height = "100%";
   pipDocument.body.appendChild(mount);
   return mount;
 }

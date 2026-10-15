@@ -11,7 +11,7 @@ import {
   preparePictureInPictureDocument,
 } from "../voice/pictureInPicture.ts";
 
-const PIP_SIZE = { width: 328, height: 88 } as const;
+const PIP_SIZE = { width: 220, height: 64 } as const;
 
 export function useFloatingCallPanel(controls: FloatingCallBarProps) {
   const [open, setOpen] = useState(false);
